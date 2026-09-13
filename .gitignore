@@ -1,0 +1,15 @@
+# Maven
+backend/target/
+# IDEs
+.idea/
+*.iml
+.vscode/
+# Node / Angular
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+# Dados locais
+.env
+*.log
+# Áudio e features nunca entram no repo
+data/
