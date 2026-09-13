@@ -1,5 +1,6 @@
 package dev.rifflab.analysis;
 
+import dev.rifflab.harmony.ChordQuality;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
