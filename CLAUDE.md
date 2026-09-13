@@ -113,17 +113,21 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
 - **Dois eixos (P1).** Eixo A `KeyRelation` (acorde × tonalidade), precedência:
   `NONE` (sem fundamental) → `AMBIGUOUS` (power chord cuja díade cabe na escala) → `DIATONIC`
   (todas as notas, inclusive 7ª, na escala) → `BORROWED` (todas na escala paralela: maior ↔ menor
-  natural) → `SECONDARY_DOMINANT` (MAJ/DOM7 uma 5ª acima da fundamental do próximo acorde; chains
-  permitidas; alvo não precisa ser diatônico) → `CHROMATIC` (inclui ♭II frígio, III/VI maiores).
+  natural; cobre os "IV dórico" e "♭VII mixolídio") → `SECONDARY_DOMINANT` (DOM7 fora do campo é
+  dominante pela qualidade, resolva ou não — `E7 → F` em Dó é V/vi; tríade MAJ só com o próximo
+  acorde uma 5ª abaixo) → `CHROMATIC` (inclui ♭II frígio, III/VI maiores, ♭V blue note).
   Eixo B `Transition` (acorde × anterior, sobre tríades reduzidas; guarda `rootInterval` e
   `commonTones`): `PARALLEL`, `RELATIVE`, `LEITTONWECHSEL`, `HEXATONIC_POLE` (maior r ↔ menor r+8),
   `CHROMATIC_MEDIANT` (terça, 1 comum), `DOUBLY_CHROMATIC_MEDIANT` (0), `DIATONIC_MEDIANT`,
   `MEDIANT` (terça com sus/power), `FIFTH_DOWN` (G→C), `FIFTH_UP`, `TRITONE`, `SEMITONE`,
   `WHOLE_TONE`, `SAME_ROOT`, `SAME`.
-- **Referência tonal (P2).** A tonalidade do `key_segment` vigente. `MINOR` = menor natural + V,
-  V7, vii°, vii°7 da harmônica como diatônicos; `AEOLIAN` é estrito. Modos usam a própria escala.
-  Numerais **sempre relativos à escala maior da tônica** (♭III, ♭VI, ♭VII também em menor; ♯IV,
-  nunca ♭V); caixa pela tríade: `ii`, `vii°`, `iiø7`, `III+`, `♭VI5`, `IVsus4`.
+- **Referência tonal (P2).** A tonalidade do `key_segment` vigente. Menores tonais (`MINOR`,
+  `DORIAN`) = escala natural + V, V7, vii°, vii°7 da harmônica como diatônicos; `AEOLIAN` e
+  `PHRYGIAN` são estritos. `PHRYGIAN_DOMINANT` (tônica maior + ♭II) existe para flamenco/metal.
+  Blues: `MIXOLYDIAN` (I7 diatônico) ou `DORIAN` (IV7 diatônico), conforme o caso.
+  Numerais **sempre relativos à escala maior da tônica** (♭III, ♭VI, ♭VII também em menor);
+  trítono = `♯IV` em modos de terça maior, `♭V` nos de terça menor; caixa pela tríade: `ii`,
+  `vii°`, `iiø7`, `III+`, `IVsus4`; power chord neutro em caixa alta: `I5`, `♭VI5`.
 - **Unidade (P3).** Segmentos idênticos consecutivos são fundidos antes da normalização; matriz de
   transição sem diagonal; seções repetidas contam cada vez (música como ouvida); distribuições
   por contagem de segmento e por duração — a Onda 3 expõe as duas.
@@ -142,9 +146,9 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
 ## Ondas
 
 - [x] Onda 0 — esqueleto (entregue e aprovado em 2026-09-13)
-- [ ] Onda 1 — `HarmonicNormalizer`: domínio e regras implementados; testes de classificação
-  aguardam a lista de progressões do dono (`ProgressionClassificationTest`). Portão: a
-  classificação bate com a análise manual?
+- [ ] Onda 1 — `HarmonicNormalizer`: regras implementadas e validadas contra as 30 progressões do
+  dono (`ProgressionClassificationTest`, 2026-09-13). Portão aberto: divergências de convenção
+  (label de power chord, `AMBIGUOUS` nas métricas, `7sus4`) aguardam decisão.
 - [ ] Onda 2 — integração com o extrator (contract test com fixture JSON)
 - [ ] Onda 3 — analítica de corpus
 - [ ] Onda 4 — Angular
