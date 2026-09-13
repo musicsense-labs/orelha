@@ -105,14 +105,34 @@ Revisado em relação ao esboço original; ver `backend/src/main/resources/db/mi
   romano é renderização.
 - Séries por frame não vão para o Postgres: `analysis_run.features_path` (Parquet).
 
+## Regras do `HarmonicNormalizer` (P1/P2/P3 decididos em 2026-09-13)
+
+Pacote `dev.rifflab.harmony`, Java puro. Versão em `HarmonicNormalizer.VERSION`; mude a cada
+alteração de regra (vai para `harmonic_annotation.normalizer_version`).
+
+- **Dois eixos (P1).** Eixo A `KeyRelation` (acorde × tonalidade), precedência:
+  `NONE` (sem fundamental) → `AMBIGUOUS` (power chord cuja díade cabe na escala) → `DIATONIC`
+  (todas as notas, inclusive 7ª, na escala) → `BORROWED` (todas na escala paralela: maior ↔ menor
+  natural) → `SECONDARY_DOMINANT` (MAJ/DOM7 uma 5ª acima da fundamental do próximo acorde; chains
+  permitidas; alvo não precisa ser diatônico) → `CHROMATIC` (inclui ♭II frígio, III/VI maiores).
+  Eixo B `Transition` (acorde × anterior, sobre tríades reduzidas; guarda `rootInterval` e
+  `commonTones`): `PARALLEL`, `RELATIVE`, `LEITTONWECHSEL`, `HEXATONIC_POLE` (maior r ↔ menor r+8),
+  `CHROMATIC_MEDIANT` (terça, 1 comum), `DOUBLY_CHROMATIC_MEDIANT` (0), `DIATONIC_MEDIANT`,
+  `MEDIANT` (terça com sus/power), `FIFTH_DOWN` (G→C), `FIFTH_UP`, `TRITONE`, `SEMITONE`,
+  `WHOLE_TONE`, `SAME_ROOT`, `SAME`.
+- **Referência tonal (P2).** A tonalidade do `key_segment` vigente. `MINOR` = menor natural + V,
+  V7, vii°, vii°7 da harmônica como diatônicos; `AEOLIAN` é estrito. Modos usam a própria escala.
+  Numerais **sempre relativos à escala maior da tônica** (♭III, ♭VI, ♭VII também em menor; ♯IV,
+  nunca ♭V); caixa pela tríade: `ii`, `vii°`, `iiø7`, `III+`, `♭VI5`, `IVsus4`.
+- **Unidade (P3).** Segmentos idênticos consecutivos são fundidos antes da normalização; matriz de
+  transição sem diagonal; seções repetidas contam cada vez (música como ouvida); distribuições
+  por contagem de segmento e por duração — a Onda 3 expõe as duas.
+- **Baixo.** `inverted = bass ≠ root`; `BassRole` ∈ {ROOT, THIRD, FIFTH, SEVENTH, SUSPENDED,
+  NON_CHORD_TONE, UNKNOWN}. Pedal sob harmonia móvel é query sobre a sequência de
+  `effective_bass_pc` (Onda 3).
+
 ## Decisões pendentes
 
-- **P1** `FunctionClass`: rótulo único com precedência vs dois eixos (acorde×tonalidade
-  e relação de transição). Afeta a Onda 1 e as colunas de `harmonic_annotation`.
-- **P2** Referência tonal: tonalidade global vs segmentos; modos como referência válida;
-  V maior em menor é diatônico (harmônica) ou empréstimo (natural)?
-- **P3** Unidade de contagem das métricas de corpus: segmento, duração, beat ou compasso;
-  fusão de segmentos idênticos consecutivos; diagonal da matriz de transição.
 - **Extrator (Onda 2):** recomendação = backend do ChordMiniApp (BTC-PL + Beat-Transformer)
   para acordes/beats; audiolla depois para stems, basic-pitch, LUFS. Fallback: container
   próprio mínimo. Nenhum dos dois devolve chroma por segmento.
@@ -121,8 +141,10 @@ Revisado em relação ao esboço original; ver `backend/src/main/resources/db/mi
 
 ## Ondas
 
-- [x] Onda 0 — esqueleto (entregue 2026-09-13; portão pendente: o schema faz sentido para as perguntas do Contexto?)
-- [ ] Onda 1 — `HarmonicNormalizer` (Java puro; pedir a lista de progressões antes dos testes)
+- [x] Onda 0 — esqueleto (entregue e aprovado em 2026-09-13)
+- [ ] Onda 1 — `HarmonicNormalizer`: domínio e regras implementados; testes de classificação
+  aguardam a lista de progressões do dono (`ProgressionClassificationTest`). Portão: a
+  classificação bate com a análise manual?
 - [ ] Onda 2 — integração com o extrator (contract test com fixture JSON)
 - [ ] Onda 3 — analítica de corpus
 - [ ] Onda 4 — Angular
