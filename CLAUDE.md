@@ -63,8 +63,11 @@ docker-compose.yml   Postgres local (rifflab/rifflab@localhost:5432/rifflab)
 - `JAVA_HOME` do sistema aponta para JDK 1.8. Para Maven use o JDK 21:
   `JAVA_HOME="/c/Program Files/Eclipse Adoptium/jdk-21.0.10.7-hotspot"` (bash)
   ou `$env:JAVA_HOME="C:\Program Files\Eclipse Adoptium\jdk-21.0.10.7-hotspot"` (pwsh).
+- `~/.m2/settings.xml` aponta para um Nexus corporativo inacessível fora da rede; por isso
+  `backend/.mvn/maven.config` força `.mvn/settings.xml` (Maven Central). Não alterar o global.
 - Angular CLI não é global: use `npx ng ...` dentro de `frontend/`.
 - Docker Desktop disponível; Testcontainers usa o daemon local.
+- Testes do backend: `cd backend && mvn test` (sobe Postgres via Testcontainers, ~40 s).
 
 ## Regras de trabalho
 
@@ -118,7 +121,7 @@ Revisado em relação ao esboço original; ver `backend/src/main/resources/db/mi
 
 ## Ondas
 
-- [x] Onda 0 — esqueleto (este commit em diante)
+- [x] Onda 0 — esqueleto (entregue 2026-09-13; portão pendente: o schema faz sentido para as perguntas do Contexto?)
 - [ ] Onda 1 — `HarmonicNormalizer` (Java puro; pedir a lista de progressões antes dos testes)
 - [ ] Onda 2 — integração com o extrator (contract test com fixture JSON)
 - [ ] Onda 3 — analítica de corpus
