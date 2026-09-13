@@ -41,6 +41,28 @@ class KeyTest {
         assertThat(C_AEOLIAN.isDiatonic(Chord.of(root, quality))).isEqualTo(expected);
     }
 
+    @ParameterizedTest(name = "D dorian: {0} {1} diatonic={2}")
+    @CsvSource({
+            "2, MIN7, true", "7, DOM7, true",   // i7, IV7 dórico
+            "9, DOM7, true",                    // V7 da harmônica: dórico é menor tonal
+            "9, MIN7, true", "10, MAJ, false",  // ♭VI maior não é dórico (6ª maior)
+    })
+    void dorianIsTonalMinorWithHarmonicDominant(int root, ChordQuality quality, boolean expected) {
+        assertThat(new Key(2, KeyMode.DORIAN).isDiatonic(Chord.of(root, quality))).isEqualTo(expected);
+    }
+
+    @ParameterizedTest(name = "E phrygian (strict): {0} {1} diatonic={2}")
+    @CsvSource({"4, MIN, true", "5, MAJ, true", "11, MAJ, false", "4, MAJ, false"})
+    void phrygianIsStrict(int root, ChordQuality quality, boolean expected) {
+        assertThat(new Key(4, KeyMode.PHRYGIAN).isDiatonic(Chord.of(root, quality))).isEqualTo(expected);
+    }
+
+    @ParameterizedTest(name = "F# phrygian dominant: {0} {1} diatonic={2}")
+    @CsvSource({"6, MAJ, true", "7, MAJ, true", "6, MIN, false", "11, MIN, true"})
+    void phrygianDominantHasMajorTonicAndFlatTwo(int root, ChordQuality quality, boolean expected) {
+        assertThat(new Key(6, KeyMode.PHRYGIAN_DOMINANT).isDiatonic(Chord.of(root, quality))).isEqualTo(expected);
+    }
+
     @ParameterizedTest(name = "borrowed into C major: {0} {1} = {2}")
     @CsvSource({
             "8, MAJ, true", "3, MAJ, true", "10, MAJ, true", "5, MIN, true", "2, DIM, true",
@@ -59,8 +81,8 @@ class KeyTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"MAJOR, MINOR", "LYDIAN, MINOR", "MIXOLYDIAN, MINOR", "MINOR, MAJOR", "DORIAN, MAJOR",
-            "PHRYGIAN, MAJOR", "AEOLIAN, MAJOR", "LOCRIAN, MAJOR"})
+    @CsvSource({"MAJOR, MINOR", "LYDIAN, MINOR", "MIXOLYDIAN, MINOR", "PHRYGIAN_DOMINANT, MINOR",
+            "MINOR, MAJOR", "DORIAN, MAJOR", "PHRYGIAN, MAJOR", "AEOLIAN, MAJOR", "LOCRIAN, MAJOR"})
     void parallelFollowsTheThird(KeyMode mode, KeyMode parallel) {
         assertThat(mode.parallel()).isEqualTo(parallel);
     }

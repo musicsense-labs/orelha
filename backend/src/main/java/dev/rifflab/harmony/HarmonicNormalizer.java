@@ -31,7 +31,7 @@ public final class HarmonicNormalizer {
         }
         int degree = key.degreeInterval(chord.rootPc());
         Transition transition = previous != null && previous.hasRoot() ? Transition.between(previous, chord) : null;
-        return new NormalizedChord(index, chord, degree, RomanNumeral.label(degree, chord.quality()),
+        return new NormalizedChord(index, chord, degree, RomanNumeral.label(degree, chord.quality(), key.mode()),
                 keyRelation(chord, next, key), BassRole.of(chord), transition);
     }
 
@@ -56,10 +56,15 @@ public final class HarmonicNormalizer {
         return KeyRelation.CHROMATIC;
     }
 
-    /** Maior ou dominante cuja fundamental está uma 5ª justa acima da fundamental do próximo acorde. */
+    /**
+     * Dominante secundária: uma DOM7 fora do campo é dominante pela própria qualidade, resolva ou não
+     * (E7 → F em Dó maior continua V/vi). Uma tríade maior só quando o próximo acorde está uma 5ª abaixo.
+     */
     private static boolean isSecondaryDominant(Chord chord, Chord next) {
-        boolean dominantQuality = chord.quality() == ChordQuality.MAJ || chord.quality() == ChordQuality.DOM7;
-        return dominantQuality && next != null && next.hasRoot()
+        if (chord.quality() == ChordQuality.DOM7) {
+            return true;
+        }
+        return chord.quality() == ChordQuality.MAJ && next != null && next.hasRoot()
                 && PitchClasses.interval(chord.rootPc(), next.rootPc()) == 5;
     }
 }

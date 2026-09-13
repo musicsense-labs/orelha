@@ -25,8 +25,8 @@ public record Key(int tonicPc, KeyMode mode) {
     }
 
     /**
-     * O acorde pertence ao campo harmônico? Todas as notas na escala; em MINOR, além da natural,
-     * V, V7, vii° e vii°7 da harmônica (função dominante) também contam.
+     * O acorde pertence ao campo harmônico? Todas as notas na escala; nos menores tonais
+     * (MINOR, DORIAN), V, V7, vii° e vii°7 da harmônica (função dominante) também contam.
      */
     public boolean isDiatonic(Chord chord) {
         if (!chord.hasRoot()) {
@@ -36,7 +36,7 @@ public record Key(int tonicPc, KeyMode mode) {
         if (PitchClasses.isSubset(pcs, scale())) {
             return true;
         }
-        if (mode == KeyMode.MINOR) {
+        if (mode.hasHarmonicDominant()) {
             int degree = degreeInterval(chord.rootPc());
             boolean dominantFunction = degree == 7 || degree == 11;
             return dominantFunction

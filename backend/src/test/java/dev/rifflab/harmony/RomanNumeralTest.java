@@ -16,6 +16,13 @@ class RomanNumeralTest {
             "8, POWER, ♭VI5", "0, POWER, I5", "5, SUS4, IVsus4", "7, SUS2, Vsus2",
     })
     void rendersRelativeToMajorScale(int interval, ChordQuality quality, String expected) {
-        assertThat(RomanNumeral.label(interval, quality)).isEqualTo(expected);
+        assertThat(RomanNumeral.label(interval, quality, KeyMode.MAJOR)).isEqualTo(expected);
+    }
+
+    @ParameterizedTest(name = "tritone in {0} = {1}")
+    @CsvSource({"MAJOR, ♯IV5", "LYDIAN, ♯IV5", "MIXOLYDIAN, ♯IV5", "PHRYGIAN_DOMINANT, ♯IV5",
+            "MINOR, ♭V5", "DORIAN, ♭V5", "AEOLIAN, ♭V5", "PHRYGIAN, ♭V5"})
+    void tritoneSpellingFollowsTheThird(KeyMode mode, String expected) {
+        assertThat(RomanNumeral.label(6, ChordQuality.POWER, mode)).isEqualTo(expected);
     }
 }
