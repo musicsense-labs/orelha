@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: riff-lab
+  datasource:
+    url: jdbc:postgresql://localhost:5432/rifflab
+    username: rifflab
+    password: rifflab
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    locations: classpath:db/migration
+
+server:
+  port: 8080

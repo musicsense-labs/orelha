@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Settings do projeto: ignora o mirror corporativo do ~/.m2/settings.xml e usa o Maven Central. -->
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0">
+</settings>
