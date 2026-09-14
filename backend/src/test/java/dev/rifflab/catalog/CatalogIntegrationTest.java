@@ -73,6 +73,19 @@ class CatalogIntegrationTest {
                 HttpMethod.GET, null, new ParameterizedTypeReference<>() {
                 });
         assertThat(byAlbum.getBody()).containsExactly(created);
+
+        // O player da UI lê o áudio pela API, com Range para seek.
+        ResponseEntity<byte[]> audioBytes = rest.getForEntity("/api/tracks/" + created.id() + "/audio", byte[].class);
+        assertThat(audioBytes.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(audioBytes.getHeaders().getContentType().toString()).isEqualTo("audio/wav");
+        assertThat(new String(audioBytes.getBody(), StandardCharsets.UTF_8)).isEqualTo("not really audio");
+
+        org.springframework.http.HttpHeaders range = new org.springframework.http.HttpHeaders();
+        range.set("Range", "bytes=4-9");
+        ResponseEntity<byte[]> partial = rest.exchange("/api/tracks/" + created.id() + "/audio", HttpMethod.GET,
+                new org.springframework.http.HttpEntity<>(range), byte[].class);
+        assertThat(partial.getStatusCode()).isEqualTo(HttpStatus.PARTIAL_CONTENT);
+        assertThat(new String(partial.getBody(), StandardCharsets.UTF_8)).isEqualTo("really");
     }
 
     @Test
