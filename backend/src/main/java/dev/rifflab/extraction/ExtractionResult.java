@@ -7,10 +7,13 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
-/** Tudo que uma extração devolve, já traduzido para o vocabulário do domínio. Só dado bruto. */
+/**
+ * Tudo que uma extração devolve, já traduzido para o vocabulário do domínio. Só dado bruto.
+ * stems = caminhos (no volume do extrator) dos stems persistidos, por nome; vazio se não há.
+ */
 public record ExtractionResult(Provenance provenance, AudioInfo audio, KeyEstimate key, Tempo tempo,
                                List<BeatEvent> beats, List<ChordEvent> chords, List<BassNoteEvent> bassNotes,
-                               List<TimbreStat> timbre, String featuresPath) {
+                               List<TimbreStat> timbre, String featuresPath, Map<String, String> stems) {
 
     public record Provenance(String name, String version, Map<String, String> models) {
     }

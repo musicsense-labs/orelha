@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 /** Traduz o JSON do riff-extractor para {@link ExtractionResult}. Sem interpretação musical. */
 @Component
@@ -56,7 +57,8 @@ public class RiffExtractorAdapter implements AudioExtractor {
                         .map(t -> new TimbreStat(t.stemModel(), t.stem(), t.centroidMean(), t.centroidStd(),
                                 t.flatnessMean(), t.rolloffP95(), t.rmsMean()))
                         .toList(),
-                r.featuresPath());
+                r.featuresPath(),
+                r.stems() == null ? Map.of() : r.stems());
     }
 
     /** O madmom só conhece 'major' e 'minor'; modos são atribuídos depois (MANUAL/DERIVED). */

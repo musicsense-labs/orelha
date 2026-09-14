@@ -58,6 +58,7 @@ public class AnalysisPipeline {
         run.setExtractorVersion(result.provenance().version());
         run.setModelNames(result.provenance().models());
         run.setFeaturesPath(result.featuresPath());
+        run.setStems(result.stems() == null || result.stems().isEmpty() ? null : result.stems());
         track.setDurationS(result.audio().durationS());
         track.setSampleRate(result.audio().sampleRate());
 

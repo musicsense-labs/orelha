@@ -1,7 +1,7 @@
 {
   "extractor": {
     "name": "riff-extractor",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "models": {
       "chords": "chordmini/btc_model_best.pth@aa6e3a8",
       "beats": "madmom/RNNDownBeat+DBN@27f032e",
@@ -176,18 +176,18 @@
         0.0964
       ],
       "chroma_low": [
-        0.9437,
-        0.4913,
-        0.0556,
-        0.3811,
-        0.7353,
-        0.3915,
-        0.0293,
-        0.0436,
-        0.3608,
-        0.7297,
-        0.3787,
-        0.4844
+        0.9504,
+        0.4882,
+        0.0565,
+        0.3809,
+        0.7354,
+        0.3938,
+        0.033,
+        0.0433,
+        0.3538,
+        0.7152,
+        0.3733,
+        0.4876
       ]
     },
     {
@@ -209,18 +209,18 @@
         0.0534
       ],
       "chroma_low": [
-        0.5936,
-        0.3025,
-        0.0308,
-        0.0345,
-        0.4822,
-        0.9421,
-        0.3655,
-        0.0362,
-        0.3511,
-        0.696,
-        0.3577,
-        0.2941
+        0.5973,
+        0.3042,
+        0.0325,
+        0.0363,
+        0.4778,
+        0.9372,
+        0.3678,
+        0.0356,
+        0.3533,
+        0.7056,
+        0.3625,
+        0.2956
       ]
     },
     {
@@ -242,18 +242,18 @@
         0.2231
       ],
       "chroma_low": [
-        0.8595,
-        0.4454,
-        0.0666,
-        0.4924,
-        0.9558,
-        0.4943,
-        0.3887,
-        0.7758,
-        0.4033,
-        0.0441,
-        0.0389,
-        0.4229
+        0.8519,
+        0.4415,
+        0.0657,
+        0.4837,
+        0.9394,
+        0.4878,
+        0.376,
+        0.7466,
+        0.3878,
+        0.0417,
+        0.0394,
+        0.4187
       ]
     },
     {
@@ -275,18 +275,18 @@
         0.2451
       ],
       "chroma_low": [
-        0.4915,
-        0.3854,
-        0.7484,
-        0.4077,
-        0.0786,
-        0.0657,
-        0.2921,
-        0.5913,
-        0.3194,
-        0.0623,
-        0.4598,
-        0.9165
+        0.493,
+        0.3809,
+        0.7415,
+        0.4053,
+        0.0776,
+        0.0637,
+        0.3048,
+        0.6158,
+        0.3336,
+        0.0647,
+        0.4639,
+        0.9208
       ]
     },
     {
@@ -308,18 +308,18 @@
         0.0927
       ],
       "chroma_low": [
-        0.96,
-        0.4913,
-        0.0445,
-        0.3735,
-        0.726,
-        0.3776,
-        0.0282,
-        0.0373,
-        0.3376,
-        0.6847,
-        0.3542,
-        0.4858
+        0.9547,
+        0.492,
+        0.0405,
+        0.3721,
+        0.7275,
+        0.3815,
+        0.0265,
+        0.0398,
+        0.3678,
+        0.7429,
+        0.3838,
+        0.4854
       ]
     },
     {
@@ -341,18 +341,18 @@
         0.0492
       ],
       "chroma_low": [
-        0.6065,
-        0.3102,
-        0.0286,
-        0.0364,
-        0.4632,
-        0.9182,
-        0.3495,
-        0.0337,
-        0.358,
-        0.7227,
-        0.367,
-        0.3039
+        0.5967,
+        0.3063,
+        0.0256,
+        0.0401,
+        0.4664,
+        0.9209,
+        0.3516,
+        0.0355,
+        0.3499,
+        0.7066,
+        0.3598,
+        0.2985
       ]
     },
     {
@@ -374,18 +374,18 @@
         0.2255
       ],
       "chroma_low": [
-        0.8577,
-        0.4495,
-        0.0716,
-        0.4774,
-        0.9288,
-        0.4847,
-        0.3861,
-        0.754,
-        0.3939,
-        0.0453,
-        0.0445,
-        0.4286
+        0.8713,
+        0.4557,
+        0.0701,
+        0.4799,
+        0.9341,
+        0.4864,
+        0.3799,
+        0.7445,
+        0.392,
+        0.0478,
+        0.045,
+        0.4344
       ]
     },
     {
@@ -407,30 +407,30 @@
         0.2443
       ],
       "chroma_low": [
-        0.4643,
-        0.3764,
-        0.7705,
-        0.3979,
-        0.0363,
-        0.0421,
-        0.4224,
-        0.8589,
-        0.4394,
-        0.0375,
-        0.4521,
-        0.9124
+        0.477,
+        0.3869,
+        0.7864,
+        0.4058,
+        0.0358,
+        0.039,
+        0.3825,
+        0.7755,
+        0.3962,
+        0.0384,
+        0.4622,
+        0.9351
       ]
     }
   ],
   "bass_notes": [
     {
       "start_s": 0.012,
-      "end_s": 0.499,
+      "end_s": 0.488,
       "midi": 45,
-      "velocity": 95
+      "velocity": 94
     },
     {
-      "start_s": 0.511,
+      "start_s": 0.499,
       "end_s": 0.998,
       "midi": 45,
       "velocity": 94
@@ -439,37 +439,37 @@
       "start_s": 0.998,
       "end_s": 1.498,
       "midi": 45,
-      "velocity": 93
+      "velocity": 94
     },
     {
       "start_s": 1.498,
       "end_s": 2.01,
       "midi": 45,
-      "velocity": 90
+      "velocity": 92
     },
     {
-      "start_s": 1.998,
+      "start_s": 2.01,
       "end_s": 2.509,
       "midi": 41,
-      "velocity": 96
+      "velocity": 98
     },
     {
       "start_s": 2.509,
       "end_s": 3.008,
       "midi": 41,
-      "velocity": 98
+      "velocity": 97
     },
     {
       "start_s": 3.008,
       "end_s": 3.519,
       "midi": 41,
-      "velocity": 99
+      "velocity": 98
     },
     {
       "start_s": 3.519,
       "end_s": 4.02,
       "midi": 41,
-      "velocity": 96
+      "velocity": 94
     },
     {
       "start_s": 4.008,
@@ -479,75 +479,63 @@
     },
     {
       "start_s": 4.507,
-      "end_s": 4.879,
-      "midi": 36,
-      "velocity": 100
-    },
-    {
-      "start_s": 4.879,
       "end_s": 5.018,
       "midi": 36,
-      "velocity": 79
+      "velocity": 95
     },
     {
       "start_s": 5.018,
-      "end_s": 5.517,
+      "end_s": 5.575,
       "midi": 36,
-      "velocity": 96
+      "velocity": 97
     },
     {
-      "start_s": 5.517,
-      "end_s": 5.995,
-      "midi": 36,
-      "velocity": 93
+      "start_s": 5.506,
+      "end_s": 5.645,
+      "midi": 48,
+      "velocity": 35
     },
     {
-      "start_s": 5.854,
+      "start_s": 5.575,
       "end_s": 5.995,
-      "midi": 43,
-      "velocity": 38
+      "midi": 36,
+      "velocity": 94
     },
     {
       "start_s": 5.995,
       "end_s": 6.494,
       "midi": 43,
-      "velocity": 94
+      "velocity": 93
+    },
+    {
+      "start_s": 6.366,
+      "end_s": 6.61,
+      "midi": 55,
+      "velocity": 38
     },
     {
       "start_s": 6.494,
       "end_s": 7.005,
       "midi": 43,
-      "velocity": 94
-    },
-    {
-      "start_s": 6.877,
-      "end_s": 7.086,
-      "midi": 55,
-      "velocity": 45
+      "velocity": 95
     },
     {
       "start_s": 7.005,
       "end_s": 7.504,
       "midi": 43,
-      "velocity": 93
-    },
-    {
-      "start_s": 7.341,
-      "end_s": 7.597,
-      "midi": 55,
-      "velocity": 50
+      "velocity": 94
     },
     {
       "start_s": 7.504,
       "end_s": 7.981,
       "midi": 43,
-      "velocity": 91
+      "velocity": 92
     },
     {
-      "start_s": 7.958,
-      "end_s": 8.492,
+      "start_s": 7.981,
+      "end_s": 8.504,
       "midi": 45,
-      "velocity": 91
+      "velocity": 95
     },
     {
       "start_s": 8.504,
@@ -557,24 +545,24 @@
     },
     {
       "start_s": 9.003,
-      "end_s": 9.502,
+      "end_s": 9.514,
       "midi": 45,
-      "velocity": 94
+      "velocity": 95
     },
     {
-      "start_s": 9.502,
+      "start_s": 9.514,
       "end_s": 10.014,
       "midi": 45,
-      "velocity": 91
+      "velocity": 92
     },
     {
       "start_s": 10.003,
-      "end_s": 10.513,
+      "end_s": 10.502,
       "midi": 41,
-      "velocity": 99
+      "velocity": 98
     },
     {
-      "start_s": 10.513,
+      "start_s": 10.502,
       "end_s": 11.001,
       "midi": 41,
       "velocity": 98
@@ -583,25 +571,19 @@
       "start_s": 11.001,
       "end_s": 11.512,
       "midi": 41,
-      "velocity": 96
+      "velocity": 98
     },
     {
       "start_s": 11.512,
       "end_s": 12.012,
       "midi": 41,
-      "velocity": 95
+      "velocity": 94
     },
     {
       "start_s": 12.001,
       "end_s": 12.512,
       "midi": 36,
-      "velocity": 97
-    },
-    {
-      "start_s": 12.001,
-      "end_s": 12.152,
-      "midi": 48,
-      "velocity": 40
+      "velocity": 99
     },
     {
       "start_s": 12.512,
@@ -617,15 +599,15 @@
     },
     {
       "start_s": 13.51,
-      "end_s": 14.022,
+      "end_s": 13.999,
       "midi": 36,
-      "velocity": 91
+      "velocity": 94
     },
     {
-      "start_s": 13.999,
+      "start_s": 13.987,
       "end_s": 14.498,
       "midi": 43,
-      "velocity": 94
+      "velocity": 92
     },
     {
       "start_s": 14.498,
@@ -637,30 +619,30 @@
       "start_s": 15.009,
       "end_s": 15.508,
       "midi": 43,
-      "velocity": 93
+      "velocity": 94
     },
     {
       "start_s": 15.508,
       "end_s": 15.891,
       "midi": 43,
-      "velocity": 97
+      "velocity": 98
     }
   ],
   "timbre": [
     {
       "stem_model": "htdemucs",
       "stem": "bass",
-      "centroid_mean": 212.5082,
-      "centroid_std": 35.0034,
+      "centroid_mean": 212.8774,
+      "centroid_std": 33.9383,
       "flatness_mean": 0,
       "rolloff_p95": 452.1973,
-      "rms_mean": 0.1482
+      "rms_mean": 0.1483
     },
     {
       "stem_model": "htdemucs",
       "stem": "drums",
-      "centroid_mean": 3751.4912,
-      "centroid_std": 477.3834,
+      "centroid_mean": 3752.7403,
+      "centroid_std": 480.1189,
       "flatness_mean": 0.0059,
       "rolloff_p95": 19186.084,
       "rms_mean": 0.0004
@@ -668,21 +650,27 @@
     {
       "stem_model": "htdemucs",
       "stem": "other",
-      "centroid_mean": 657.1236,
-      "centroid_std": 117.5256,
+      "centroid_mean": 658.2638,
+      "centroid_std": 115.1218,
       "flatness_mean": 0,
       "rolloff_p95": 1658.0566,
-      "rms_mean": 0.0941
+      "rms_mean": 0.0939
     },
     {
       "stem_model": "htdemucs",
       "stem": "vocals",
-      "centroid_mean": 3527.1985,
-      "centroid_std": 432.4021,
+      "centroid_mean": 3523.7721,
+      "centroid_std": 425.3281,
       "flatness_mean": 0.0061,
-      "rolloff_p95": 18906.1523,
+      "rolloff_p95": 18929.8389,
       "rms_mean": 0.0002
     }
   ],
-  "features_path": "/data/features/32d62a27cd1d2a97592672224d9830097432305b552e5044027dee65c8c5fb15.parquet"
+  "features_path": "/data/features/32d62a27cd1d2a97592672224d9830097432305b552e5044027dee65c8c5fb15.parquet",
+  "stems": {
+    "bass": "/data/stems/32d62a27cd1d2a97592672224d9830097432305b552e5044027dee65c8c5fb15/bass.wav",
+    "drums": "/data/stems/32d62a27cd1d2a97592672224d9830097432305b552e5044027dee65c8c5fb15/drums.wav",
+    "other": "/data/stems/32d62a27cd1d2a97592672224d9830097432305b552e5044027dee65c8c5fb15/other.wav",
+    "vocals": "/data/stems/32d62a27cd1d2a97592672224d9830097432305b552e5044027dee65c8c5fb15/vocals.wav"
+  }
 }

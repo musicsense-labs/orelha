@@ -61,6 +61,10 @@ public class AnalysisRun {
     @Column(name = "features_path")
     private String featuresPath;
 
+    /** Stems persistidos pelo extrator, por nome: caminhos do container (traduzidos por DataPaths). */
+    @JdbcTypeCode(SqlTypes.JSON)
+    private Map<String, String> stems;
+
     @Column(name = "requested_at", nullable = false)
     private Instant requestedAt = Instant.now();
 
@@ -147,6 +151,14 @@ public class AnalysisRun {
 
     public void setFeaturesPath(String featuresPath) {
         this.featuresPath = featuresPath;
+    }
+
+    public Map<String, String> getStems() {
+        return stems;
+    }
+
+    public void setStems(Map<String, String> stems) {
+        this.stems = stems;
     }
 
     public Instant getRequestedAt() {

@@ -11,7 +11,7 @@ import java.util.Map;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 record RiffExtractorResponse(Extractor extractor, Audio audio, Key key, Tempo tempo, List<Beat> beats,
                              List<ChordSegment> chords, List<BassNote> bassNotes, List<Timbre> timbre,
-                             String featuresPath) {
+                             String featuresPath, Map<String, String> stems) {
 
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     record Extractor(String name, String version, Map<String, String> models) {
