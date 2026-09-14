@@ -188,11 +188,16 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
   real do container. Portão aprovado em 2026-09-14 com Valerie, Smells Like Teen Spirit e Creep:
   acordes e transições batem com o ouvido do dono; power chord não é inferível (ver Extração);
   tonalidade de baixa confiança corrigida por override manual.
-- [ ] Onda 3 — analítica de corpus: perfil por artista/álbum (eixo A por contagem e duração,
-  distribuição de graus + entropia, matriz de transição 12×12, relações), comparação entre dois
-  artistas (JS divergence das matrizes, L1 das distribuições), passagens de pedal (baixo parado
-  sob mediante cromático), timbre por álbum. Dados vêm de uma query SQL sobre run canônico +
-  tonalidade preferida; métricas em Java puro (`dev.rifflab.corpus.CorpusMetrics`). (+ backlog: tonalidade `DERIVED` por perfil de fundamentais
+- [ ] Onda 3 — analítica de corpus, entregue em 2026-09-14 (portão pendente): `GET
+  /api/corpus/artists/{id}/profile`, `/albums/{id}/profile`, `/compare?a&b`,
+  `/artists/{id}/pedal-passages?relation=`. Perfil = eixo A por contagem e duração, fração fora do
+  campo (`AMBIGUOUS` conta como dentro), distribuição de graus (12 bins, grafia neutra `♯IV/♭V`) +
+  entropia de Shannon em bits, matriz de transição 12×12 (`counts`, `rowNormalized`), relações do
+  eixo B, timbre médio por álbum e stem. Comparação = JS divergence (bits, base 2) das matrizes
+  normalizadas globalmente + L1 de graus e do eixo A. Uma query nativa (`CorpusQueries`) sobre run
+  canônico + tonalidade preferida; métricas em Java puro (`CorpusMetrics`). A diagonal da matriz
+  existe e significa troca de qualidade/baixo sobre a mesma fundamental (`IV → iv` do Creep).
+  (+ backlog: tonalidade `DERIVED` por perfil de fundamentais
   quando a confiança do madmom for baixa; heurística de modo por I7/IV7 recorrentes; query de
   linha de baixo sob acorde sustentado — Valerie 3:18, Kashmir; `min_segment_duration` do BTC
   vs segmentos de < 1 s)
