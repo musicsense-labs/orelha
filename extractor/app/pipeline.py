@@ -9,7 +9,7 @@ from . import MODELS, VERSION
 from .bass import transcribe_bass
 from .beats import track_beats
 from .chords import recognize_chords
-from .chroma import chroma_per_segment
+from .chroma import chroma_low_per_segment, chroma_per_segment
 from .key import estimate_key
 from .stems import separate_stems
 from .timbre import timbre_summaries
@@ -29,9 +29,12 @@ def analyze(audio_path: Path, audio_sha256: str, work_dir: Path) -> dict:
     log.info("chords")
     chords = recognize_chords(audio_path, work_dir / "chords")
     log.info("chroma")
-    chromas = chroma_per_segment(y, sr, [(c["start_s"], c["end_s"]) for c in chords])
-    for chord, chroma in zip(chords, chromas):
+    spans = [(c["start_s"], c["end_s"]) for c in chords]
+    guitars, guitars_sr = librosa.load(stems["other"], sr=None, mono=True)
+    for chord, chroma, chroma_low in zip(chords, chroma_per_segment(y, sr, spans),
+                                         chroma_low_per_segment(guitars, guitars_sr, spans)):
         chord["chroma"] = chroma
+        chord["chroma_low"] = chroma_low
     log.info("beats")
     beats, bpm, time_signature = track_beats(audio_path)
     log.info("key")

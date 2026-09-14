@@ -34,7 +34,8 @@ def render() -> np.ndarray:
         for root, intervals in PROGRESSION:
             chord = np.zeros(int(beat * BEATS_PER_CHORD * SR))
             for interval in intervals:
-                chord += tone(midi_hz(60 + root + interval), beat * BEATS_PER_CHORD, 0.15)
+                # Registro de guitarra (C3–C4): é onde o chroma_low procura a terça.
+                chord += tone(midi_hz(48 + root + interval), beat * BEATS_PER_CHORD, 0.15)
             for b in range(BEATS_PER_CHORD):
                 bass = tone(midi_hz(36 + root), beat, 0.4, harmonics=3)
                 kick = tone(55, 0.1, 0.5, harmonics=1) * np.exp(-np.arange(int(0.1 * SR)) / (0.02 * SR))
