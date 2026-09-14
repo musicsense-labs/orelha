@@ -7,4 +7,6 @@ import java.util.List;
 public interface TrackRepository extends JpaRepository<Track, Long> {
 
     List<Track> findByAlbumIdOrderByTrackNoAsc(Long albumId);
+
+    List<Track> findByAlbumArtistId(Long artistId);
 }
