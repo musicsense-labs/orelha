@@ -11,6 +11,20 @@ spring:
       ddl-auto: validate
   flyway:
     locations: classpath:db/migration
+  servlet:
+    multipart:
+      max-file-size: 200MB
+      max-request-size: 200MB
 
 server:
   port: 8080
+
+rifflab:
+  extractor:
+    url: http://localhost:8000
+    timeout: 30m          # uma faixa leva minutos em CPU (demucs + BTC + madmom)
+  worker:
+    enabled: true
+    poll-ms: 5000
+  harmony:
+    power-chord-third-ratio: 0.35   # provisório; calibrar no portão da Onda 2
