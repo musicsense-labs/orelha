@@ -154,8 +154,19 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
   reactor sem ganho).
 - Só aqui se conhece o JSON do extrator: `extraction/riffextractor/*`. O domínio vê
   `ExtractionResult`; rótulos Harte são traduzidos por `HarteLabel`.
-- `PowerChordDetector` decide POWER pelo chroma (limiar `rifflab.harmony.power-chord-third-ratio`,
-  provisório 0.35).
+- **Power chord não é inferível pelo chroma** (medido em 2026-09-14, três faixas reais): sob
+  distorção a intermodulação de fundamental e quinta gera 2,5f — a terça maior uma oitava acima,
+  no mesmo registro da pestana. Razão terça/quinta no `chroma_low` (stem de guitarra, C2–F4):
+  Teen Spirit (power chords) mediana 0,66 = Valerie (tríades limpas) 0,66; só tríades distorcidas
+  (Creep, 1,24) se destacam. `PowerChordDetector` fica **desligado** (`power-chord-third-ratio: 0`);
+  power chords entram como o maj/min que o BTC escolheu e `AMBIGUOUS` não ocorre com este extrator.
+  O `chroma_low` continua coletado para tentativas futuras (extrator com classe "5", outra evidência).
+- **Tonalidade corrigível sem re-extrair**: `PUT /api/tracks/{id}/key` grava `key_segment MANUAL`
+  (inclusive modos) e re-anota o run canônico; timeline e corpus preferem `MANUAL > DERIVED >
+  EXTRACTOR`. A leitura com a tonalidade do extrator permanece (unicidade da anotação inclui o
+  `key_segment`). Creep: madmom deu C maior com 0,31; a correção para G maior devolve I III IV iv.
+- **Run canônico é escolha do dono**: `PUT /api/tracks/{id}/canonical-run` (run DONE da faixa);
+  o padrão continua sendo o primeiro run concluído.
 - Fixture do contract test = resposta real do container sobre `app/testaudio.py` (WAV sintético,
   Am F C G). Nunca gravar áudio com direitos autorais no repositório.
 
@@ -172,12 +183,15 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
   power chord em caixa alta neutra (`I5`); `AMBIGUOUS` conta como *dentro* do campo nas métricas
   de corpus; `7sus4` reduz a `sus4`; modos (mixolídio/dórico de blues, frígio) só existem se
   atribuídos — `key_segment.source = MANUAL` ou heurística futura (backlog Onda 3).
-- [ ] Onda 2 — extrator próprio em `extractor/`, adapter, fila, worker, pipeline até
-  `harmonic_annotation`, endpoints de run e timeline; contract test com a resposta real do
-  container (`fixtures/riff-extractor/progression.json`). Portão pendente: rodar em 3 faixas
-  reais do dono e conferir a timeline de ouvido; calibrar o limiar de power chord.
-- [ ] Onda 3 — analítica de corpus (+ backlog: heurística de modo por I7/IV7 recorrentes; query de
-  pedal de baixo sob fundamentais móveis — Kashmir)
+- [ ] Onda 2 — extrator próprio em `extractor/` (0.2.0), adapter, fila, worker, pipeline até
+  `harmonic_annotation`, endpoints de run/timeline/key/canonical-run; contract test com a resposta
+  real do container. Portão rodado em 2026-09-14 com Valerie, Smells Like Teen Spirit e Creep:
+  acordes e transições batem com o ouvido do dono; power chord não é inferível (ver Extração);
+  tonalidade de baixa confiança corrigida por override manual. Aguardando aprovação final.
+- [ ] Onda 3 — analítica de corpus (+ backlog: tonalidade `DERIVED` por perfil de fundamentais
+  quando a confiança do madmom for baixa; heurística de modo por I7/IV7 recorrentes; query de
+  linha de baixo sob acorde sustentado — Valerie 3:18, Kashmir; `min_segment_duration` do BTC
+  vs segmentos de < 1 s)
 - [ ] Onda 4 — Angular
 
 ## Glossário
