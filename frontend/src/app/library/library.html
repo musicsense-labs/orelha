@@ -1,0 +1,52 @@
+<h1>Corpus</h1>
+
+@if (error()) {
+  <p class="error">Backend indisponível: {{ error() }}</p>
+} @else if (loading()) {
+  <p class="muted">Carregando…</p>
+} @else if (tree().length === 0) {
+  <p class="muted">Nenhum artista cadastrado. Use <code>POST /api/artists</code>, <code>/api/albums</code> e <code>/api/tracks</code>.</p>
+}
+
+@for (node of tree(); track node.artist.id) {
+  <section class="card">
+    <h2>
+      <a [routerLink]="['/artists', node.artist.id]">{{ node.artist.name }}</a>
+      <small class="muted">
+        @if (node.artist.country) { {{ node.artist.country }} }
+        @if (node.artist.formedYear) { · {{ node.artist.formedYear }} }
+      </small>
+    </h2>
+    @if (node.albums.length === 0) {
+      <p class="muted">Sem álbuns.</p>
+    }
+    @for (a of node.albums; track a.album.id) {
+      <h3>
+        {{ a.album.title }} <small class="muted">{{ a.album.year ?? '' }}</small>
+        <a class="small" [routerLink]="['/albums', a.album.id]">perfil do álbum</a>
+      </h3>
+      @if (a.tracks.length === 0) {
+        <p class="muted">Sem faixas.</p>
+      } @else {
+        <table>
+          <tbody>
+            @for (t of a.tracks; track t.id) {
+              <tr>
+                <td class="num">{{ t.trackNo ?? '' }}</td>
+                <td><a [routerLink]="['/tracks', t.id]">{{ t.title }}</a></td>
+                <td class="num">{{ t.durationS != null ? formatTime(t.durationS) : '' }}</td>
+                <td>
+                  @if (t.canonicalRunId != null) {
+                    <span class="badge ok">run {{ t.canonicalRunId }}</span>
+                  } @else {
+                    <span class="badge">sem análise</span>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    }
+  </section>
+}

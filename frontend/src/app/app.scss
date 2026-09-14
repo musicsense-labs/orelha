@@ -1,0 +1,18 @@
+.topbar {
+  display: flex;
+  align-items: baseline;
+  gap: 1.25rem;
+  padding: 0.6rem 1.25rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+
+  .brand { font-weight: 700; font-size: 1.1rem; margin-right: 0.5rem; }
+  a { color: var(--ink); text-decoration: none; }
+  a.active:not(.brand) { border-bottom: 2px solid var(--accent); }
+}
+
+main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem 1.25rem 3rem;
+}

@@ -1,0 +1,113 @@
+@if (profile.error()) {
+  <p class="error">Perfil indisponível.</p>
+} @else if (profile.isLoading()) {
+  <p class="muted">Carregando perfil…</p>
+} @else if (profile.value(); as p) {
+  <h1>{{ p.name }} <small class="muted">{{ p.scope === 'artist' ? 'artista' : 'álbum' }}</small></h1>
+
+  @if (p.segments === 0) {
+    <p class="muted">Nenhuma faixa analisada neste escopo. O perfil aparece quando houver runs concluídos.</p>
+  } @else {
+    <p class="muted">
+      {{ p.tracks }} faixa(s) analisada(s) · {{ p.segments }} segmentos · {{ formatTime(p.durationS) }}
+      · entropia de graus {{ p.degrees.entropyBySegmentBits.toFixed(2) }} bits (por segmento),
+      {{ p.degrees.entropyByDurationBits.toFixed(2) }} (por duração)
+    </p>
+
+    <div class="grid two">
+      <section class="card">
+        <h2>Fora do campo harmônico</h2>
+        <p class="big">{{ percent(p.nonDiatonic.byDuration) }} <small class="muted">por duração</small>
+          · {{ percent(p.nonDiatonic.bySegment) }} <small class="muted">por segmento</small></p>
+        <table>
+          <thead><tr><th>relação com a tonalidade</th><th class="num">segmentos</th><th class="num">duração</th></tr></thead>
+          <tbody>
+            @for (r of keyRelationRows(); track r.relation) {
+              <tr><td>{{ r.relation }}</td><td class="num">{{ percent(r.bySegment) }}</td><td class="num">{{ percent(r.byDuration) }}</td></tr>
+            }
+          </tbody>
+        </table>
+      </section>
+
+      <section class="card">
+        <h2>Relações entre acordes consecutivos</h2>
+        <table>
+          <thead><tr><th>relação</th><th class="num">transições</th><th class="num">duração</th></tr></thead>
+          <tbody>
+            @for (r of relationRows(); track r.relation) {
+              <tr><td>{{ r.relation }}</td><td class="num">{{ percent(r.bySegment) }}</td><td class="num">{{ percent(r.byDuration) }}</td></tr>
+            }
+          </tbody>
+        </table>
+      </section>
+    </div>
+
+    <section class="card">
+      <app-degree-bars [series]="degreeSeries()" [labels]="p.degreeLabels" title="Distribuição de graus" />
+    </section>
+
+    <div class="grid two">
+      <section class="card">
+        <app-heatmap [matrix]="p.transitions.rowNormalized" [counts]="p.transitions.counts" [labels]="p.degreeLabels"
+                     [title]="'Matriz de transição P(para | de) — ' + p.transitions.total + ' transições'" />
+      </section>
+      <section class="card">
+        <h2>Transições mais frequentes</h2>
+        <table>
+          <tbody>
+            @for (t of topTransitions(); track t.from + t.to) {
+              <tr><td>{{ t.from }} → {{ t.to }}</td><td class="num">{{ t.count }}×</td><td class="num">{{ percent(t.share) }}</td></tr>
+            }
+          </tbody>
+        </table>
+      </section>
+    </div>
+
+    @if (p.timbreByAlbum.length > 0) {
+      <section class="card">
+        <h2>Timbre por álbum <small class="muted">média das faixas, por stem</small></h2>
+        <table>
+          <thead>
+            <tr><th>álbum</th><th>stem</th><th class="num">faixas</th><th class="num">centroide (Hz)</th>
+                <th class="num">rolloff 95% (Hz)</th><th class="num">flatness</th><th class="num">RMS</th></tr>
+          </thead>
+          <tbody>
+            @for (t of p.timbreByAlbum; track t.albumId + t.stem) {
+              <tr>
+                <td>{{ t.albumTitle }} <small class="muted">{{ t.albumYear ?? '' }}</small></td>
+                <td>{{ t.stem }}</td>
+                <td class="num">{{ t.tracks }}</td>
+                <td class="num">{{ t.centroidMean?.toFixed(0) ?? '—' }}</td>
+                <td class="num">{{ t.rolloffP95?.toFixed(0) ?? '—' }}</td>
+                <td class="num">{{ t.flatnessMean?.toFixed(3) ?? '—' }}</td>
+                <td class="num">{{ t.rmsMean?.toFixed(3) ?? '—' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </section>
+    }
+
+    @if (scope() === 'artists') {
+      <section class="card">
+        <h2>Baixo parado sob mediante cromático</h2>
+        @if (pedals.value()?.length) {
+          <table>
+            <tbody>
+              @for (x of pedals.value(); track x.trackId + '-' + x.startS) {
+                <tr>
+                  <td><a [routerLink]="['/tracks', x.trackId]">{{ x.trackTitle }}</a></td>
+                  <td class="num">{{ formatTime(x.startS) }}–{{ formatTime(x.endS) }}</td>
+                  <td>{{ x.fromLabel }} → {{ x.toLabel }}</td>
+                  <td>baixo {{ noteName(x.bassPc) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        } @else {
+          <p class="muted">Nenhuma passagem encontrada.</p>
+        }
+      </section>
+    }
+  }
+}

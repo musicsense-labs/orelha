@@ -15,3 +15,6 @@ frontend/.angular/
 data/
 # Saídas locais do extractor (WAV sintético, JSON, logs de build)
 extractor/out/
+# Ferramentas locais da sessão
+.claude/
+frontend/proxy.local.json

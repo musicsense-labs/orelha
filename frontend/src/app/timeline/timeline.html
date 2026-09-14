@@ -1,0 +1,80 @@
+@if (track.error()) {
+  <p class="error">Faixa não encontrada.</p>
+} @else if (track.value(); as t) {
+  <header class="track-header">
+    <div>
+      <h1>{{ t.title }}</h1>
+      <p class="muted">
+        tonalidade {{ keyLabel() }}
+        @if (timeline.value()?.bpm; as bpm) { · {{ bpm }} BPM {{ timeline.value()?.timeSignature ?? '' }} }
+        @if (timeline.value()?.runId; as run) { · run {{ run }} · normalizer {{ timeline.value()?.normalizerVersion }} }
+        · <a [routerLink]="['/albums', t.albumId]">álbum</a>
+      </p>
+    </div>
+    <audio #audio controls preload="metadata" [src]="'/api/tracks/' + t.id + '/audio'"
+           (play)="onPlay()" (pause)="onPause()" (ended)="onPause()" (seeked)="onSeeked()"></audio>
+  </header>
+
+  @if (timeline.isLoading()) {
+    <p class="muted">Carregando timeline…</p>
+  } @else if (segments().length === 0) {
+    <p class="muted">Sem análise concluída para esta faixa. A timeline aparece quando o run terminar.</p>
+  } @else {
+    <div class="legend">
+      @for (l of legend; track l.relation) {
+        <span><i [style.background]="l.color"></i>{{ l.relation }}</span>
+      }
+    </div>
+
+    <svg class="timeline" [attr.viewBox]="'0 0 ' + width + ' ' + (laneHeight * 2 + 30)" preserveAspectRatio="none"
+         (mouseleave)="hovered.set(null)">
+      <!-- lane 1: acordes com grau -->
+      @for (s of segments(); track s.seqNo) {
+        <g class="segment" [class.active]="current()?.seqNo === s.seqNo"
+           (click)="seek(s)" (mouseenter)="hovered.set(s)">
+          <rect [attr.x]="x(s.startS)" y="0" [attr.width]="widthOf(s)" [attr.height]="laneHeight"
+                [attr.fill]="color(s)" stroke="#fff" stroke-width="0.5" />
+          @if (showsLabel(s)) {
+            <text [attr.x]="x(s.startS) + widthOf(s) / 2" y="17" text-anchor="middle" class="chord">{{ label(s) }}</text>
+            <text [attr.x]="x(s.startS) + widthOf(s) / 2" y="34" text-anchor="middle" class="degree">{{ s.degreeLabel ?? '' }}</text>
+          }
+        </g>
+      }
+      <!-- lane 2: baixo efetivo (stem) -->
+      @for (s of segments(); track s.seqNo) {
+        <g class="segment" (click)="seek(s)" (mouseenter)="hovered.set(s)">
+          <rect [attr.x]="x(s.startS)" [attr.y]="laneHeight + 4" [attr.width]="widthOf(s)" [attr.height]="laneHeight - 8"
+                [attr.fill]="s.effectiveBassPc == null ? '#eee' : (s.effectiveBassPc === s.rootPc ? '#cfd8dc' : '#ffcc80')"
+                stroke="#fff" stroke-width="0.5" />
+          @if (showsLabel(s)) {
+            <text [attr.x]="x(s.startS) + widthOf(s) / 2" [attr.y]="laneHeight + 27" text-anchor="middle" class="bass">
+              {{ noteName(s.effectiveBassPc) }}
+            </text>
+          }
+        </g>
+      }
+      <!-- eixo de tempo -->
+      @for (m of [0, 1, 2, 3, 4, 5, 6, 7, 8]; track m) {
+        @if (m * 30 < duration()) {
+          <line [attr.x1]="x(m * 30)" [attr.x2]="x(m * 30)" [attr.y1]="laneHeight * 2" [attr.y2]="laneHeight * 2 + 6" stroke="#888" />
+          <text [attr.x]="x(m * 30)" [attr.y]="laneHeight * 2 + 20" class="tick">{{ formatTime(m * 30) }}</text>
+        }
+      }
+      <!-- playhead -->
+      <line class="playhead" [attr.x1]="playheadX()" [attr.x2]="playheadX()" y1="0" [attr.y2]="laneHeight * 2 + 8" />
+    </svg>
+
+    <div class="detail card">
+      @if (focus(); as s) {
+        <strong>{{ label(s) }}</strong>
+        <span class="degree-big">{{ s.degreeLabel ?? '—' }}</span>
+        <span class="badge" [style.background]="color(s)">{{ s.keyRelation }}</span>
+        <span class="muted">{{ formatTime(s.startS) }}–{{ formatTime(s.endS) }}</span>
+        @if (s.relationFromPrev) { <span>← {{ s.relationFromPrev }}</span> }
+        <span>baixo {{ noteName(s.effectiveBassPc) }}@if (s.inverted) { (invertido) }</span>
+      } @else {
+        <span class="muted">Passe o mouse ou dê play: o segmento atual aparece aqui.</span>
+      }
+    </div>
+  }
+}

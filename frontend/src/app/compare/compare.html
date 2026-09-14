@@ -1,0 +1,71 @@
+<h1>Comparar artistas</h1>
+
+<div class="pickers">
+  <label>A
+    <select (change)="select('a', $any($event.target).value)">
+      <option value="">—</option>
+      @for (x of artists.value() ?? []; track x.id) {
+        <option [value]="x.id" [selected]="a() === x.id">{{ x.name }}</option>
+      }
+    </select>
+  </label>
+  <label>B
+    <select (change)="select('b', $any($event.target).value)">
+      <option value="">—</option>
+      @for (x of artists.value() ?? []; track x.id) {
+        <option [value]="x.id" [selected]="b() === x.id">{{ x.name }}</option>
+      }
+    </select>
+  </label>
+</div>
+
+@if (a() != null && b() != null && a() === b()) {
+  <p class="muted">Escolha dois artistas diferentes.</p>
+} @else if (comparison.isLoading()) {
+  <p class="muted">Comparando…</p>
+} @else if (comparison.error()) {
+  <p class="error">Comparação indisponível.</p>
+} @else if (comparison.value(); as c) {
+  @if (c.a.segments === 0 || c.b.segments === 0) {
+    <p class="muted">Um dos artistas não tem faixas analisadas.</p>
+  } @else {
+    <section class="card distances">
+      <div><span class="big">{{ c.distances.transitionJsBits.toFixed(2) }}</span><br><small class="muted">JS divergence das matrizes (bits, 0–1)</small></div>
+      <div><span class="big">{{ c.distances.degreeL1.toFixed(2) }}</span><br><small class="muted">L1 dos graus (0–2)</small></div>
+      <div><span class="big">{{ c.distances.keyRelationL1.toFixed(2) }}</span><br><small class="muted">L1 do eixo A (0–2)</small></div>
+    </section>
+
+    <div class="grid two">
+      <section class="card">
+        <h2><a [routerLink]="['/artists', c.a.id]">{{ c.a.name }}</a>
+          <small class="muted">{{ c.a.tracks }} faixa(s) · fora do campo {{ percent(c.a.nonDiatonic.byDuration) }}</small></h2>
+        <app-heatmap [matrix]="c.a.transitions.rowNormalized" [counts]="c.a.transitions.counts" [labels]="c.a.degreeLabels"
+                     [title]="c.a.transitions.total + ' transições'" [height]="360" />
+      </section>
+      <section class="card">
+        <h2><a [routerLink]="['/artists', c.b.id]">{{ c.b.name }}</a>
+          <small class="muted">{{ c.b.tracks }} faixa(s) · fora do campo {{ percent(c.b.nonDiatonic.byDuration) }}</small></h2>
+        <app-heatmap [matrix]="c.b.transitions.rowNormalized" [counts]="c.b.transitions.counts" [labels]="c.b.degreeLabels"
+                     [title]="c.b.transitions.total + ' transições'" [height]="360" />
+      </section>
+    </div>
+
+    <section class="card">
+      <app-degree-bars [series]="degreeSeries()" [labels]="c.a.degreeLabels" title="Distribuição de graus (por duração)" />
+    </section>
+
+    <section class="card">
+      <h2>Relação com a tonalidade <small class="muted">por duração</small></h2>
+      <table>
+        <thead><tr><th></th><th class="num">{{ c.a.name }}</th><th class="num">{{ c.b.name }}</th></tr></thead>
+        <tbody>
+          @for (r of keyRelationRows(); track r.relation) {
+            <tr><td>{{ r.relation }}</td><td class="num">{{ percent(r.a) }}</td><td class="num">{{ percent(r.b) }}</td></tr>
+          }
+        </tbody>
+      </table>
+    </section>
+  }
+} @else {
+  <p class="muted">Escolha dois artistas.</p>
+}
