@@ -11,8 +11,25 @@
         · <a [routerLink]="['/albums', t.albumId]">álbum</a>
       </p>
     </div>
-    <audio #audio controls preload="metadata" [src]="'/api/tracks/' + t.id + '/audio'"
-           (play)="onPlay()" (pause)="onPause()" (ended)="onPause()" (seeked)="onSeeked()"></audio>
+    <div class="player">
+      <audio #audio controls preload="metadata" [src]="'/api/tracks/' + t.id + '/audio'"
+             (play)="onPlay()" (pause)="onPause()" (ended)="onPause()" (seeked)="onSeeked()"></audio>
+      <div class="mixer">
+        <button type="button" [class.on]="isAudible('mix')" (click)="toggle('mix')" (dblclick)="solo('mix')">mix</button>
+        @for (name of stems.value() ?? []; track name) {
+          <button type="button" [class.on]="isAudible(name)" (click)="toggle(name)" (dblclick)="solo(name)"
+                  [title]="'clique: liga/desliga · duplo clique: só ' + (stemLabels[name] ?? name)">
+            {{ stemLabels[name] ?? name }}
+          </button>
+          <audio #stemAudio [attr.data-stem]="name" preload="auto" muted
+                 [src]="'/api/tracks/' + t.id + '/stems/' + name"></audio>
+        } @empty {
+          @if (!stems.isLoading()) {
+            <span class="muted small-note">sem stems neste run — re-analise a faixa com o extrator 0.3.0</span>
+          }
+        }
+      </div>
+    </div>
   </header>
 
   @if (timeline.isLoading()) {

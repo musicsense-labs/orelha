@@ -24,6 +24,9 @@ export interface Track {
   audioSha256: string;
   sampleRate: number | null;
   canonicalRunId: number | null;
+  latestRunId: number | null;
+  latestRunStatus: 'QUEUED' | 'RUNNING' | 'DONE' | 'FAILED' | null;
+  latestRunError: string | null;
 }
 
 export type ChordQuality =

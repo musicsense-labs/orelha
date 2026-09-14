@@ -1,11 +1,63 @@
-<h1>Corpus</h1>
+<div class="page-head">
+  <h1>Corpus</h1>
+  <button type="button" class="primary" (click)="showForm.set(!showForm())">
+    {{ showForm() ? 'fechar' : '+ nova faixa' }}
+  </button>
+</div>
+
+@if (showForm()) {
+  <form class="card upload" (submit)="$event.preventDefault(); submit()">
+    <div class="row">
+      <label>Artista
+        <select (change)="selectArtist($any($event.target).value)">
+          <option value="" [selected]="artistId() === null">—</option>
+          @for (a of artists.value() ?? []; track a.id) {
+            <option [value]="a.id" [selected]="artistId() === a.id">{{ a.name }}</option>
+          }
+          <option value="new" [selected]="artistId() === 'new'">novo artista…</option>
+        </select>
+      </label>
+      @if (artistId() === 'new') {
+        <label>Nome <input [value]="newArtist().name" (input)="newArtist.set({ ...newArtist(), name: $any($event.target).value })" required></label>
+        <label>País <input [value]="newArtist().country" (input)="newArtist.set({ ...newArtist(), country: $any($event.target).value })" size="6"></label>
+        <label>Formação <input type="number" [value]="newArtist().formedYear" (input)="newArtist.set({ ...newArtist(), formedYear: $any($event.target).value })" size="5"></label>
+      }
+    </div>
+
+    <div class="row">
+      <label>Álbum
+        <select (change)="selectAlbum($any($event.target).value)" [disabled]="artistId() === null">
+          <option value="" [selected]="albumId() === null">—</option>
+          @for (al of albumsOfSelectedArtist(); track al.id) {
+            <option [value]="al.id" [selected]="albumId() === al.id">{{ al.title }} {{ al.year ?? '' }}</option>
+          }
+          <option value="new" [selected]="albumId() === 'new'">novo álbum…</option>
+        </select>
+      </label>
+      @if (albumId() === 'new') {
+        <label>Título <input [value]="newAlbum().title" (input)="newAlbum.set({ ...newAlbum(), title: $any($event.target).value })" required></label>
+        <label>Ano <input type="number" [value]="newAlbum().year" (input)="newAlbum.set({ ...newAlbum(), year: $any($event.target).value })" size="5"></label>
+      }
+    </div>
+
+    <div class="row">
+      <label>Arquivo <input type="file" accept=".mp3,.wav,.flac,.ogg,.m4a,.aac,.aiff,audio/*" (change)="onFile($event)"></label>
+      <label>Título <input [value]="title()" (input)="title.set($any($event.target).value)" placeholder="nome do arquivo"></label>
+      <label>Nº <input type="number" min="1" [value]="trackNo()" (input)="trackNo.set($any($event.target).value)" size="3"></label>
+      <button type="submit" class="primary" [disabled]="!canSubmit()">{{ submitting() ? 'enviando…' : 'enviar e analisar' }}</button>
+    </div>
+
+    @if (formError()) { <p class="error">{{ formError() }}</p> }
+    <p class="muted small-note">O arquivo vai para <code>data/audio/&lt;álbum&gt;/</code>; a análise leva ~1–2 min por faixa e aparece na lista ao terminar.</p>
+  </form>
+}
 
 @if (error()) {
   <p class="error">Backend indisponível: {{ error() }}</p>
-} @else if (loading()) {
+} @else if (loading() && tree().length === 0) {
   <p class="muted">Carregando…</p>
 } @else if (tree().length === 0) {
-  <p class="muted">Nenhum artista cadastrado. Use <code>POST /api/artists</code>, <code>/api/albums</code> e <code>/api/tracks</code>.</p>
+  <p class="muted">Nenhum artista cadastrado. Use "+ nova faixa".</p>
 }
 
 @for (node of tree(); track node.artist.id) {
@@ -36,10 +88,12 @@
                 <td><a [routerLink]="['/tracks', t.id]">{{ t.title }}</a></td>
                 <td class="num">{{ t.durationS != null ? formatTime(t.durationS) : '' }}</td>
                 <td>
-                  @if (t.canonicalRunId != null) {
-                    <span class="badge ok">run {{ t.canonicalRunId }}</span>
-                  } @else {
-                    <span class="badge">sem análise</span>
+                  @switch (t.latestRunStatus) {
+                    @case ('QUEUED') { <span class="badge wait">na fila</span> }
+                    @case ('RUNNING') { <span class="badge wait">analisando…</span> }
+                    @case ('FAILED') { <span class="badge fail" [title]="t.latestRunError ?? ''">falhou</span> }
+                    @case ('DONE') { <span class="badge ok">run {{ t.canonicalRunId ?? t.latestRunId }}</span> }
+                    @default { <span class="badge">sem análise</span> }
                   }
                 </td>
               </tr>
