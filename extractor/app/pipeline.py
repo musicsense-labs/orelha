@@ -17,6 +17,7 @@ from .timbre import timbre_summaries
 log = logging.getLogger(__name__)
 
 FEATURES_DIR = Path(os.environ.get("FEATURES_DIR", "/data/features"))
+STEMS_DIR = Path(os.environ.get("STEMS_DIR", "/data/stems"))
 
 
 def analyze(audio_path: Path, audio_sha256: str, work_dir: Path) -> dict:
@@ -25,7 +26,7 @@ def analyze(audio_path: Path, audio_sha256: str, work_dir: Path) -> dict:
     lufs = float(pyloudnorm.Meter(sr).integrated_loudness(y))
 
     log.info("stems")
-    stems = separate_stems(audio_path, work_dir / "stems")
+    stems = separate_stems(audio_path, STEMS_DIR / audio_sha256)
     log.info("chords")
     chords = recognize_chords(audio_path, work_dir / "chords")
     log.info("chroma")
@@ -56,4 +57,5 @@ def analyze(audio_path: Path, audio_sha256: str, work_dir: Path) -> dict:
         "bass_notes": bass_notes,
         "timbre": timbre,
         "features_path": str(features_path),
+        "stems": {name: str(path) for name, path in sorted(stems.items())},
     }

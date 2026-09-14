@@ -1,4 +1,8 @@
-"""Separação de stems com demucs (htdemucs: drums, bass, other, vocals)."""
+"""Separação de stems com demucs (htdemucs: drums, bass, other, vocals).
+
+Os stems são persistidos em STEMS_DIR/<sha256>/<stem>.wav — o backend os serve para o player
+multi-stem da UI e os reusa para timbre/baixo; nada de teoria musical aqui.
+"""
 from pathlib import Path
 
 from demucs.api import Separator, save_audio

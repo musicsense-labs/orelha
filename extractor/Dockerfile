@@ -3,7 +3,7 @@
 FROM python:3.10-slim
 
 ENV PIP_NO_CACHE_DIR=1 PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
-    CHORDMINI_DIR=/opt/chordmini FEATURES_DIR=/data/features WORK_DIR=/tmp/riff-extractor
+    CHORDMINI_DIR=/opt/chordmini FEATURES_DIR=/data/features STEMS_DIR=/data/stems WORK_DIR=/tmp/riff-extractor
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends build-essential git ffmpeg libsndfile1 \
@@ -35,8 +35,8 @@ RUN python -c "from demucs.pretrained import get_model; get_model('htdemucs')"
 
 COPY app /opt/extractor/app
 WORKDIR /opt/extractor
-RUN mkdir -p ${FEATURES_DIR} ${WORK_DIR}
-VOLUME ["/data/features"]
+RUN mkdir -p ${FEATURES_DIR} ${STEMS_DIR} ${WORK_DIR}
+VOLUME ["/data/features", "/data/stems"]
 EXPOSE 8000
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]

@@ -23,8 +23,9 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - features:/data/features
+      # Bind mounts no host: o backend lê os stems (player multi-stem) e o Parquet daqui.
+      - ./data/features:/data/features
+      - ./data/stems:/data/stems
 
 volumes:
   pgdata:
-  features:

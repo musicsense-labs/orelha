@@ -30,15 +30,17 @@ teoria musical** — rótulos Harte, tempos, vetores. O Spring Boot interpreta.
   "bass_notes": [{"start_s": 0.0, "end_s": 0.5, "midi": 45, "velocity": 90}],
   "timbre": [{"stem_model": "htdemucs", "stem": "bass", "centroid_mean": 412.5, "centroid_std": 88.1,
               "flatness_mean": 0.02, "rolloff_p95": 1800.0, "rms_mean": 0.12}],
-  "features_path": "/data/features/<sha256>.parquet"
+  "features_path": "/data/features/<sha256>.parquet",
+  "stems": {"bass": "/data/stems/<sha256>/bass.wav", "drums": "...", "other": "...", "vocals": "..."}
 }
 ```
 
 `chroma` é a mixagem inteira; `chroma_low` é o stem de guitarra (`other`) restrito a C2–F4 — a
 evidência para decidir power chord sem o 5º harmônico da distorção.
 
-`features_path` aponta para o volume do container (séries por frame, Parquet); o backend guarda o
-caminho, não o conteúdo.
+`features_path` e `stems` apontam para os volumes do container (`/data/features`, `/data/stems`),
+bind-mounted no host pelo compose (`./data`): o backend guarda os caminhos e serve os stems para o
+player multi-stem.
 
 ## Build e smoke test
 
