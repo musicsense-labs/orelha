@@ -1,0 +1,51 @@
+<div class="card upload">
+  <h2>Importar pasta <small class="muted">artista, álbum, ano, título e número vêm das tags do arquivo</small></h2>
+
+  <div class="row">
+    <label>Pasta (pelo navegador)
+      <input type="file" webkitdirectory multiple (change)="onFolder($event)">
+    </label>
+    <span class="muted">{{ audioFiles().length }} arquivo(s) de áudio</span>
+    <button type="button" class="primary" [disabled]="audioFiles().length === 0 || running()" (click)="uploadFolder()">
+      {{ running() && progress() ? 'enviando ' + progress()!.sent + '/' + progress()!.total + '…' : 'enviar pasta' }}
+    </button>
+  </div>
+
+  <div class="row">
+    <label>ou caminho no servidor
+      <input [value]="serverPath()" (input)="serverPath.set($any($event.target).value)" size="48"
+             placeholder="C:\Users\...\Music\Black Sabbath">
+    </label>
+    <label class="inline"><input type="checkbox" [checked]="recursive()" (change)="recursive.set($any($event.target).checked)"> subpastas</label>
+    <button type="button" class="primary" [disabled]="!serverPath().trim() || running()" (click)="importServerPath()">
+      {{ running() && !progress() ? 'importando…' : 'importar do servidor' }}
+    </button>
+  </div>
+  <p class="muted small-note">Pelo navegador os arquivos são copiados para <code>data/audio/</code>; pelo caminho do servidor ficam onde estão. Arquivos já importados (mesmo conteúdo) são pulados.</p>
+
+  @if (error()) { <p class="error">{{ error() }}</p> }
+
+  @if (report(); as r) {
+    <p><strong>{{ r.imported.length }}</strong> importada(s), <strong>{{ r.skipped.length }}</strong> pulada(s) — a análise de cada faixa entra na fila.</p>
+    @if (r.imported.length) {
+      <table>
+        <thead><tr><th>arquivo</th><th>artista</th><th>álbum</th><th>título</th><th class="num">nº</th><th>origem</th></tr></thead>
+        <tbody>
+          @for (x of r.imported; track x.trackId) {
+            <tr><td class="muted">{{ x.file }}</td><td>{{ x.artist }}</td><td>{{ x.album }}</td><td>{{ x.title }}</td>
+                <td class="num">{{ x.trackNo ?? '' }}</td><td><span class="badge" [class.ok]="x.fromTags">{{ x.fromTags ? 'tags' : 'pasta/nome' }}</span></td></tr>
+          }
+        </tbody>
+      </table>
+    }
+    @if (r.skipped.length) {
+      <table>
+        <tbody>
+          @for (x of r.skipped; track x.file) {
+            <tr><td class="muted">{{ x.file }}</td><td>{{ x.reason }}</td></tr>
+          }
+        </tbody>
+      </table>
+    }
+  }
+</div>

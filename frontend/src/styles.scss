@@ -39,3 +39,5 @@ button.primary:disabled { opacity: 0.45; cursor: default; }
 .small-note { font-size: 0.8rem; margin: 0.25rem 0 0; }
 .badge.wait { background: #fff3cd; color: #7a5a00; }
 .badge.fail { background: #f8d7da; color: #7a1c24; }
+.upload label.inline { flex-direction: row; align-items: center; gap: 0.4rem; }
+.page-head span { display: flex; gap: 0.5rem; }

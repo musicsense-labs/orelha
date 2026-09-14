@@ -1,9 +1,18 @@
 <div class="page-head">
   <h1>Corpus</h1>
-  <button type="button" class="primary" (click)="showForm.set(!showForm())">
-    {{ showForm() ? 'fechar' : '+ nova faixa' }}
-  </button>
+  <span>
+    <button type="button" class="primary" (click)="showImport.set(!showImport()); showForm.set(false)">
+      {{ showImport() ? 'fechar' : '+ importar pasta' }}
+    </button>
+    <button type="button" class="primary" (click)="showForm.set(!showForm()); showImport.set(false)">
+      {{ showForm() ? 'fechar' : '+ uma faixa' }}
+    </button>
+  </span>
 </div>
+
+@if (showImport()) {
+  <app-import (done)="onImported()" />
+}
 
 @if (showForm()) {
   <form class="card upload" (submit)="$event.preventDefault(); submit()">

@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Album, Artist, Track } from '../api/models';
 import { formatTime } from '../shared/music';
+import { Import } from './import';
 
 /**
  * Catálogo: artistas → álbuns → faixas, com o estado do último run; e o formulário de upload,
@@ -11,7 +12,7 @@ import { formatTime } from '../shared/music';
  */
 @Component({
   selector: 'app-library',
-  imports: [RouterLink],
+  imports: [RouterLink, Import],
   templateUrl: './library.html',
 })
 export class Library {
@@ -47,6 +48,7 @@ export class Library {
 
   // --- formulário de upload -------------------------------------------------------------------
   readonly showForm = signal(false);
+  readonly showImport = signal(false);
   readonly artistId = signal<number | 'new' | null>(null);
   readonly newArtist = signal({ name: '', country: '', formedYear: '' });
   readonly albumId = signal<number | 'new' | null>(null);
@@ -75,6 +77,12 @@ export class Library {
       }
     }, 5000);
     inject(DestroyRef).onDestroy(() => clearInterval(timer));
+  }
+
+  onImported(): void {
+    this.artists.reload();
+    this.albums.reload();
+    this.tick.update((n) => n + 1);
   }
 
   selectArtist(value: string): void {
