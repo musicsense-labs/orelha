@@ -27,4 +27,6 @@ rifflab:
     enabled: true
     poll-ms: 5000
   harmony:
-    power-chord-third-ratio: 0.35   # provisório; calibrar no portão da Onda 2
+    # 0 = desligado. Medido em 2026-09-14: o chroma não separa power chord distorcido de tríade limpa
+    # (intermodulação f + 1,5f = terça maior). Ver PowerChordDetector.
+    power-chord-third-ratio: 0

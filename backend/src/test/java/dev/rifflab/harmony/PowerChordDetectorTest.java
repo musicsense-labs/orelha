@@ -53,6 +53,15 @@ class PowerChordDetectorTest {
     }
 
     @Test
+    void zeroRatioDisablesTheInference() {
+        PowerChordDetector off = new PowerChordDetector(0);
+        float[] e5 = chroma(4, 10, 11, 8);
+        assertThat(off.isEnabled()).isFalse();
+        assertThat(off.isPowerChord(e5, 4)).isFalse();
+        assertThat(off.reclassify(Chord.of(4, ChordQuality.MAJ), e5).quality()).isEqualTo(ChordQuality.MAJ);
+    }
+
+    @Test
     void missingChromaNeverReclassifies() {
         assertThat(detector.isPowerChord(null, 4)).isFalse();
         assertThat(detector.isPowerChord(new float[12], 4)).isFalse();   // silêncio: sem referência
