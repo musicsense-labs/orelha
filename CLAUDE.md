@@ -216,7 +216,7 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
   quando a confiança do madmom for baixa; heurística de modo por I7/IV7 recorrentes; query de
   linha de baixo sob acorde sustentado — Valerie 3:18, Kashmir; `min_segment_duration` do BTC
   vs segmentos de < 1 s)
-- [ ] Onda 4 — Angular, entregue em 2026-09-14 (portão pendente): corpus, timeline com playback
+- [x] Onda 4 — Angular, entregue e aprovada em 2026-09-14: corpus, timeline com playback
   sincronizado e lane de baixo efetivo, perfil com heatmap/barras/timbre/pedais, comparação com
   distâncias. Verificado ao vivo contra os runs reais (Creep, Nirvana × Radiohead).
 
