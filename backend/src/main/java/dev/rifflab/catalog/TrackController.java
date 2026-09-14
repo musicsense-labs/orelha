@@ -39,12 +39,15 @@ public class TrackController {
     private final TrackService service;
     private final DataPaths dataPaths;
     private final AnalysisRunRepository runs;
+    private final ImportService importer;
 
-    TrackController(TrackRepository tracks, TrackService service, DataPaths dataPaths, AnalysisRunRepository runs) {
+    TrackController(TrackRepository tracks, TrackService service, DataPaths dataPaths, AnalysisRunRepository runs,
+                    ImportService importer) {
         this.tracks = tracks;
         this.service = service;
         this.dataPaths = dataPaths;
         this.runs = runs;
+        this.importer = importer;
     }
 
     private TrackResponse response(Track track) {
@@ -87,6 +90,21 @@ public class TrackController {
     TrackResponse upload(@RequestPart("file") MultipartFile file, @RequestParam Long albumId,
                          @RequestParam(required = false) String title, @RequestParam(required = false) Integer trackNo) {
         return response(service.upload(albumId, title, trackNo, file));
+    }
+
+    /** Upload de pasta pela UI: vários arquivos, tags lidas de cada um, artista/álbum criados ou reusados. */
+    @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    ImportReport importUploads(@RequestPart("files") List<MultipartFile> files) {
+        return importer.importUploads(files);
+    }
+
+    public record ImportPathRequest(@jakarta.validation.constraints.NotBlank String path, boolean recursive) {
+    }
+
+    /** Pasta já no disco do servidor: as faixas referenciam os arquivos onde estão. */
+    @PostMapping("/import-path")
+    ImportReport importPath(@Valid @RequestBody ImportPathRequest req) {
+        return importer.importDirectory(Path.of(req.path()), req.recursive());
     }
 
     /** O arquivo de áudio da faixa, para o player da UI. Spring MVC responde a Range (206) para seek. */
