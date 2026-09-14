@@ -167,6 +167,14 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
   `key_segment`). Creep: madmom deu C maior com 0,31; a correção para G maior devolve I III IV iv.
 - **Run canônico é escolha do dono**: `PUT /api/tracks/{id}/canonical-run` (run DONE da faixa);
   o padrão continua sendo o primeiro run concluído.
+- **Stems persistidos (0.3.0)**: o extrator grava `/data/stems/<sha>/{drums,bass,other,vocals}.wav`
+  e devolve `stems` no JSON; o compose faz bind mount de `./data/{features,stems}` no host e
+  `DataPaths` traduz `/data/...` → `rifflab.data.host-root` (default `../data`). O backend serve
+  `GET /api/tracks/{id}/stems` e `/stems/{name}` (Range) a partir do run canônico; runs anteriores
+  a 0.3.0 não têm stems (a UI avisa e sugere re-análise). `data/` é ignorado pelo git.
+- **Upload pela UI**: `POST /api/tracks/upload` (multipart `file`, `albumId`, `title?`, `trackNo?`)
+  grava em `rifflab.library.dir/<albumId>/<título>.<ext>` (sem sobrescrever) e enfileira;
+  `TrackResponse` traz o último run (`latestRunId/Status/Error`) numa query só para a lista.
 - Fixture do contract test = resposta real do container sobre `app/testaudio.py` (WAV sintético,
   Am F C G). Nunca gravar áudio com direitos autorais no repositório.
 
@@ -185,6 +193,12 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
   proxy.local.json` (arquivo local, ignorado pelo git).
 - Só apresentação em TypeScript (`shared/music.ts`: nomes de nota, cifra, cores); a teoria fica
   no backend.
+- **Player multi-stem** (timeline): a mixagem é o `<audio>` mestre (relógio); cada stem é um
+  `<audio>` escondido que segue play/pause/seek e é corrigido se derivar > 150 ms. Botões
+  mix/bateria/baixo/guitarras/voz: clique liga/desliga, duplo clique = solo. Sem Web Audio API
+  (decodificar 4 × 50 MB não vale a sincronia por amostra num uso local).
+- **Upload** (corpus): formulário cria artista/álbum se preciso, envia multipart e faz polling
+  de `/api/tracks` a cada 5 s enquanto houver run QUEUED/RUNNING; badges na fila/analisando…/falhou.
 
 ## Decisões pendentes
 
