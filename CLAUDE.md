@@ -183,12 +183,16 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
   power chord em caixa alta neutra (`I5`); `AMBIGUOUS` conta como *dentro* do campo nas métricas
   de corpus; `7sus4` reduz a `sus4`; modos (mixolídio/dórico de blues, frígio) só existem se
   atribuídos — `key_segment.source = MANUAL` ou heurística futura (backlog Onda 3).
-- [ ] Onda 2 — extrator próprio em `extractor/` (0.2.0), adapter, fila, worker, pipeline até
+- [x] Onda 2 — extrator próprio em `extractor/` (0.2.0), adapter, fila, worker, pipeline até
   `harmonic_annotation`, endpoints de run/timeline/key/canonical-run; contract test com a resposta
-  real do container. Portão rodado em 2026-09-14 com Valerie, Smells Like Teen Spirit e Creep:
+  real do container. Portão aprovado em 2026-09-14 com Valerie, Smells Like Teen Spirit e Creep:
   acordes e transições batem com o ouvido do dono; power chord não é inferível (ver Extração);
-  tonalidade de baixa confiança corrigida por override manual. Aguardando aprovação final.
-- [ ] Onda 3 — analítica de corpus (+ backlog: tonalidade `DERIVED` por perfil de fundamentais
+  tonalidade de baixa confiança corrigida por override manual.
+- [ ] Onda 3 — analítica de corpus: perfil por artista/álbum (eixo A por contagem e duração,
+  distribuição de graus + entropia, matriz de transição 12×12, relações), comparação entre dois
+  artistas (JS divergence das matrizes, L1 das distribuições), passagens de pedal (baixo parado
+  sob mediante cromático), timbre por álbum. Dados vêm de uma query SQL sobre run canônico +
+  tonalidade preferida; métricas em Java puro (`dev.rifflab.corpus.CorpusMetrics`). (+ backlog: tonalidade `DERIVED` por perfil de fundamentais
   quando a confiança do madmom for baixa; heurística de modo por I7/IV7 recorrentes; query de
   linha de baixo sob acorde sustentado — Valerie 3:18, Kashmir; `min_segment_duration` do BTC
   vs segmentos de < 1 s)
