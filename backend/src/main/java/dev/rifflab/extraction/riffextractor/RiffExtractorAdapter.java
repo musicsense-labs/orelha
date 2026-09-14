@@ -47,7 +47,8 @@ public class RiffExtractorAdapter implements AudioExtractor {
                 r.tempo() == null ? null : new Tempo(r.tempo().bpm(), r.tempo().timeSignature()),
                 orEmpty(r.beats()).stream().map(b -> new BeatEvent(b.timeS(), b.position())).toList(),
                 orEmpty(r.chords()).stream()
-                        .map(c -> new ChordEvent(c.startS(), c.endS(), HarteLabel.parse(c.label()), c.chroma(), null))
+                        .map(c -> new ChordEvent(c.startS(), c.endS(), HarteLabel.parse(c.label()), c.chroma(),
+                                c.chromaLow(), null))
                         .toList(),
                 orEmpty(r.bassNotes()).stream()
                         .map(n -> new BassNoteEvent(n.startS(), n.endS(), n.midi(), n.velocity())).toList(),

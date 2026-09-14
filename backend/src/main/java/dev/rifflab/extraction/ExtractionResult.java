@@ -28,8 +28,12 @@ public record ExtractionResult(Provenance provenance, AudioInfo audio, KeyEstima
     public record BeatEvent(BigDecimal timeS, int position) {
     }
 
-    /** chroma = 12 energias por classe de altura (C = 0), média do segmento; null se o extrator não fornece. */
-    public record ChordEvent(BigDecimal startS, BigDecimal endS, Chord chord, float[] chroma, Float confidence) {
+    /**
+     * chroma = 12 energias por classe de altura (C = 0) na mixagem; chromaLow = idem no stem de guitarra,
+     * registro C2–C4 (evidência de power chord). null quando o extrator não fornece.
+     */
+    public record ChordEvent(BigDecimal startS, BigDecimal endS, Chord chord, float[] chroma, float[] chromaLow,
+                             Float confidence) {
     }
 
     public record BassNoteEvent(BigDecimal startS, BigDecimal endS, int midi, Integer velocity) {

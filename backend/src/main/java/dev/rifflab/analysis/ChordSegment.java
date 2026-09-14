@@ -1,5 +1,6 @@
 package dev.rifflab.analysis;
 
+import dev.rifflab.harmony.Chord;
 import dev.rifflab.harmony.ChordQuality;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -54,15 +55,19 @@ public class ChordSegment {
 
     private Float confidence;
 
-    /** Chroma médio do segmento (12 classes, C=0): evidência para o teste de terça. */
+    /** Chroma médio do segmento na mixagem (12 classes, C=0). */
     @Column(columnDefinition = "real[]")
     private float[] chroma;
+
+    /** Chroma do stem de guitarra em C2–C4: a evidência para o teste de terça (power chord). */
+    @Column(name = "chroma_low", columnDefinition = "real[]")
+    private float[] chromaLow;
 
     protected ChordSegment() {
     }
 
     public ChordSegment(AnalysisRun run, int seqNo, BigDecimal startS, BigDecimal endS, Integer rootPc,
-                        ChordQuality quality, Integer bassPc, Float confidence, float[] chroma) {
+                        ChordQuality quality, Integer bassPc, Float confidence, float[] chroma, float[] chromaLow) {
         this.run = run;
         this.seqNo = seqNo;
         this.startS = startS;
@@ -72,6 +77,12 @@ public class ChordSegment {
         this.bassPc = bassPc;
         this.confidence = confidence;
         this.chroma = chroma;
+        this.chromaLow = chromaLow;
+    }
+
+    /** O acorde deste segmento como valor de domínio. */
+    public Chord chord() {
+        return new Chord(rootPc, quality, bassPc);
     }
 
     public Long getId() {
@@ -112,5 +123,9 @@ public class ChordSegment {
 
     public float[] getChroma() {
         return chroma;
+    }
+
+    public float[] getChromaLow() {
+        return chromaLow;
     }
 }

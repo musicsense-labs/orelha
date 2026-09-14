@@ -34,7 +34,7 @@ record RiffExtractorResponse(Extractor extractor, Audio audio, Key key, Tempo te
     }
 
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-    record ChordSegment(BigDecimal startS, BigDecimal endS, String label, float[] chroma) {
+    record ChordSegment(BigDecimal startS, BigDecimal endS, String label, float[] chroma, float[] chromaLow) {
     }
 
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
