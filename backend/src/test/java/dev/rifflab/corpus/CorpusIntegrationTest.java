@@ -98,7 +98,7 @@ class CorpusIntegrationTest {
                 new AudioInfo(new BigDecimal("8.000"), 44100, new BigDecimal("-14.00")),
                 new KeyEstimate(tonic, mode, 0.9f), new Tempo(new BigDecimal("120.00"), "4/4"),
                 List.of(), chords, bass, List.of(new TimbreStat("htdemucs", "other", centroid, 10f, 0.1f, 3000f, 0.2f)),
-                "/data/features/stub.parquet");
+                "/data/features/stub.parquet", Map.of());
     }
 
     // C maior: C (0–2) → A♭ (2–4, ♭VI, mediante cromático) → G (4–6) → C (6–8); baixo em C durante C→A♭.

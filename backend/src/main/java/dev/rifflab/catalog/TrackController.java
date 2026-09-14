@@ -1,6 +1,9 @@
 package dev.rifflab.catalog;
 
+import dev.rifflab.analysis.AnalysisRun;
+import dev.rifflab.analysis.AnalysisRunRepository;
 import dev.rifflab.common.NotFoundException;
+import dev.rifflab.extraction.DataPaths;
 import jakarta.validation.Valid;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
@@ -17,13 +20,16 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/tracks")
@@ -31,30 +37,40 @@ public class TrackController {
 
     private final TrackRepository tracks;
     private final TrackService service;
+    private final DataPaths dataPaths;
+    private final AnalysisRunRepository runs;
 
-    TrackController(TrackRepository tracks, TrackService service) {
+    TrackController(TrackRepository tracks, TrackService service, DataPaths dataPaths, AnalysisRunRepository runs) {
         this.tracks = tracks;
         this.service = service;
+        this.dataPaths = dataPaths;
+        this.runs = runs;
+    }
+
+    private TrackResponse response(Track track) {
+        return TrackResponse.of(track, runs.findFirstByTrackIdOrderByIdDesc(track.getId()).orElse(null));
     }
 
     @GetMapping
     @Transactional(readOnly = true)
     List<TrackResponse> list(@RequestParam(required = false) Long albumId) {
         List<Track> result = albumId == null ? tracks.findAll() : tracks.findByAlbumIdOrderByTrackNoAsc(albumId);
-        return result.stream().map(TrackResponse::of).toList();
+        Map<Long, AnalysisRun> latest = runs.findLatestPerTrack().stream()
+                .collect(Collectors.toMap(r -> r.getTrack().getId(), r -> r));
+        return result.stream().map(t -> TrackResponse.of(t, latest.get(t.getId()))).toList();
     }
 
     @GetMapping("/{id}")
     @Transactional(readOnly = true)
     TrackResponse get(@PathVariable Long id) {
-        return TrackResponse.of(find(id));
+        return response(find(id));
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @Transactional
     TrackResponse create(@Valid @RequestBody TrackRequest req) {
-        return TrackResponse.of(service.register(req));
+        return response(service.register(req));
     }
 
     /** Enfileira um novo run para a faixa; devolve o id do run para polling em /api/analysis/runs/{id}. */
@@ -62,6 +78,15 @@ public class TrackController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     Map<String, Long> analyze(@PathVariable Long id) {
         return Map.of("runId", service.enqueueAnalysis(id).getId());
+    }
+
+    /** Upload pela UI: multipart com file, albumId, title (opcional: nome do arquivo) e trackNo. */
+    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
+    @Transactional
+    TrackResponse upload(@RequestPart("file") MultipartFile file, @RequestParam Long albumId,
+                         @RequestParam(required = false) String title, @RequestParam(required = false) Integer trackNo) {
+        return response(service.upload(albumId, title, trackNo, file));
     }
 
     /** O arquivo de áudio da faixa, para o player da UI. Spring MVC responde a Range (206) para seek. */
@@ -73,6 +98,35 @@ public class TrackController {
         if (!Files.isRegularFile(path)) {
             throw new NotFoundException("Audio of track", id);
         }
+        return audioResponse(path);
+    }
+
+    /** Nomes dos stems disponíveis no run canônico (vazio para runs anteriores ao extrator 0.3.0). */
+    @GetMapping("/{id}/stems")
+    @Transactional(readOnly = true)
+    List<String> stems(@PathVariable Long id) {
+        Map<String, String> stems = stemsOf(find(id));
+        return stems.keySet().stream().sorted().toList();
+    }
+
+    /** Um stem (wav) do run canônico, com Range para o player multi-stem. */
+    @GetMapping("/{id}/stems/{name}")
+    @Transactional(readOnly = true)
+    ResponseEntity<Resource> stem(@PathVariable Long id, @PathVariable String name) {
+        String containerPath = stemsOf(find(id)).get(name);
+        Path path = containerPath == null ? null : dataPaths.toHost(containerPath);
+        if (path == null || !Files.isRegularFile(path)) {
+            throw new NotFoundException("Stem " + name + " of track", id);
+        }
+        return audioResponse(path);
+    }
+
+    private static Map<String, String> stemsOf(Track track) {
+        AnalysisRun run = track.getCanonicalRun();
+        return run == null || run.getStems() == null ? Map.of() : run.getStems();
+    }
+
+    private static ResponseEntity<Resource> audioResponse(Path path) {
         return ResponseEntity.ok()
                 .contentType(audioType(path))
                 .header(HttpHeaders.ACCEPT_RANGES, "bytes")
@@ -103,7 +157,7 @@ public class TrackController {
     @PutMapping("/{id}/canonical-run")
     @Transactional
     TrackResponse setCanonicalRun(@PathVariable Long id, @Valid @RequestBody CanonicalRunRequest req) {
-        return TrackResponse.of(service.setCanonicalRun(id, req.runId()));
+        return response(service.setCanonicalRun(id, req.runId()));
     }
 
     @DeleteMapping("/{id}")

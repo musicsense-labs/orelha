@@ -23,6 +23,11 @@ rifflab:
   extractor:
     url: http://localhost:8000
     timeout: 30m          # uma faixa leva minutos em CPU (demucs + BTC + madmom)
+  data:
+    container-root: /data       # como o extrator nomeia seus volumes
+    host-root: ../data          # onde o compose faz o bind mount (./data na raiz do repo)
+  library:
+    dir: ../data/audio          # uploads pela UI: <dir>/<albumId>/<título>.<ext>
   worker:
     enabled: true
     poll-ms: 5000

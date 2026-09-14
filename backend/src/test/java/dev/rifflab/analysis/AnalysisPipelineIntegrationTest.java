@@ -56,6 +56,17 @@ class AnalysisPipelineIntegrationTest {
     @ServiceConnection
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
 
+    /** Simula o bind mount do compose: /data/... do extrator vira este diretório no host. */
+    static Path dataRoot;
+
+    @org.springframework.test.context.DynamicPropertySource
+    static void dataRoot(org.springframework.test.context.DynamicPropertyRegistry registry) throws IOException {
+        dataRoot = Files.createTempDirectory("riff-data");
+        Files.createDirectories(dataRoot.resolve("stems/stub"));
+        Files.writeString(dataRoot.resolve("stems/stub/bass.wav"), "bass stem");
+        registry.add("rifflab.data.host-root", () -> dataRoot.toString());
+    }
+
     @TestConfiguration
     static class StubExtractor {
         @Bean
@@ -93,7 +104,8 @@ class AnalysisPipelineIntegrationTest {
                     new BassNoteEvent(bd(4.0), bd(6.0), 43, 100),        // G sob G
                     new BassNoteEvent(bd(6.0), bd(8.0), 45, 100)),       // A sob E5: pedal
             List.of(new TimbreStat("htdemucs", "bass", 400f, 50f, 0.02f, 1800f, 0.1f)),
-            "/data/features/stub.parquet");
+            "/data/features/stub.parquet",
+            Map.of("bass", "/data/stems/stub/bass.wav", "drums", "/data/stems/stub/drums.wav"));
 
     private static BigDecimal bd(double v) {
         return BigDecimal.valueOf(v).setScale(3);
@@ -166,6 +178,21 @@ class AnalysisPipelineIntegrationTest {
                 .containsExactly(9, 5, 7, 9);
         assertThat(timeline.segments().get(0).endS()).isEqualByComparingTo("2.000");   // Am fundido
         assertThat(timeline.key().source()).isEqualTo(KeySource.EXTRACTOR);
+
+        // Stems do run canônico: só os que existem no host são servidos.
+        ResponseEntity<List<String>> stems = rest.exchange("/api/tracks/" + track.id() + "/stems",
+                org.springframework.http.HttpMethod.GET, null,
+                new org.springframework.core.ParameterizedTypeReference<>() {
+                });
+        assertThat(stems.getBody()).containsExactly("bass", "drums");
+        ResponseEntity<byte[]> bass = rest.getForEntity("/api/tracks/" + track.id() + "/stems/bass", byte[].class);
+        assertThat(bass.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(bass.getHeaders().getContentType().toString()).isEqualTo("audio/wav");
+        assertThat(new String(bass.getBody(), java.nio.charset.StandardCharsets.UTF_8)).isEqualTo("bass stem");
+        assertThat(rest.getForEntity("/api/tracks/" + track.id() + "/stems/drums", byte[].class).getStatusCode())
+                .isEqualTo(HttpStatus.NOT_FOUND);   // declarado pelo extrator, mas o arquivo não está no host
+        assertThat(rest.getForEntity("/api/tracks/" + track.id() + "/stems/vocals", byte[].class).getStatusCode())
+                .isEqualTo(HttpStatus.NOT_FOUND);
 
         // Tonalidade atribuída pelo dono: re-anota sem re-extrair e passa a ser a leitura preferida.
         ResponseEntity<KeyController.KeyResponse> override = rest.exchange("/api/tracks/" + track.id() + "/key",

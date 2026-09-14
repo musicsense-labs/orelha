@@ -5,8 +5,10 @@ import dev.rifflab.analysis.AnalysisRun;
 import dev.rifflab.analysis.RunStatus;
 import dev.rifflab.common.NotFoundException;
 import dev.rifflab.extraction.AudioExtractor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,37 +16,64 @@ import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import java.util.Locale;
+import java.util.Set;
 
 @Service
 public class TrackService {
+
+    private static final Set<String> AUDIO_EXTENSIONS = Set.of("mp3", "wav", "flac", "ogg", "m4a", "aac", "aiff", "aif");
 
     private final TrackRepository tracks;
     private final AlbumRepository albums;
     private final AnalysisQueue queue;
     private final AudioExtractor extractor;
+    private final Path libraryDir;
 
-    TrackService(TrackRepository tracks, AlbumRepository albums, AnalysisQueue queue, AudioExtractor extractor) {
+    TrackService(TrackRepository tracks, AlbumRepository albums, AnalysisQueue queue, AudioExtractor extractor,
+                 @Value("${rifflab.library.dir:../data/audio}") String libraryDir) {
         this.tracks = tracks;
         this.albums = albums;
         this.queue = queue;
         this.extractor = extractor;
+        this.libraryDir = Path.of(libraryDir).toAbsolutePath().normalize();
     }
 
-    /** Cadastra a faixa, fixa a identidade dos bytes e enfileira a primeira análise. */
+    /** Cadastra uma faixa a partir de um arquivo já no disco, fixa a identidade dos bytes e enfileira a análise. */
     @Transactional
     public Track register(TrackRequest req) {
-        Album album = albums.findById(req.albumId()).orElseThrow(() -> new NotFoundException("Album", req.albumId()));
         Path audio = Path.of(req.audioPath());
         if (!Files.isRegularFile(audio)) {
             throw new IllegalArgumentException("Audio file not found: " + req.audioPath());
         }
-        Track track = tracks.save(new Track(album, req.title(), req.trackNo(), audio.toAbsolutePath().toString(), sha256(audio)));
-        queue.enqueue(track, extractor.name());
-        return track;
+        return register(findAlbum(req.albumId()), req.title(), req.trackNo(), audio);
+    }
+
+    /** Upload pela UI: grava em rifflab.library.dir/<albumId>/ e segue o mesmo caminho do cadastro. */
+    @Transactional
+    public Track upload(Long albumId, String title, Integer trackNo, MultipartFile file) {
+        Album album = findAlbum(albumId);
+        String original = baseNameOf(file.getOriginalFilename());
+        String extension = extensionOf(original);
+        if (!AUDIO_EXTENSIONS.contains(extension)) {
+            throw new IllegalArgumentException("Unsupported audio file: " + original);
+        }
+        String baseName = (title == null || title.isBlank()) ? original.substring(0, original.length() - extension.length() - 1) : title;
+        Path target = uniquePath(libraryDir.resolve(String.valueOf(album.getId())), sanitize(baseName), extension);
+        try {
+            Files.createDirectories(target.getParent());
+            try (InputStream in = file.getInputStream()) {
+                Files.copy(in, target, StandardCopyOption.REPLACE_EXISTING);
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        return register(album, baseName, trackNo, target);
     }
 
     /** Novo run para a mesma faixa (outro extrator/modelo ou re-execução); nunca sobrescreve. */
@@ -67,6 +96,43 @@ public class TrackService {
         }
         track.setCanonicalRun(run);
         return track;
+    }
+
+    private Track register(Album album, String title, Integer trackNo, Path audio) {
+        Track track = tracks.save(new Track(album, title, trackNo, audio.toAbsolutePath().toString(), sha256(audio)));
+        queue.enqueue(track, extractor.name());
+        return track;
+    }
+
+    private Album findAlbum(Long albumId) {
+        return albums.findById(albumId).orElseThrow(() -> new NotFoundException("Album", albumId));
+    }
+
+    private static Path uniquePath(Path dir, String baseName, String extension) {
+        Path candidate = dir.resolve(baseName + "." + extension);
+        for (int i = 2; Files.exists(candidate); i++) {
+            candidate = dir.resolve(baseName + "-" + i + "." + extension);
+        }
+        return candidate;
+    }
+
+    static String sanitize(String name) {
+        String cleaned = name.strip().replaceAll("[\\\\/:*?\"<>|\\p{Cntrl}]+", "-").replaceAll("\\s+", " ");
+        return cleaned.isBlank() ? "track" : cleaned;
+    }
+
+    /** Só o nome, sem diretórios do cliente — sem passar por Path, que rejeita ':' e '?' no Windows. */
+    private static String baseNameOf(String originalFilename) {
+        if (originalFilename == null) {
+            return "";
+        }
+        int cut = Math.max(originalFilename.lastIndexOf('/'), originalFilename.lastIndexOf('\\'));
+        return originalFilename.substring(cut + 1);
+    }
+
+    private static String extensionOf(String fileName) {
+        int dot = fileName.lastIndexOf('.');
+        return dot < 0 ? "" : fileName.substring(dot + 1).toLowerCase(Locale.ROOT);
     }
 
     static String sha256(Path file) {
