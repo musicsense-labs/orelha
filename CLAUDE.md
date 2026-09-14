@@ -68,6 +68,11 @@ docker-compose.yml   Postgres local (rifflab/rifflab@localhost:5432/rifflab)
 - Angular CLI não é global: use `npx ng ...` dentro de `frontend/`.
 - Docker Desktop disponível; Testcontainers usa o daemon local.
 - Testes do backend: `cd backend && mvn test` (sobe Postgres via Testcontainers, ~40 s).
+- Extrator: `docker compose build extractor` (~10 min na primeira vez, imagem de 4,2 GB: torch CPU
+  + demucs). WAV sintético para smoke test: `docker run --rm -v "$PWD/extractor/out:/out"
+  riff-extractor python -m app.testaudio /out/progression.wav`. `extractor/out/` é ignorado pelo git.
+- Stack completo: `docker compose up -d` (Postgres + extractor em :8000) e `mvn spring-boot:run`
+  em `backend/` (API em :8080; o worker faz polling da fila a cada 5 s).
 
 ## Regras de trabalho
 
@@ -135,11 +140,27 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
   NON_CHORD_TONE, UNKNOWN}. Pedal sob harmonia móvel é query sobre a sequência de
   `effective_bass_pc` (Onda 3).
 
+## Extração (decidido em 2026-09-13)
+
+- O backend Python do ChordMiniApp foi descartado no spike: BTC desligado por constante, import
+  inexistente, checkpoint não publicado, Chord-CNN-LSTM sem pesos, sem tonalidade, > 6 GB.
+- **`extractor/` é nosso** (FastAPI, Python 3.10, CPU): executa o `src/evaluation/test.py` do
+  ChordMini (MIT, BTC 170 classes) e lê o `.lab`; madmom para beats/downbeats e tonalidade
+  (24 maior/menor); demucs `htdemucs` para stems; basic-pitch no stem de baixo; librosa para
+  chroma por segmento e descritores por stem (agregados no JSON, séries em Parquet); pyloudnorm.
+  Contrato em `extractor/README.md`. É cola: zero teoria musical no Python.
+- `POST /analyze` é síncrono (minutos); a assincronia é a fila do Spring (`analysis_run` +
+  `AnalysisWorker`). Cliente Java com `RestClient` (bloqueante por desenho; WebClient traria
+  reactor sem ganho).
+- Só aqui se conhece o JSON do extrator: `extraction/riffextractor/*`. O domínio vê
+  `ExtractionResult`; rótulos Harte são traduzidos por `HarteLabel`.
+- `PowerChordDetector` decide POWER pelo chroma (limiar `rifflab.harmony.power-chord-third-ratio`,
+  provisório 0.35).
+- Fixture do contract test = resposta real do container sobre `app/testaudio.py` (WAV sintético,
+  Am F C G). Nunca gravar áudio com direitos autorais no repositório.
+
 ## Decisões pendentes
 
-- **Extrator (Onda 2):** recomendação = backend do ChordMiniApp (BTC-PL + Beat-Transformer)
-  para acordes/beats; audiolla depois para stems, basic-pitch, LUFS. Fallback: container
-  próprio mínimo. Nenhum dos dois devolve chroma por segmento.
 - **Gráficos (Onda 4):** recomendação = ECharts para heatmap/comparação; timeline como SVG
   em template Angular dirigido por signals (`d3-scale` só se necessário).
 
@@ -151,9 +172,10 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
   power chord em caixa alta neutra (`I5`); `AMBIGUOUS` conta como *dentro* do campo nas métricas
   de corpus; `7sus4` reduz a `sus4`; modos (mixolídio/dórico de blues, frígio) só existem se
   atribuídos — `key_segment.source = MANUAL` ou heurística futura (backlog Onda 3).
-- [ ] Onda 2 — integração com o extrator (contract test com fixture JSON). Primeiro passo: spike
-  do backend do ChordMini (Docker, independência do Firebase, JSON real). Fusão de segmentos
-  consecutivos compara fundamental + qualidade **+ baixo**.
+- [ ] Onda 2 — extrator próprio em `extractor/`, adapter, fila, worker, pipeline até
+  `harmonic_annotation`, endpoints de run e timeline; contract test com a resposta real do
+  container (`fixtures/riff-extractor/progression.json`). Portão pendente: rodar em 3 faixas
+  reais do dono e conferir a timeline de ouvido; calibrar o limiar de power chord.
 - [ ] Onda 3 — analítica de corpus (+ backlog: heurística de modo por I7/IV7 recorrentes; query de
   pedal de baixo sob fundamentais móveis — Kashmir)
 - [ ] Onda 4 — Angular
