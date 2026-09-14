@@ -25,4 +25,9 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
     ProblemDetail badRequest(IllegalArgumentException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
+
+    @ExceptionHandler(IllegalStateException.class)
+    ProblemDetail stateConflict(IllegalStateException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+    }
 }

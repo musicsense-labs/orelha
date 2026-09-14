@@ -19,18 +19,23 @@ public class TimelineController {
 
     private final TrackRepository tracks;
     private final AnalysisRunRepository runs;
+    private final KeySegmentRepository keys;
     private final HarmonicAnnotationRepository annotations;
     private final TrackAnalysisRepository analyses;
 
-    TimelineController(TrackRepository tracks, AnalysisRunRepository runs, HarmonicAnnotationRepository annotations,
-                       TrackAnalysisRepository analyses) {
+    TimelineController(TrackRepository tracks, AnalysisRunRepository runs, KeySegmentRepository keys,
+                       HarmonicAnnotationRepository annotations, TrackAnalysisRepository analyses) {
         this.tracks = tracks;
         this.runs = runs;
+        this.keys = keys;
         this.annotations = annotations;
         this.analyses = analyses;
     }
 
-    /** Timeline do run canônico da faixa, ou de um run específico via ?runId=. Vazio se nada foi analisado. */
+    /**
+     * Timeline do run canônico da faixa, ou de um run específico via ?runId=, lida com a tonalidade
+     * preferida (MANUAL > DERIVED > EXTRACTOR). Vazio se nada foi analisado.
+     */
     @GetMapping
     @Transactional(readOnly = true)
     TimelineResponse get(@PathVariable Long trackId, @RequestParam(required = false) Long runId) {
@@ -41,13 +46,12 @@ public class TimelineController {
         if (run == null || !run.getTrack().getId().equals(trackId)) {
             return new TimelineResponse(trackId, null, HarmonicNormalizer.VERSION, null, null, null, List.of());
         }
-        List<HarmonicAnnotation> timeline = annotations.findTimeline(run.getId(), HarmonicNormalizer.VERSION);
-        TimelineResponse.KeyInfo key = timeline.stream().findFirst()
-                .map(HarmonicAnnotation::getKeySegment)
-                .map(k -> new TimelineResponse.KeyInfo(k.getTonicPc(), k.getMode(), k.getConfidence(), k.getSource()))
-                .orElse(null);
+        KeySegment key = keys.findPreferred(run.getId()).orElse(null);
+        List<HarmonicAnnotation> timeline = key == null ? List.of()
+                : annotations.findTimeline(run.getId(), HarmonicNormalizer.VERSION, key.getId());
         TrackAnalysis analysis = analyses.findByRunId(run.getId()).orElse(null);
-        return new TimelineResponse(trackId, run.getId(), HarmonicNormalizer.VERSION, key,
+        return new TimelineResponse(trackId, run.getId(), HarmonicNormalizer.VERSION,
+                key == null ? null : new TimelineResponse.KeyInfo(key.getTonicPc(), key.getMode(), key.getConfidence(), key.getSource()),
                 analysis == null ? null : analysis.getBpm(),
                 analysis == null ? null : analysis.getTimeSignature(),
                 timeline.stream().map(TimelineResponse.Segment::of).toList());

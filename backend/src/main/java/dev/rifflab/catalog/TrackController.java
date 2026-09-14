@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -54,6 +55,16 @@ public class TrackController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     Map<String, Long> analyze(@PathVariable Long id) {
         return Map.of("runId", service.enqueueAnalysis(id).getId());
+    }
+
+    public record CanonicalRunRequest(@jakarta.validation.constraints.NotNull Long runId) {
+    }
+
+    /** Troca o run que responde pela faixa (comparar extratores/modelos sem sobrescrever nada). */
+    @PutMapping("/{id}/canonical-run")
+    @Transactional
+    TrackResponse setCanonicalRun(@PathVariable Long id, @Valid @RequestBody CanonicalRunRequest req) {
+        return TrackResponse.of(service.setCanonicalRun(id, req.runId()));
     }
 
     @DeleteMapping("/{id}")

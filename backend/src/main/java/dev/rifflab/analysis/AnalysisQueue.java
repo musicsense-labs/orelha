@@ -54,7 +54,7 @@ public class AnalysisQueue {
         run.setError(message.length() > 2000 ? message.substring(0, 2000) : message);
     }
 
-    private AnalysisRun find(long runId) {
+    public AnalysisRun find(long runId) {
         return runs.findById(runId).orElseThrow(() -> new NotFoundException("AnalysisRun", runId));
     }
 }

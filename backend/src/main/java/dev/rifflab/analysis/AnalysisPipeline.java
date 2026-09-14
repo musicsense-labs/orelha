@@ -9,6 +9,7 @@ import dev.rifflab.extraction.ExtractionResult.ChordEvent;
 import dev.rifflab.harmony.Chord;
 import dev.rifflab.harmony.HarmonicNormalizer;
 import dev.rifflab.harmony.Key;
+import dev.rifflab.harmony.KeyMode;
 import dev.rifflab.harmony.NormalizedChord;
 import dev.rifflab.harmony.PowerChordDetector;
 import jakarta.persistence.EntityManager;
@@ -22,8 +23,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * De {@link ExtractionResult} até harmonic_annotation: persiste o bruto, decide POWER pelo chroma,
- * funde segmentos, normaliza e anota. Tudo numa transação — sem I/O externo aqui dentro.
+ * De {@link ExtractionResult} até harmonic_annotation: persiste o bruto, decide POWER pelo chroma
+ * grave do stem de guitarra, funde segmentos, normaliza e anota. Tudo numa transação — sem I/O
+ * externo aqui dentro. Re-anotar com outra tonalidade ({@link #reannotate}) nunca re-extrai.
  */
 @Service
 public class AnalysisPipeline {
@@ -64,38 +66,60 @@ public class AnalysisPipeline {
                 result.tempo() == null ? null : result.tempo().timeSignature(),
                 result.audio().integratedLufs()));
 
-        KeySegment keySegment = null;
-        if (result.key() != null) {
-            keySegment = new KeySegment(run, BigDecimal.ZERO, result.audio().durationS(),
-                    result.key().tonicPc(), result.key().mode(), result.key().confidence(), KeySource.EXTRACTOR);
-            em.persist(keySegment);
-        }
-
         persistBeats(run, result);
-        result.bassNotes().forEach(n -> em.persist(new BassNote(run, n.startS(), n.endS(), n.midi(), n.velocity())));
+        List<BassNoteEvent> bassNotes = result.bassNotes();
+        bassNotes.forEach(n -> em.persist(new BassNote(run, n.startS(), n.endS(), n.midi(), n.velocity())));
         result.timbre().forEach(t -> em.persist(new TimbreSummary(run, t.stemModel(), t.stem(), t.centroidMean(),
                 t.centroidStd(), t.flatnessMean(), t.rolloffP95(), t.rmsMean())));
 
+        // POWER é decidido antes da fusão: dois E5 rotulados E e Em pelo modelo viram um segmento só.
         List<ChordEvent> events = ChordEvents.mergeConsecutive(result.chords().stream()
-                .map(e -> new ChordEvent(e.startS(), e.endS(), powerChords.reclassify(e.chord(), e.chroma()),
-                        e.chroma(), e.confidence()))
+                .map(e -> new ChordEvent(e.startS(), e.endS(), powerChords.reclassify(e.chord(), e.chromaLow()),
+                        e.chroma(), e.chromaLow(), e.confidence()))
                 .toList());
         List<ChordSegment> segments = new ArrayList<>(events.size());
         for (int i = 0; i < events.size(); i++) {
             ChordEvent e = events.get(i);
             ChordSegment segment = new ChordSegment(run, i, e.startS(), e.endS(), e.chord().rootPc(),
-                    e.chord().quality(), e.chord().bassPc(), e.confidence(), e.chroma());
+                    e.chord().quality(), e.chord().bassPc(), e.confidence(), e.chroma(), e.chromaLow());
             em.persist(segment);
             segments.add(segment);
         }
 
-        if (keySegment != null) {
-            annotate(segments, events, keySegment, result.bassNotes());
+        if (result.key() != null) {
+            KeySegment keySegment = new KeySegment(run, BigDecimal.ZERO, result.audio().durationS(),
+                    result.key().tonicPc(), result.key().mode(), result.key().confidence(), KeySource.EXTRACTOR);
+            em.persist(keySegment);
+            annotate(segments, keySegment, bassNotes);
         }
 
         if (track.getCanonicalRun() == null) {
             track.setCanonicalRun(run);
         }
+    }
+
+    /**
+     * Tonalidade atribuída pelo dono: grava um key_segment MANUAL cobrindo o run inteiro e deriva uma
+     * nova leitura dos segmentos já extraídos. A leitura feita com a tonalidade do extrator permanece.
+     */
+    @Transactional
+    public KeySegment reannotate(long runId, int tonicPc, KeyMode mode) {
+        AnalysisRun run = find(runId);
+        BigDecimal duration = run.getTrack().getDurationS();
+        KeySegment keySegment = new KeySegment(run, BigDecimal.ZERO, duration == null ? BigDecimal.ZERO : duration,
+                tonicPc, mode, null, KeySource.MANUAL);
+        em.persist(keySegment);
+
+        List<ChordSegment> segments = em.createQuery(
+                        "select s from ChordSegment s where s.run.id = :runId order by s.seqNo", ChordSegment.class)
+                .setParameter("runId", runId).getResultList();
+        List<BassNoteEvent> bassNotes = em.createQuery(
+                        "select b from BassNote b where b.run.id = :runId order by b.startS", BassNote.class)
+                .setParameter("runId", runId).getResultList().stream()
+                .map(b -> new BassNoteEvent(b.getStartS(), b.getEndS(), b.getMidiPitch(), b.getVelocity()))
+                .toList();
+        annotate(segments, keySegment, bassNotes);
+        return keySegment;
     }
 
     private void persistBeats(AnalysisRun run, ExtractionResult result) {
@@ -110,27 +134,26 @@ public class AnalysisPipeline {
         }
     }
 
-    private void annotate(List<ChordSegment> segments, List<ChordEvent> events, KeySegment keySegment,
-                          List<BassNoteEvent> bassNotes) {
+    private void annotate(List<ChordSegment> segments, KeySegment keySegment, List<BassNoteEvent> bassNotes) {
         Key key = new Key(keySegment.getTonicPc(), keySegment.getMode());
-        List<Chord> chords = events.stream().map(ChordEvent::chord).toList();
+        List<Chord> chords = segments.stream().map(ChordSegment::chord).toList();
         List<NormalizedChord> normalized = normalizer.normalize(chords, key);
         for (int i = 0; i < segments.size(); i++) {
             NormalizedChord n = normalized.get(i);
-            ChordEvent e = events.get(i);
-            em.persist(new HarmonicAnnotation(segments.get(i), HarmonicNormalizer.VERSION, keySegment,
+            ChordSegment s = segments.get(i);
+            em.persist(new HarmonicAnnotation(s, HarmonicNormalizer.VERSION, keySegment,
                     n.degreeInterval(), n.degreeLabel(), n.keyRelation().name(), n.isInverted(),
-                    effectiveBassPc(e, bassNotes),
+                    effectiveBassPc(s.getStartS(), s.getEndS(), bassNotes),
                     n.fromPrevious() == null ? null : n.fromPrevious().relation().name()));
         }
     }
 
-    /** Classe de altura do baixo que mais tempo soa dentro do segmento; null sem notas. */
-    static Integer effectiveBassPc(ChordEvent segment, List<BassNoteEvent> bassNotes) {
+    /** Classe de altura do baixo que mais tempo soa dentro do intervalo; null sem notas. */
+    static Integer effectiveBassPc(BigDecimal start, BigDecimal end, List<BassNoteEvent> bassNotes) {
         Map<Integer, Double> weight = new HashMap<>();
         for (BassNoteEvent note : bassNotes) {
-            double overlap = Math.min(note.endS().doubleValue(), segment.endS().doubleValue())
-                    - Math.max(note.startS().doubleValue(), segment.startS().doubleValue());
+            double overlap = Math.min(note.endS().doubleValue(), end.doubleValue())
+                    - Math.max(note.startS().doubleValue(), start.doubleValue());
             if (overlap > 0) {
                 weight.merge(note.midi() % 12, overlap, Double::sum);
             }

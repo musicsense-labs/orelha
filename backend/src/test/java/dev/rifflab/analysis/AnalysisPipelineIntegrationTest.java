@@ -48,7 +48,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * resultado conhecido (Am F G E7 em Lá menor, com o E7 tocado como power chord segundo o chroma).
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = "rifflab.worker.enabled=false")
+        properties = {"rifflab.worker.enabled=false", "rifflab.harmony.power-chord-third-ratio=0.35"})
 @Testcontainers
 class AnalysisPipelineIntegrationTest {
 
@@ -99,12 +99,15 @@ class AnalysisPipelineIntegrationTest {
         return BigDecimal.valueOf(v).setScale(3);
     }
 
+    /** strongPcs alimenta o chroma grave (o que decide POWER); o chroma da mixagem é neutro. */
     private static ChordEvent chord(double start, double end, int root, ChordQuality quality, int... strongPcs) {
-        float[] chroma = new float[12];
+        float[] chromaLow = new float[12];
         for (int pc : strongPcs) {
-            chroma[pc] = 1f;
+            chromaLow[pc] = 1f;
         }
-        return new ChordEvent(bd(start), bd(end), Chord.of(root, quality), chroma, null);
+        float[] chroma = new float[12];
+        java.util.Arrays.fill(chroma, 0.5f);
+        return new ChordEvent(bd(start), bd(end), Chord.of(root, quality), chroma, chromaLow, null);
     }
 
     @Autowired
@@ -162,6 +165,46 @@ class AnalysisPipelineIntegrationTest {
         assertThat(timeline.segments()).extracting(TimelineResponse.Segment::effectiveBassPc)
                 .containsExactly(9, 5, 7, 9);
         assertThat(timeline.segments().get(0).endS()).isEqualByComparingTo("2.000");   // Am fundido
+        assertThat(timeline.key().source()).isEqualTo(KeySource.EXTRACTOR);
+
+        // Tonalidade atribuída pelo dono: re-anota sem re-extrair e passa a ser a leitura preferida.
+        ResponseEntity<KeyController.KeyResponse> override = rest.exchange("/api/tracks/" + track.id() + "/key",
+                org.springframework.http.HttpMethod.PUT,
+                new org.springframework.http.HttpEntity<>(new KeyController.KeyRequest(0, KeyMode.MAJOR)),
+                KeyController.KeyResponse.class);
+        assertThat(override.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(override.getBody().source()).isEqualTo(KeySource.MANUAL);
+
+        TimelineResponse relative = rest.getForObject("/api/tracks/" + track.id() + "/timeline", TimelineResponse.class);
+        assertThat(relative.runId()).isEqualTo(timeline.runId());
+        assertThat(relative.key().source()).isEqualTo(KeySource.MANUAL);
+        assertThat(relative.key().tonicPc()).isZero();
+        assertThat(relative.segments()).extracting(TimelineResponse.Segment::degreeLabel)
+                .containsExactly("vi", "IV", "V", "III5");
+        assertThat(relative.segments()).extracting(TimelineResponse.Segment::keyRelation)
+                .containsExactly("DIATONIC", "DIATONIC", "DIATONIC", "AMBIGUOUS");
+        assertThat(relative.segments()).extracting(TimelineResponse.Segment::effectiveBassPc)
+                .containsExactly(9, 5, 7, 9);
+    }
+
+    @Test
+    void keyOverrideWithoutAnalysisIsAConflict() throws IOException {
+        Path audio = tempDir.resolve("stub3.wav");
+        Files.writeString(audio, "stub3");
+        Long artistId = rest.postForEntity("/api/artists", new ArtistRequest("Stub 3", null, null), ArtistResponse.class)
+                .getBody().id();
+        Long albumId = rest.postForEntity("/api/albums", new AlbumRequest(artistId, "Stub 3", 2026), AlbumResponse.class)
+                .getBody().id();
+        Long trackId = rest.postForEntity("/api/tracks",
+                new TrackRequest(albumId, "Stub 3", 1, audio.toString()), TrackResponse.class).getBody().id();
+
+        ResponseEntity<org.springframework.http.ProblemDetail> response = rest.exchange("/api/tracks/" + trackId + "/key",
+                org.springframework.http.HttpMethod.PUT,
+                new org.springframework.http.HttpEntity<>(new KeyController.KeyRequest(7, KeyMode.MAJOR)),
+                org.springframework.http.ProblemDetail.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        // deixa a fila limpa para os outros testes
+        worker.pollOnce();
     }
 
     @Test
@@ -189,5 +232,15 @@ class AnalysisPipelineIntegrationTest {
                 TimelineResponse.class);
         assertThat(second.runId()).isEqualTo(secondRun);
         assertThat(second.segments()).hasSize(4);
+
+        // O dono escolhe qual run responde pela faixa.
+        ResponseEntity<TrackResponse> switched = rest.exchange("/api/tracks/" + trackId + "/canonical-run",
+                org.springframework.http.HttpMethod.PUT,
+                new org.springframework.http.HttpEntity<>(new dev.rifflab.catalog.TrackController.CanonicalRunRequest(secondRun)),
+                TrackResponse.class);
+        assertThat(switched.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(switched.getBody().canonicalRunId()).isEqualTo(secondRun);
+        assertThat(rest.getForObject("/api/tracks/" + trackId + "/timeline", TimelineResponse.class).runId())
+                .isEqualTo(secondRun);
     }
 }

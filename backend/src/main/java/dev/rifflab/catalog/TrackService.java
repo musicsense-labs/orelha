@@ -2,6 +2,7 @@ package dev.rifflab.catalog;
 
 import dev.rifflab.analysis.AnalysisQueue;
 import dev.rifflab.analysis.AnalysisRun;
+import dev.rifflab.analysis.RunStatus;
 import dev.rifflab.common.NotFoundException;
 import dev.rifflab.extraction.AudioExtractor;
 import org.springframework.stereotype.Service;
@@ -51,6 +52,21 @@ public class TrackService {
     public AnalysisRun enqueueAnalysis(Long trackId) {
         Track track = tracks.findById(trackId).orElseThrow(() -> new NotFoundException("Track", trackId));
         return queue.enqueue(track, extractor.name());
+    }
+
+    /** Escolhe qual run responde pela faixa nas queries de corpus; precisa estar DONE e ser dela. */
+    @Transactional
+    public Track setCanonicalRun(Long trackId, Long runId) {
+        Track track = tracks.findById(trackId).orElseThrow(() -> new NotFoundException("Track", trackId));
+        AnalysisRun run = queue.find(runId);
+        if (!run.getTrack().getId().equals(trackId)) {
+            throw new IllegalArgumentException("Run " + runId + " does not belong to track " + trackId);
+        }
+        if (run.getStatus() != RunStatus.DONE) {
+            throw new IllegalStateException("Run " + runId + " is " + run.getStatus() + ", not DONE");
+        }
+        track.setCanonicalRun(run);
+        return track;
     }
 
     static String sha256(Path file) {
