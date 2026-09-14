@@ -175,6 +175,13 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
 - **Upload pela UI**: `POST /api/tracks/upload` (multipart `file`, `albumId`, `title?`, `trackNo?`)
   grava em `rifflab.library.dir/<albumId>/<título>.<ext>` (sem sobrescrever) e enfileira;
   `TrackResponse` traz o último run (`latestRunId/Status/Error`) numa query só para a lista.
+- **Importar pasta**: `POST /api/tracks/import` (multipart `files`, nome = caminho relativo da pasta)
+  copia para a biblioteca; `POST /api/tracks/import-path {path, recursive}` referencia os arquivos
+  no lugar. `AudioTags` (jaudiotagger) lê ID3/Vorbis/MP4/WAV: artista = album artist ou artist;
+  álbum; ano (4 dígitos); título; número (`3/12` → 3). Sem tags: convenção `Artista/Álbum/01
+  Título.ext`; pasta plana sem tags dá nomes ruins (a pasta-mãe vira artista) — corrigir via
+  `PUT /api/artists|albums`. Artista/álbum reusados por nome (case-insensitive); mesmo SHA-256 é
+  pulado; número já ocupado no álbum vira null. Uma transação por faixa (`TransactionTemplate`).
 - Fixture do contract test = resposta real do container sobre `app/testaudio.py` (WAV sintético,
   Am F C G). Nunca gravar áudio com direitos autorais no repositório.
 
