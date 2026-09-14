@@ -146,11 +146,16 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
 ## Ondas
 
 - [x] Onda 0 — esqueleto (entregue e aprovado em 2026-09-13)
-- [ ] Onda 1 — `HarmonicNormalizer`: regras implementadas e validadas contra as 30 progressões do
-  dono (`ProgressionClassificationTest`, 2026-09-13). Portão aberto: divergências de convenção
-  (label de power chord, `AMBIGUOUS` nas métricas, `7sus4`) aguardam decisão.
-- [ ] Onda 2 — integração com o extrator (contract test com fixture JSON)
-- [ ] Onda 3 — analítica de corpus
+- [x] Onda 1 — `HarmonicNormalizer`: validado contra as 30 progressões do dono
+  (`ProgressionClassificationTest`); portão aprovado em 2026-09-13 com estas convenções:
+  power chord em caixa alta neutra (`I5`); `AMBIGUOUS` conta como *dentro* do campo nas métricas
+  de corpus; `7sus4` reduz a `sus4`; modos (mixolídio/dórico de blues, frígio) só existem se
+  atribuídos — `key_segment.source = MANUAL` ou heurística futura (backlog Onda 3).
+- [ ] Onda 2 — integração com o extrator (contract test com fixture JSON). Primeiro passo: spike
+  do backend do ChordMini (Docker, independência do Firebase, JSON real). Fusão de segmentos
+  consecutivos compara fundamental + qualidade **+ baixo**.
+- [ ] Onda 3 — analítica de corpus (+ backlog: heurística de modo por I7/IV7 recorrentes; query de
+  pedal de baixo sob fundamentais móveis — Kashmir)
 - [ ] Onda 4 — Angular
 
 ## Glossário
