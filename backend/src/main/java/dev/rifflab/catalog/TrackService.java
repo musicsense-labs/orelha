@@ -1,6 +1,9 @@
 package dev.rifflab.catalog;
 
+import dev.rifflab.analysis.AnalysisQueue;
+import dev.rifflab.analysis.AnalysisRun;
 import dev.rifflab.common.NotFoundException;
+import dev.rifflab.extraction.AudioExtractor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,13 +23,17 @@ public class TrackService {
 
     private final TrackRepository tracks;
     private final AlbumRepository albums;
+    private final AnalysisQueue queue;
+    private final AudioExtractor extractor;
 
-    TrackService(TrackRepository tracks, AlbumRepository albums) {
+    TrackService(TrackRepository tracks, AlbumRepository albums, AnalysisQueue queue, AudioExtractor extractor) {
         this.tracks = tracks;
         this.albums = albums;
+        this.queue = queue;
+        this.extractor = extractor;
     }
 
-    /** Cadastra a faixa e fixa a identidade dos bytes. Enfileirar a análise é papel da Onda 2. */
+    /** Cadastra a faixa, fixa a identidade dos bytes e enfileira a primeira análise. */
     @Transactional
     public Track register(TrackRequest req) {
         Album album = albums.findById(req.albumId()).orElseThrow(() -> new NotFoundException("Album", req.albumId()));
@@ -34,7 +41,16 @@ public class TrackService {
         if (!Files.isRegularFile(audio)) {
             throw new IllegalArgumentException("Audio file not found: " + req.audioPath());
         }
-        return tracks.save(new Track(album, req.title(), req.trackNo(), audio.toAbsolutePath().toString(), sha256(audio)));
+        Track track = tracks.save(new Track(album, req.title(), req.trackNo(), audio.toAbsolutePath().toString(), sha256(audio)));
+        queue.enqueue(track, extractor.name());
+        return track;
+    }
+
+    /** Novo run para a mesma faixa (outro extrator/modelo ou re-execução); nunca sobrescreve. */
+    @Transactional
+    public AnalysisRun enqueueAnalysis(Long trackId) {
+        Track track = tracks.findById(trackId).orElseThrow(() -> new NotFoundException("Track", trackId));
+        return queue.enqueue(track, extractor.name());
     }
 
     static String sha256(Path file) {

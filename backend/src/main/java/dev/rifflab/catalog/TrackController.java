@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/tracks")
@@ -46,6 +47,13 @@ public class TrackController {
     @Transactional
     TrackResponse create(@Valid @RequestBody TrackRequest req) {
         return TrackResponse.of(service.register(req));
+    }
+
+    /** Enfileira um novo run para a faixa; devolve o id do run para polling em /api/analysis/runs/{id}. */
+    @PostMapping("/{id}/analyze")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    Map<String, Long> analyze(@PathVariable Long id) {
+        return Map.of("runId", service.enqueueAnalysis(id).getId());
     }
 
     @DeleteMapping("/{id}")

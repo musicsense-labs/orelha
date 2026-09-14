@@ -96,8 +96,17 @@ public class AnalysisRun {
         return extractorVersion;
     }
 
+    public void setExtractorVersion(String extractorVersion) {
+        this.extractorVersion = extractorVersion;
+    }
+
     public Map<String, String> getModelNames() {
         return modelNames;
+    }
+
+    /** Preenchido na conclusão: só então se sabe qual modelo cada capacidade usou. */
+    public void setModelNames(Map<String, String> modelNames) {
+        this.modelNames = modelNames;
     }
 
     public RunStatus getStatus() {
