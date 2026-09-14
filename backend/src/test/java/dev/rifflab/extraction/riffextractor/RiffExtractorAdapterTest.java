@@ -6,6 +6,7 @@ import dev.rifflab.extraction.ExtractionResult.ChordEvent;
 import dev.rifflab.harmony.Chord;
 import dev.rifflab.harmony.ChordQuality;
 import dev.rifflab.harmony.KeyMode;
+import dev.rifflab.harmony.PowerChordDetector;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -83,6 +84,16 @@ class RiffExtractorAdapterTest {
             assertThat(chroma).hasSize(12);
             int peak = IntStream.range(0, 12).reduce((a, b) -> chroma[a] >= chroma[b] ? a : b).getAsInt();
             assertThat(peak).as("pico do chroma em %s", e.chord()).isEqualTo(e.chord().rootPc());
+        }
+    }
+
+    @Test
+    void fullTriadsInRealChromaAreNotMistakenForPowerChords() {
+        PowerChordDetector detector = new PowerChordDetector(PowerChordDetector.DEFAULT_THIRD_RATIO);
+        for (ChordEvent e : result.chords()) {
+            assertThat(detector.reclassify(e.chord(), e.chroma()))
+                    .as("%s at %s", e.chord(), e.startS())
+                    .isEqualTo(e.chord());
         }
     }
 

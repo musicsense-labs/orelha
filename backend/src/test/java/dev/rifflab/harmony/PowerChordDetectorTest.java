@@ -19,7 +19,7 @@ class PowerChordDetectorTest {
 
     @Test
     void dyadWithoutThirdIsPower() {
-        float[] e5 = chroma(4, 10, 11, 8, 8, 1, 7, 1);       // E, B fortes; G#/G residuais
+        float[] e5 = chroma(4, 10, 11, 8, 8, 2, 7, 1);       // E, B fortes; G#/G em nível de vazamento (0.25 da quinta)
         assertThat(detector.isPowerChord(e5, 4)).isTrue();
         assertThat(detector.reclassify(Chord.of(4, ChordQuality.MAJ), e5).quality()).isEqualTo(ChordQuality.POWER);
         assertThat(detector.reclassify(Chord.of(4, ChordQuality.MIN), e5).quality()).isEqualTo(ChordQuality.POWER);
@@ -32,6 +32,17 @@ class PowerChordDetectorTest {
         assertThat(detector.reclassify(Chord.of(4, ChordQuality.MAJ), eMajor).quality()).isEqualTo(ChordQuality.MAJ);
         float[] eMinor = chroma(4, 10, 7, 6, 11, 8);         // E, G, B
         assertThat(detector.isPowerChord(eMinor, 4)).isFalse();
+    }
+
+    @Test
+    void realTriadChromaIsDominatedByTheRootButStillHasItsThird() {
+        // Perfil medido no WAV sintético (Am com baixo na fundamental): terça 0.20, quinta 0.30, fundamental 1.0.
+        float[] am = new float[12];
+        am[9] = 1.0f;
+        am[0] = 0.20f;
+        am[4] = 0.30f;
+        am[8] = 0.12f; // vazamento no G#
+        assertThat(detector.isPowerChord(am, 9)).isFalse();
     }
 
     @Test
