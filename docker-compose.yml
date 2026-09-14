@@ -16,5 +16,15 @@ services:
       timeout: 3s
       retries: 10
 
+  extractor:
+    build: ./extractor
+    image: riff-extractor
+    container_name: riff-lab-extractor
+    ports:
+      - "8000:8000"
+    volumes:
+      - features:/data/features
+
 volumes:
   pgdata:
+  features:

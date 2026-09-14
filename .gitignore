@@ -13,3 +13,5 @@ frontend/.angular/
 *.log
 # Áudio e features nunca entram no repo
 data/
+# Saídas locais do extractor (WAV sintético, JSON, logs de build)
+extractor/out/

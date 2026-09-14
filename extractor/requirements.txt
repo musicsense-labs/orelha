@@ -1,0 +1,10 @@
+# Cola do serviço. torch (CPU), ChordMini e madmom são instalados no Dockerfile, antes deste arquivo.
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+librosa==0.10.1
+soundfile==0.12.1
+demucs==4.1.0
+basic-pitch==0.4.0
+pyloudnorm==0.1.1
+pyarrow==18.1.0
