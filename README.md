@@ -14,7 +14,8 @@ Contexto, arquitetura e regras de trabalho estão em [CLAUDE.md](CLAUDE.md).
 
 ```bash
 docker compose up -d --build
-cd backend && mvn spring-boot:run
+cd backend && mvn spring-boot:run        # ou .\backend\run.ps1 [-Port 8081] no PowerShell
+cd frontend && npx ng serve              # http://localhost:4200, proxy /api → :8080
 ```
 
-Requer JDK 21 (`JAVA_HOME` apontando para ele) e Docker.
+Requer JDK 21 (`JAVA_HOME` apontando para ele), Node 24 e Docker.

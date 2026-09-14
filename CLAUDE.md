@@ -45,7 +45,7 @@ Se você se pegar querendo cruzar essa linha, pare e pergunte.
 - **Backend:** Java 21, Spring Boot 3.5, Spring Web, Spring Data JPA, PostgreSQL 16,
   Flyway, WebClient. Testes com JUnit 5 + Testcontainers. Build Maven.
 - **Frontend:** Angular 21 (LTS), standalone components, signals, zoneless, sem NgRx.
-  Gráficos: decisão pendente (ver "Decisões").
+  Gráficos: ECharts (heatmap, barras) + SVG em template para a timeline (ver "Frontend").
 - **Extração:** container Docker de terceiro, configurado por URL em `application.yml`.
   Nunca acoplar o domínio ao formato de resposta de um extrator específico —
   interfaces de extração com um adapter por implementação.
@@ -170,10 +170,25 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
 - Fixture do contract test = resposta real do container sobre `app/testaudio.py` (WAV sintético,
   Am F C G). Nunca gravar áudio com direitos autorais no repositório.
 
+## Frontend (decidido em 2026-09-14)
+
+- **ECharts** (`echarts/core`, tree-shaken: heatmap + bar) para a matriz de transição e as
+  distribuições; **timeline em SVG de template Angular** dirigida por signals, sem D3: cada segmento
+  é um `<rect>` num `@for`, o playhead é um `computed` sobre `currentTime`, e `<audio>` nativo faz o
+  playback (`GET /api/tracks/{id}/audio`, com `Range` para seek). Clicar num segmento faz seek.
+- `httpResource` para toda leitura; sem store, sem NgRx. Rotas: `/` (corpus), `/tracks/:id`
+  (timeline), `/artists/:id` e `/albums/:id` (perfil), `/compare`. Parâmetros e `data` de rota
+  viram inputs (`withComponentInputBinding`).
+- Sem mock: cada tela mostra vazio ou a mensagem do backend quando não há dados.
+- Dev: `npx ng serve` usa `proxy.conf.json` (→ :8080). Se o 8080 estiver ocupado (WildFly do
+  IntelliJ nesta máquina), rode `.\backend\run.ps1 -Port 8081` e `npx ng serve --proxy-config
+  proxy.local.json` (arquivo local, ignorado pelo git).
+- Só apresentação em TypeScript (`shared/music.ts`: nomes de nota, cifra, cores); a teoria fica
+  no backend.
+
 ## Decisões pendentes
 
-- **Gráficos (Onda 4):** recomendação = ECharts para heatmap/comparação; timeline como SVG
-  em template Angular dirigido por signals (`d3-scale` só se necessário).
+- Nenhuma no momento.
 
 ## Ondas
 
@@ -201,7 +216,9 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
   quando a confiança do madmom for baixa; heurística de modo por I7/IV7 recorrentes; query de
   linha de baixo sob acorde sustentado — Valerie 3:18, Kashmir; `min_segment_duration` do BTC
   vs segmentos de < 1 s)
-- [ ] Onda 4 — Angular
+- [ ] Onda 4 — Angular, entregue em 2026-09-14 (portão pendente): corpus, timeline com playback
+  sincronizado e lane de baixo efetivo, perfil com heatmap/barras/timbre/pedais, comparação com
+  distâncias. Verificado ao vivo contra os runs reais (Creep, Nirvana × Radiohead).
 
 ## Glossário
 
