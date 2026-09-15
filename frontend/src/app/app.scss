@@ -2,7 +2,7 @@
   display: flex;
   align-items: center;
   gap: 1.25rem;
-  padding: 0.5rem 1.25rem;
+  padding: 0.6rem 1.25rem;
   border-bottom: 1px solid var(--line);
   background: var(--panel);
 
@@ -10,11 +10,11 @@
   a.active:not(.brand) { border-bottom: 2px solid var(--accent); }
 
   // Assinatura horizontal: cena (caixa · Orelha · vitrola · caixa) + nome e organização.
-  .brand { display: inline-flex; align-items: center; gap: 0.6rem; margin-right: 0.75rem; }
+  .brand { display: inline-flex; align-items: center; gap: 0.9rem; margin-right: 1rem; }
   .brand img { display: block; }
   .wordmark { display: flex; flex-direction: column; line-height: 1; }
-  .name { font-family: 'Bricolage Grotesque', 'Trebuchet MS', system-ui, sans-serif; font-weight: 800; font-size: 1.35rem; letter-spacing: -0.03em; }
-  .org { font-family: 'IBM Plex Mono', 'Courier New', monospace; font-size: 0.55rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted); margin-top: 0.2rem; }
+  .name { font-family: 'Bricolage Grotesque', 'Trebuchet MS', system-ui, sans-serif; font-weight: 800; font-size: 1.9rem; letter-spacing: -0.03em; }
+  .org { font-family: 'IBM Plex Mono', 'Courier New', monospace; font-size: 0.7rem; letter-spacing: 0.24em; text-transform: uppercase; color: var(--muted); margin-top: 0.2rem; }
 }
 
 main {
