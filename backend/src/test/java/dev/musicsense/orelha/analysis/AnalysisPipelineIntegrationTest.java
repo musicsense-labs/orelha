@@ -9,7 +9,7 @@ import dev.musicsense.orelha.catalog.TrackResponse;
 import dev.musicsense.orelha.extraction.AudioExtractor;
 import dev.musicsense.orelha.extraction.ExtractionResult;
 import dev.musicsense.orelha.extraction.ExtractionResult.AudioInfo;
-import dev.musicsense.orelha.extraction.ExtractionResult.BassNoteEvent;
+import dev.musicsense.orelha.extraction.ExtractionResult.NoteEvent;
 import dev.musicsense.orelha.extraction.ExtractionResult.BeatEvent;
 import dev.musicsense.orelha.extraction.ExtractionResult.ChordEvent;
 import dev.musicsense.orelha.extraction.ExtractionResult.KeyEstimate;
@@ -99,10 +99,12 @@ class AnalysisPipelineIntegrationTest {
                     chord(2.0, 4.0, 5, ChordQuality.MAJ, 5, 9, 0),      // F
                     chord(4.0, 6.0, 7, ChordQuality.MAJ, 7, 11, 2),     // G
                     chord(6.0, 8.0, 4, ChordQuality.MAJ, 4, 11)),       // "E" sem terça no chroma → E5
-            List.of(new BassNoteEvent(bd(0.0), bd(2.0), 45, 100),        // A sob Am
-                    new BassNoteEvent(bd(2.0), bd(4.0), 41, 100),        // F sob F
-                    new BassNoteEvent(bd(4.0), bd(6.0), 43, 100),        // G sob G
-                    new BassNoteEvent(bd(6.0), bd(8.0), 45, 100)),       // A sob E5: pedal
+            List.of(new NoteEvent(bd(0.0), bd(2.0), 45, 100),        // A sob Am
+                    new NoteEvent(bd(2.0), bd(4.0), 41, 100),        // F sob F
+                    new NoteEvent(bd(4.0), bd(6.0), 43, 100),        // G sob G
+                    new NoteEvent(bd(6.0), bd(8.0), 45, 100)),       // A sob E5: pedal
+            List.of(new NoteEvent(bd(0.5), bd(1.5), 64, 90),         // voz: E4 sobre Am
+                    new NoteEvent(bd(2.5), bd(3.5), 65, 90)),        // F4 sobre F
             List.of(new TimbreStat("htdemucs", "bass", 400f, 50f, 0.02f, 1800f, 0.1f)),
             "/data/features/stub.parquet",
             Map.of("bass", "/data/stems/stub/bass.wav", "drums", "/data/stems/stub/drums.wav"));
@@ -178,6 +180,14 @@ class AnalysisPipelineIntegrationTest {
                 .containsExactly(9, 5, 7, 9);
         assertThat(timeline.segments().get(0).endS()).isEqualByComparingTo("2.000");   // Am fundido
         assertThat(timeline.key().source()).isEqualTo(KeySource.EXTRACTOR);
+
+        // Notas da voz do run canônico (extrator ≥ 0.5.0).
+        ResponseEntity<List<dev.musicsense.orelha.catalog.TrackController.NoteResponse>> vocals = rest.exchange(
+                "/api/tracks/" + track.id() + "/vocal-notes", org.springframework.http.HttpMethod.GET, null,
+                new org.springframework.core.ParameterizedTypeReference<>() {
+                });
+        assertThat(vocals.getBody()).extracting(dev.musicsense.orelha.catalog.TrackController.NoteResponse::midi)
+                .containsExactly(64, 65);
 
         // Beats do run canônico, com compasso contado a partir do primeiro downbeat.
         ResponseEntity<List<dev.musicsense.orelha.catalog.TrackController.BeatResponse>> beats = rest.exchange(
@@ -261,6 +271,25 @@ class AnalysisPipelineIntegrationTest {
                 SectionsResponse.class);
         assertThat(reverted.getBody().source()).isEqualTo(SectionSource.DERIVED);
         assertThat(reverted.getBody().parts()).extracting(SectionsResponse.Part::label).containsExactly("A");
+
+        // Re-análise herda o que o dono corrigiu no run canônico: tonalidade MANUAL (C maior) e partes MANUAL.
+        rest.exchange("/api/tracks/" + track.id() + "/sections", org.springframework.http.HttpMethod.PUT,
+                new org.springframework.http.HttpEntity<>(List.of(
+                        new SectionController.SectionRequest(new BigDecimal("0.000"), new BigDecimal("8.000"), "tudo", null, null))),
+                SectionsResponse.class);
+        long reanalysis = ((Number) rest.postForEntity("/api/tracks/" + track.id() + "/analyze", null, Map.class)
+                .getBody().get("runId")).longValue();
+        worker.pollOnce();
+        TimelineResponse inherited = rest.getForObject("/api/tracks/" + track.id() + "/timeline?runId=" + reanalysis,
+                TimelineResponse.class);
+        assertThat(inherited.key().source()).isEqualTo(KeySource.MANUAL);
+        assertThat(inherited.key().tonicPc()).isZero();
+        assertThat(inherited.segments()).extracting(TimelineResponse.Segment::degreeLabel)
+                .containsExactly("vi", "IV", "V", "III5");
+        SectionsResponse inheritedParts = rest.getForObject("/api/tracks/" + track.id() + "/sections?runId=" + reanalysis,
+                SectionsResponse.class);
+        assertThat(inheritedParts.source()).isEqualTo(SectionSource.MANUAL);
+        assertThat(inheritedParts.parts()).extracting(SectionsResponse.Part::label).containsExactly("tudo");
     }
 
     @Test

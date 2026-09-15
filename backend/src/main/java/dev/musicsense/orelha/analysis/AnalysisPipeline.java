@@ -5,7 +5,7 @@ import dev.musicsense.orelha.catalog.Track;
 import dev.musicsense.orelha.common.NotFoundException;
 import dev.musicsense.orelha.extraction.ChordEvents;
 import dev.musicsense.orelha.extraction.ExtractionResult;
-import dev.musicsense.orelha.extraction.ExtractionResult.BassNoteEvent;
+import dev.musicsense.orelha.extraction.ExtractionResult.NoteEvent;
 import dev.musicsense.orelha.extraction.ExtractionResult.ChordEvent;
 import dev.musicsense.orelha.harmony.Chord;
 import dev.musicsense.orelha.harmony.HarmonicNormalizer;
@@ -37,14 +37,18 @@ public class AnalysisPipeline {
     private final PowerChordDetector powerChords;
     private final AudioLibrary library;
     private final SectionService sections;
+    private final SectionRepository sectionRepository;
+    private final KeySegmentRepository keys;
 
     AnalysisPipeline(AnalysisRunRepository runs, EntityManager em, PowerChordDetector powerChords, AudioLibrary library,
-                     SectionService sections) {
+                     SectionService sections, SectionRepository sectionRepository, KeySegmentRepository keys) {
         this.runs = runs;
         this.em = em;
         this.powerChords = powerChords;
         this.library = library;
         this.sections = sections;
+        this.sectionRepository = sectionRepository;
+        this.keys = keys;
     }
 
     public record Input(String audioPath, String audioSha256) {
@@ -74,8 +78,9 @@ public class AnalysisPipeline {
                 result.audio().integratedLufs()));
 
         persistBeats(run, result);
-        List<BassNoteEvent> bassNotes = result.bassNotes();
+        List<NoteEvent> bassNotes = result.bassNotes();
         bassNotes.forEach(n -> em.persist(new BassNote(run, n.startS(), n.endS(), n.midi(), n.velocity())));
+        result.vocalNotes().forEach(n -> em.persist(new VocalNote(run, n.startS(), n.endS(), n.midi(), n.velocity())));
         result.timbre().forEach(t -> em.persist(new TimbreSummary(run, t.stemModel(), t.stem(), t.centroidMean(),
                 t.centroidStd(), t.flatnessMean(), t.rolloffP95(), t.rmsMean())));
 
@@ -101,9 +106,37 @@ public class AnalysisPipeline {
         }
         em.flush();
         sections.derive(run);   // partes por repetição: independem da tonalidade, não re-derivam no override
+        inheritManualOverrides(run, track.getCanonicalRun(), segments, bassNotes);
 
         if (track.getCanonicalRun() == null) {
             track.setCanonicalRun(run);
+        }
+    }
+
+    /**
+     * O que o dono corrigiu no run canônico anterior (tonalidade MANUAL, partes MANUAL) vale para a
+     * re-análise: é copiado para o run novo, senão reprocessar apagaria o trabalho dele.
+     */
+    private void inheritManualOverrides(AnalysisRun run, AnalysisRun previous, List<ChordSegment> segments,
+                                        List<NoteEvent> bassNotes) {
+        if (previous == null || previous.getId().equals(run.getId())) {
+            return;
+        }
+        keys.findPreferred(previous.getId())
+                .filter(k -> k.getSource() == KeySource.MANUAL)
+                .ifPresent(k -> {
+                    KeySegment manual = new KeySegment(run, k.getStartS(), k.getEndS(), k.getTonicPc(), k.getMode(), null,
+                            KeySource.MANUAL);
+                    em.persist(manual);
+                    annotate(segments, manual, bassNotes);
+                });
+        List<Section> manualSections = sectionRepository.findByRunIdAndSourceOrderByPosition(previous.getId(),
+                SectionSource.MANUAL);
+        if (!manualSections.isEmpty()) {
+            sections.replaceManual(run, manualSections.stream()
+                    .map(s -> new SectionService.SectionEdit(s.getStartS(), s.getEndS(), s.getLabel(), s.getCycleEndS(),
+                            s.getRepeats()))
+                    .toList());
         }
     }
 
@@ -122,10 +155,10 @@ public class AnalysisPipeline {
         List<ChordSegment> segments = em.createQuery(
                         "select s from ChordSegment s where s.run.id = :runId order by s.seqNo", ChordSegment.class)
                 .setParameter("runId", runId).getResultList();
-        List<BassNoteEvent> bassNotes = em.createQuery(
+        List<NoteEvent> bassNotes = em.createQuery(
                         "select b from BassNote b where b.run.id = :runId order by b.startS", BassNote.class)
                 .setParameter("runId", runId).getResultList().stream()
-                .map(b -> new BassNoteEvent(b.getStartS(), b.getEndS(), b.getMidiPitch(), b.getVelocity()))
+                .map(b -> new NoteEvent(b.getStartS(), b.getEndS(), b.getMidiPitch(), b.getVelocity()))
                 .toList();
         annotate(segments, keySegment, bassNotes);
         return keySegment;
@@ -143,7 +176,7 @@ public class AnalysisPipeline {
         }
     }
 
-    private void annotate(List<ChordSegment> segments, KeySegment keySegment, List<BassNoteEvent> bassNotes) {
+    private void annotate(List<ChordSegment> segments, KeySegment keySegment, List<NoteEvent> bassNotes) {
         Key key = new Key(keySegment.getTonicPc(), keySegment.getMode());
         List<Chord> chords = segments.stream().map(ChordSegment::chord).toList();
         List<NormalizedChord> normalized = normalizer.normalize(chords, key);
@@ -158,9 +191,9 @@ public class AnalysisPipeline {
     }
 
     /** Classe de altura do baixo que mais tempo soa dentro do intervalo; null sem notas. */
-    static Integer effectiveBassPc(BigDecimal start, BigDecimal end, List<BassNoteEvent> bassNotes) {
+    static Integer effectiveBassPc(BigDecimal start, BigDecimal end, List<NoteEvent> bassNotes) {
         Map<Integer, Double> weight = new HashMap<>();
-        for (BassNoteEvent note : bassNotes) {
+        for (NoteEvent note : bassNotes) {
             double overlap = Math.min(note.endS().doubleValue(), end.doubleValue())
                     - Math.max(note.startS().doubleValue(), start.doubleValue());
             if (overlap > 0) {

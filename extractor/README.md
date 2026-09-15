@@ -9,7 +9,7 @@ teoria musical** — rótulos Harte, tempos, vetores. O Spring Boot interpreta.
 | Beats / downbeats | madmom RNNDownBeat + DBN | BSD |
 | Tonalidade (24) | madmom CNNKeyRecognition | BSD |
 | Stems | demucs `htdemucs` | MIT |
-| Baixo → MIDI | basic-pitch (stem de baixo) | Apache-2.0 |
+| Baixo e voz → MIDI | basic-pitch (stems de baixo e de voz) | Apache-2.0 |
 | Chroma por segmento, descritores por stem, LUFS | librosa, pyloudnorm | ISC / MIT |
 
 ## API
@@ -28,6 +28,7 @@ teoria musical** — rótulos Harte, tempos, vetores. O Spring Boot interpreta.
   "chords": [{"start_s": 0.0, "end_s": 2.0, "label": "A:min",
               "chroma": [0.9, 0.1, "..."], "chroma_low": [0.8, 0.05, "..."]}],
   "bass_notes": [{"start_s": 0.0, "end_s": 0.5, "midi": 45, "velocity": 90}],
+  "vocal_notes": [{"start_s": 1.2, "end_s": 1.7, "midi": 64, "velocity": 80}],
   "timbre": [{"stem_model": "htdemucs", "stem": "bass", "centroid_mean": 412.5, "centroid_std": 88.1,
               "flatness_mean": 0.02, "rolloff_p95": 1800.0, "rms_mean": 0.12}],
   "features_path": "/data/features/<sha256>.parquet",

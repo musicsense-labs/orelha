@@ -3,6 +3,7 @@ package dev.musicsense.orelha.catalog;
 import dev.musicsense.orelha.analysis.AnalysisRun;
 import dev.musicsense.orelha.analysis.AnalysisRunRepository;
 import dev.musicsense.orelha.analysis.BeatRepository;
+import dev.musicsense.orelha.analysis.VocalNoteRepository;
 import dev.musicsense.orelha.common.NotFoundException;
 import dev.musicsense.orelha.extraction.DataPaths;
 import jakarta.validation.Valid;
@@ -44,9 +45,10 @@ public class TrackController {
     private final ImportService importer;
     private final BeatRepository beats;
     private final AudioLibrary library;
+    private final VocalNoteRepository vocalNotes;
 
     TrackController(TrackRepository tracks, TrackService service, DataPaths dataPaths, AnalysisRunRepository runs,
-                    ImportService importer, BeatRepository beats, AudioLibrary library) {
+                    ImportService importer, BeatRepository beats, AudioLibrary library, VocalNoteRepository vocalNotes) {
         this.tracks = tracks;
         this.service = service;
         this.dataPaths = dataPaths;
@@ -54,6 +56,7 @@ public class TrackController {
         this.importer = importer;
         this.beats = beats;
         this.library = library;
+        this.vocalNotes = vocalNotes;
     }
 
     private TrackResponse response(Track track) {
@@ -156,6 +159,22 @@ public class TrackController {
     }
 
     /** Beats e downbeats do run canônico: a grade do metrônomo e das barras da timeline. */
+    public record NoteResponse(BigDecimal startS, BigDecimal endS, int midi, Integer velocity) {
+    }
+
+    /** Notas da voz (basic-pitch no stem de voz) do run canônico; vazio em runs anteriores ao extrator 0.5.0. */
+    @GetMapping("/{id}/vocal-notes")
+    @Transactional(readOnly = true)
+    List<NoteResponse> vocalNotes(@PathVariable Long id) {
+        AnalysisRun run = find(id).getCanonicalRun();
+        if (run == null) {
+            return List.of();
+        }
+        return vocalNotes.findByRunIdOrderByStartS(run.getId()).stream()
+                .map(n -> new NoteResponse(n.getStartS(), n.getEndS(), n.getMidiPitch(), n.getVelocity()))
+                .toList();
+    }
+
     @GetMapping("/{id}/beats")
     @Transactional(readOnly = true)
     List<BeatResponse> beats(@PathVariable Long id) {

@@ -12,8 +12,9 @@ import java.util.Map;
  * stems = caminhos (no volume do extrator) dos stems persistidos, por nome; vazio se não há.
  */
 public record ExtractionResult(Provenance provenance, AudioInfo audio, KeyEstimate key, Tempo tempo,
-                               List<BeatEvent> beats, List<ChordEvent> chords, List<BassNoteEvent> bassNotes,
-                               List<TimbreStat> timbre, String featuresPath, Map<String, String> stems) {
+                               List<BeatEvent> beats, List<ChordEvent> chords, List<NoteEvent> bassNotes,
+                               List<NoteEvent> vocalNotes, List<TimbreStat> timbre, String featuresPath,
+                               Map<String, String> stems) {
 
     public record Provenance(String name, String version, Map<String, String> models) {
     }
@@ -39,7 +40,8 @@ public record ExtractionResult(Provenance provenance, AudioInfo audio, KeyEstima
                              Float confidence) {
     }
 
-    public record BassNoteEvent(BigDecimal startS, BigDecimal endS, int midi, Integer velocity) {
+    /** Nota MIDI transcrita de um stem (baixo ou voz). */
+    public record NoteEvent(BigDecimal startS, BigDecimal endS, int midi, Integer velocity) {
     }
 
     public record TimbreStat(String stemModel, String stem, Float centroidMean, Float centroidStd,

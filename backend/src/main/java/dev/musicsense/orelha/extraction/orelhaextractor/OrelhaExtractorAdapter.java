@@ -3,7 +3,7 @@ package dev.musicsense.orelha.extraction.orelhaextractor;
 import dev.musicsense.orelha.extraction.AudioExtractor;
 import dev.musicsense.orelha.extraction.ExtractionResult;
 import dev.musicsense.orelha.extraction.ExtractionResult.AudioInfo;
-import dev.musicsense.orelha.extraction.ExtractionResult.BassNoteEvent;
+import dev.musicsense.orelha.extraction.ExtractionResult.NoteEvent;
 import dev.musicsense.orelha.extraction.ExtractionResult.BeatEvent;
 import dev.musicsense.orelha.extraction.ExtractionResult.ChordEvent;
 import dev.musicsense.orelha.extraction.ExtractionResult.KeyEstimate;
@@ -52,7 +52,9 @@ public class OrelhaExtractorAdapter implements AudioExtractor {
                                 c.chromaLow(), null))
                         .toList(),
                 orEmpty(r.bassNotes()).stream()
-                        .map(n -> new BassNoteEvent(n.startS(), n.endS(), n.midi(), n.velocity())).toList(),
+                        .map(n -> new NoteEvent(n.startS(), n.endS(), n.midi(), n.velocity())).toList(),
+                orEmpty(r.vocalNotes()).stream()   // ausente antes do 0.5.0: lista vazia
+                        .map(n -> new NoteEvent(n.startS(), n.endS(), n.midi(), n.velocity())).toList(),
                 orEmpty(r.timbre()).stream()
                         .map(t -> new TimbreStat(t.stemModel(), t.stem(), t.centroidMean(), t.centroidStd(),
                                 t.flatnessMean(), t.rolloffP95(), t.rmsMean()))

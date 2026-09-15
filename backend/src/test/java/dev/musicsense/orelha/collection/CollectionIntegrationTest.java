@@ -12,7 +12,7 @@ import dev.musicsense.orelha.collection.CollectionService.Comparison;
 import dev.musicsense.orelha.extraction.AudioExtractor;
 import dev.musicsense.orelha.extraction.ExtractionResult;
 import dev.musicsense.orelha.extraction.ExtractionResult.AudioInfo;
-import dev.musicsense.orelha.extraction.ExtractionResult.BassNoteEvent;
+import dev.musicsense.orelha.extraction.ExtractionResult.NoteEvent;
 import dev.musicsense.orelha.extraction.ExtractionResult.ChordEvent;
 import dev.musicsense.orelha.extraction.ExtractionResult.KeyEstimate;
 import dev.musicsense.orelha.extraction.ExtractionResult.Provenance;
@@ -88,16 +88,17 @@ class CollectionIntegrationTest {
         return new ChordEvent(bd(start), bd(end), Chord.of(root, quality), new float[12], new float[12], null);
     }
 
-    private static BassNoteEvent bass(double start, double end, int midi) {
-        return new BassNoteEvent(bd(start), bd(end), midi, 100);
+    private static NoteEvent bass(double start, double end, int midi) {
+        return new NoteEvent(bd(start), bd(end), midi, 100);
     }
 
-    private static ExtractionResult result(int tonic, KeyMode mode, List<ChordEvent> chords, List<BassNoteEvent> bass,
+    private static ExtractionResult result(int tonic, KeyMode mode, List<ChordEvent> chords, List<NoteEvent> bass,
                                            float centroid) {
         return new ExtractionResult(new Provenance("stub", "0", Map.of()),
                 new AudioInfo(new BigDecimal("8.000"), 44100, new BigDecimal("-14.00")),
                 new KeyEstimate(tonic, mode, 0.9f), new Tempo(new BigDecimal("120.00"), "4/4"),
-                List.of(), chords, bass, List.of(new TimbreStat("htdemucs", "other", centroid, 10f, 0.1f, 3000f, 0.2f)),
+                List.of(), chords, bass, List.of(),
+                List.of(new TimbreStat("htdemucs", "other", centroid, 10f, 0.1f, 3000f, 0.2f)),
                 "/data/features/stub.parquet", Map.of());
     }
 
