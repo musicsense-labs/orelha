@@ -168,6 +168,21 @@ export class Timeline {
     return out;
   });
 
+  /** Nota da voz em execução (a mais forte, se várias se sobrepõem), com oitava: "E4". */
+  readonly currentVocalNote = computed(() => {
+    const t = this.currentTime();
+    let best: Note | null = null;
+    for (const n of this.vocalNotes.value() ?? []) {
+      if (n.startS > t) {
+        break;
+      }
+      if (t < n.endS && (best == null || (n.velocity ?? 0) > (best.velocity ?? 0))) {
+        best = n;
+      }
+    }
+    return best ? noteName(best.midi % 12) + (Math.floor(best.midi / 12) - 1) : null;
+  });
+
   /** Marcas de tempo a cada 30 s, cada uma na sua linha. */
   readonly ticks = computed(() => {
     const out: { seconds: number; row: number; x: number }[] = [];

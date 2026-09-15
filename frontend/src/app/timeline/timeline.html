@@ -140,6 +140,9 @@
       } @else {
         <span class="muted">Passe o mouse ou dê play: o segmento atual aparece aqui.</span>
       }
+      @if (currentVocalNote(); as v) {
+        <span class="vocal-now" title="nota da voz em execução (basic-pitch no stem de voz)">voz <b>{{ v }}</b></span>
+      }
     </div>
 
     <app-sections [trackId]="id()" [currentTime]="currentTime()" (seek)="seekTo($event)" />
