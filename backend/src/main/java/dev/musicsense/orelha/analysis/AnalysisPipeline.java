@@ -36,12 +36,15 @@ public class AnalysisPipeline {
     private final HarmonicNormalizer normalizer = new HarmonicNormalizer();
     private final PowerChordDetector powerChords;
     private final AudioLibrary library;
+    private final SectionService sections;
 
-    AnalysisPipeline(AnalysisRunRepository runs, EntityManager em, PowerChordDetector powerChords, AudioLibrary library) {
+    AnalysisPipeline(AnalysisRunRepository runs, EntityManager em, PowerChordDetector powerChords, AudioLibrary library,
+                     SectionService sections) {
         this.runs = runs;
         this.em = em;
         this.powerChords = powerChords;
         this.library = library;
+        this.sections = sections;
     }
 
     public record Input(String audioPath, String audioSha256) {
@@ -96,6 +99,8 @@ public class AnalysisPipeline {
             em.persist(keySegment);
             annotate(segments, keySegment, bassNotes);
         }
+        em.flush();
+        sections.derive(run);   // partes por repetição: independem da tonalidade, não re-derivam no override
 
         if (track.getCanonicalRun() == null) {
             track.setCanonicalRun(run);

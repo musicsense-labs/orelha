@@ -223,6 +223,44 @@ class AnalysisPipelineIntegrationTest {
                 .containsExactly("DIATONIC", "DIATONIC", "DIATONIC", "AMBIGUOUS");
         assertThat(relative.segments()).extracting(TimelineResponse.Segment::effectiveBassPc)
                 .containsExactly(9, 5, 7, 9);
+
+        // Partes: dois compassos sem repetição viram uma parte "A" só; a progressão segue a tonalidade preferida.
+        SectionsResponse derived = rest.getForObject("/api/tracks/" + track.id() + "/sections", SectionsResponse.class);
+        assertThat(derived.source()).isEqualTo(SectionSource.DERIVED);
+        assertThat(derived.parts()).hasSize(1);
+        SectionsResponse.Part a = derived.parts().get(0);
+        assertThat(a.label()).isEqualTo("A");
+        assertThat(a.startS()).isEqualByComparingTo("0.000");
+        assertThat(a.endS()).isEqualByComparingTo("8.000");
+        assertThat(a.repeats()).isEqualTo(1);
+        assertThat(a.chords()).extracting(SectionsResponse.Chord::degreeLabel).containsExactly("vi", "IV", "V", "III5");
+        assertThat(a.chords()).extracting(SectionsResponse.Chord::keyRelation)
+                .containsExactly("DIATONIC", "DIATONIC", "DIATONIC", "AMBIGUOUS");
+
+        // O dono divide e nomeia; a edição vence a derivação e a progressão respeita o corte.
+        ResponseEntity<SectionsResponse> edited = rest.exchange("/api/tracks/" + track.id() + "/sections",
+                org.springframework.http.HttpMethod.PUT,
+                new org.springframework.http.HttpEntity<>(List.of(
+                        new SectionController.SectionRequest(new BigDecimal("0.000"), new BigDecimal("4.000"), "intro", null, null),
+                        new SectionController.SectionRequest(new BigDecimal("4.000"), new BigDecimal("8.000"), "riff", null, 2))),
+                SectionsResponse.class);
+        assertThat(edited.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(edited.getBody().source()).isEqualTo(SectionSource.MANUAL);
+        assertThat(edited.getBody().parts()).extracting(SectionsResponse.Part::label).containsExactly("intro", "riff");
+        assertThat(edited.getBody().parts().get(0).chords()).extracting(SectionsResponse.Chord::degreeLabel)
+                .containsExactly("vi", "IV");
+        assertThat(edited.getBody().parts().get(1).chords()).extracting(SectionsResponse.Chord::degreeLabel)
+                .containsExactly("V", "III5");
+        assertThat(edited.getBody().parts().get(1).repeats()).isEqualTo(2);
+
+        // Re-derivar não apaga a edição; lista vazia no PUT volta à derivação.
+        assertThat(rest.postForObject("/api/tracks/" + track.id() + "/sections/derive", null, SectionsResponse.class).source())
+                .isEqualTo(SectionSource.MANUAL);
+        ResponseEntity<SectionsResponse> reverted = rest.exchange("/api/tracks/" + track.id() + "/sections",
+                org.springframework.http.HttpMethod.PUT, new org.springframework.http.HttpEntity<>(List.of()),
+                SectionsResponse.class);
+        assertThat(reverted.getBody().source()).isEqualTo(SectionSource.DERIVED);
+        assertThat(reverted.getBody().parts()).extracting(SectionsResponse.Part::label).containsExactly("A");
     }
 
     @Test
