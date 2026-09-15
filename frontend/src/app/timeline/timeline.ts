@@ -186,6 +186,18 @@ export class Timeline {
     this.seekTo(s.startS);
   }
 
+  togglePlay(): void {
+    const el = this.audio()?.nativeElement;
+    if (!el) {
+      return;
+    }
+    if (el.paused) {
+      void el.play().catch(() => undefined);
+    } else {
+      el.pause();
+    }
+  }
+
   onPlay(): void {
     this.playing.set(true);
     for (const ref of this.stemAudios()) {
@@ -233,7 +245,7 @@ export class Timeline {
     }
   }
 
-  private seekTo(seconds: number): void {
+  seekTo(seconds: number): void {
     const el = this.audio()?.nativeElement;
     if (el) {
       el.currentTime = seconds;   // dispara (seeked), que alinha stems e metrônomo

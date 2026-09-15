@@ -12,8 +12,18 @@
       </p>
     </div>
     <div class="player">
-      <audio #audio controls preload="metadata" [src]="'/api/tracks/' + t.id + '/audio'"
+      <!-- Sem controles nativos: mute e volume só existem no mixer, senão os dois brigam pelo mesmo elemento. -->
+      <audio #audio preload="metadata" [src]="'/api/tracks/' + t.id + '/audio'"
              (play)="onPlay()" (pause)="onPause()" (ended)="onPause()" (seeked)="onSeeked()"></audio>
+      <div class="transport">
+        <button type="button" class="play" (click)="togglePlay()" [title]="playing() ? 'pausar' : 'tocar'">
+          {{ playing() ? '❚❚' : '▶' }}
+        </button>
+        <span class="time">{{ formatTime(currentTime()) }}</span>
+        <input type="range" class="seek" min="0" [max]="duration()" step="0.1" [value]="currentTime()"
+               (input)="seekTo(+$any($event.target).value)" title="posição">
+        <span class="time">{{ formatTime(duration()) }}</span>
+      </div>
       <div class="mixer">
         <div class="channel">
           <button type="button" [class.on]="isAudible('mix')" (click)="toggle('mix')" title="a mixagem original; liga-la silencia os stems">mix</button>
