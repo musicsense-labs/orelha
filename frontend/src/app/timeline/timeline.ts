@@ -3,7 +3,7 @@ import {
 } from '@angular/core';
 import { httpResource } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
-import { Beat, Segment, Timeline as TimelineDto, Track } from '../api/models';
+import { Beat, Note, Segment, Timeline as TimelineDto, Track } from '../api/models';
 import { Metronome } from '../shared/metronome';
 import { Sections } from './sections';
 import {
@@ -41,6 +41,7 @@ export class Timeline {
   readonly timeline = httpResource<TimelineDto>(() => `/api/tracks/${this.id()}/timeline`);
   readonly stems = httpResource<string[]>(() => `/api/tracks/${this.id()}/stems`);
   readonly beats = httpResource<Beat[]>(() => `/api/tracks/${this.id()}/beats`);
+  readonly vocalNotes = httpResource<Note[]>(() => `/api/tracks/${this.id()}/vocal-notes`);
 
   private readonly audio = viewChild<ElementRef<HTMLAudioElement>>('audio');
   private readonly stemAudios = viewChildren<ElementRef<HTMLAudioElement>>('stemAudio');
@@ -57,9 +58,14 @@ export class Timeline {
 
   /** Largura lógica do SVG; o viewBox escala para a largura real. */
   readonly width = 1200;
+  /** Lanes: acordes (a mais alta), baixo (estreita: só a nota) e voz (piano roll). */
   readonly laneHeight = 44;
-  /** Altura de uma linha da timeline: duas lanes + eixo de tempo. */
-  readonly rowHeight = this.laneHeight * 2 + 30;
+  readonly bassLane = 22;
+  readonly vocalLane = 40;
+  readonly bassTop = this.laneHeight + 2;
+  readonly vocalTop = this.bassTop + this.bassLane + 2;
+  /** Altura de uma linha da timeline: as três lanes + eixo de tempo. */
+  readonly rowHeight = this.vocalTop + this.vocalLane + 30;
   /** Em quantas linhas a timeline quebra (preferência do visitante, guardada no navegador). */
   readonly rows = signal(readRows());
 
@@ -98,6 +104,7 @@ export class Timeline {
 
   /** Segundos por linha. */
   readonly rowSpan = computed(() => this.duration() / this.rows());
+  readonly rowIndexes = computed(() => Array.from({ length: this.rows() }, (_, i) => i));
 
   /** Segmentos recortados por linha: um pedaço por linha que o segmento atravessa. */
   readonly pieces = computed(() => {
@@ -118,6 +125,46 @@ export class Timeline {
         out.push({ key: s.seqNo + ':' + row, s, row, x, w });
       }
     }
+    return out;
+  });
+
+  /** Tessitura da voz nesta faixa (p5–p95 das notas), para o piano roll ocupar a lane inteira. */
+  readonly vocalRange = computed(() => {
+    const midis = (this.vocalNotes.value() ?? []).map((n) => n.midi).sort((a, b) => a - b);
+    if (midis.length === 0) {
+      return { low: 48, high: 72 };
+    }
+    const low = midis[Math.floor(midis.length * 0.05)];
+    const high = midis[Math.min(midis.length - 1, Math.floor(midis.length * 0.95))];
+    return high - low < 12 ? { low: low - 6, high: low + 6 } : { low, high };
+  });
+
+  /** Notas da voz recortadas por linha, já com a geometria do piano roll. */
+  readonly vocalPieces = computed(() => {
+    const span = this.rowSpan();
+    const rows = this.rows();
+    const { low, high } = this.vocalRange();
+    const step = this.vocalLane / (high - low + 1);
+    const out: { key: string; row: number; x: number; w: number; y: number; h: number; midi: number }[] = [];
+    (this.vocalNotes.value() ?? []).forEach((n, i) => {
+      const first = Math.min(rows - 1, Math.floor(n.startS / span));
+      const last = Math.min(rows - 1, Math.max(first, Math.ceil(n.endS / span) - 1));
+      const clamped = Math.min(high, Math.max(low, n.midi));
+      const y = this.vocalTop + (high - clamped) * step;
+      for (let row = first; row <= last; row++) {
+        const start = Math.max(n.startS, row * span);
+        const end = Math.min(n.endS, (row + 1) * span);
+        if (end <= start) {
+          continue;
+        }
+        out.push({
+          key: i + ':' + row, row, midi: n.midi,
+          x: ((start - row * span) / span) * this.width,
+          w: Math.max(((end - start) / span) * this.width, 1),
+          y, h: Math.max(step, 2),
+        });
+      }
+    });
     return out;
   });
 
@@ -320,6 +367,7 @@ export class Timeline {
   }
 
   protected readonly formatTime = formatTime;
+  protected readonly Math = Math;
   protected readonly noteName = noteName;
   protected readonly percent = percent;
 }

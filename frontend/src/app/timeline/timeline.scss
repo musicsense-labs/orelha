@@ -102,6 +102,9 @@
   .chord { font-weight: 600; }
   .degree { font-size: 10px; fill: #222; }
   .bass { font-size: 10px; fill: #333; }
+  .vocal-bg { fill: #f7f5f0; }
+  .vocal { fill: #5b6ee1; opacity: 0.85; }
+  .vocal:hover { fill: #2e3fb8; }
   .tick { font-size: 10px; fill: #666; }
   .segment:hover rect { filter: brightness(1.12); }
   .segment.active rect { stroke: #111; stroke-width: 1.5; }

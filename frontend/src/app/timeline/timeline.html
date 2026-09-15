@@ -76,7 +76,7 @@
 
     <!-- A timeline quebra em N linhas; cada linha cobre duration/N segundos e tem as mesmas lanes. -->
     <svg class="timeline" [attr.viewBox]="'0 0 ' + width + ' ' + (rowHeight * rows())" preserveAspectRatio="none"
-         [style.height.px]="130 * rows()" (mouseleave)="hovered.set(null)">
+         [style.height.px]="rowHeight * rows()" (mouseleave)="hovered.set(null)">
       @for (p of pieces(); track p.key) {
         <g [attr.transform]="'translate(0 ' + rowHeight * p.row + ')'">
           <!-- lane 1: acordes com grau -->
@@ -89,33 +89,43 @@
               <text [attr.x]="p.x + p.w / 2" y="34" text-anchor="middle" class="degree">{{ p.s.degreeLabel ?? '' }}</text>
             }
           </g>
-          <!-- lane 2: baixo efetivo (stem) -->
+          <!-- lane 2: baixo efetivo (stem), estreita: só a nota -->
           <g class="segment" (click)="seek(p.s)" (mouseenter)="hovered.set(p.s)">
-            <rect [attr.x]="p.x" [attr.y]="laneHeight + 4" [attr.width]="p.w" [attr.height]="laneHeight - 8"
+            <rect [attr.x]="p.x" [attr.y]="bassTop" [attr.width]="p.w" [attr.height]="bassLane"
                   [attr.fill]="p.s.effectiveBassPc == null ? '#eee' : (p.s.effectiveBassPc === p.s.rootPc ? '#cfd8dc' : '#ffcc80')"
                   stroke="#fff" stroke-width="0.5" />
             @if (p.w >= 22) {
-              <text [attr.x]="p.x + p.w / 2" [attr.y]="laneHeight + 27" text-anchor="middle" class="bass">
+              <text [attr.x]="p.x + p.w / 2" [attr.y]="bassTop + 15" text-anchor="middle" class="bass">
                 {{ noteName(p.s.effectiveBassPc) }}
               </text>
             }
           </g>
         </g>
       }
+      <!-- lane 3: voz (piano roll das notas do stem de voz; vazia em runs anteriores ao extrator 0.5.0) -->
+      @for (r of rowIndexes(); track r) {
+        <rect x="0" [attr.y]="rowHeight * r + vocalTop" [attr.width]="width" [attr.height]="vocalLane" class="vocal-bg" />
+      }
+      @for (n of vocalPieces(); track n.key) {
+        <rect class="vocal" [attr.x]="n.x" [attr.y]="rowHeight * n.row + n.y" [attr.width]="n.w" [attr.height]="n.h"
+              (click)="seekTo(n.x / width * rowSpan() + n.row * rowSpan())">
+          <title>{{ noteName(n.midi % 12) }}{{ Math.floor(n.midi / 12) - 1 }}</title>
+        </rect>
+      }
       <!-- downbeats: início de cada compasso -->
       @for (b of downbeats(); track b.beatNo) {
         <line class="downbeat" [attr.x1]="xIn(b.timeS)" [attr.x2]="xIn(b.timeS)"
-              [attr.y1]="rowHeight * rowOf(b.timeS)" [attr.y2]="rowHeight * rowOf(b.timeS) + laneHeight * 2" />
+              [attr.y1]="rowHeight * rowOf(b.timeS)" [attr.y2]="rowHeight * rowOf(b.timeS) + vocalTop + vocalLane" />
       }
       <!-- eixo de tempo, por linha -->
       @for (t of ticks(); track t.seconds) {
-        <line [attr.x1]="t.x" [attr.x2]="t.x" [attr.y1]="rowHeight * t.row + laneHeight * 2"
-              [attr.y2]="rowHeight * t.row + laneHeight * 2 + 6" stroke="#888" />
-        <text [attr.x]="t.x" [attr.y]="rowHeight * t.row + laneHeight * 2 + 20" class="tick">{{ formatTime(t.seconds) }}</text>
+        <line [attr.x1]="t.x" [attr.x2]="t.x" [attr.y1]="rowHeight * t.row + vocalTop + vocalLane"
+              [attr.y2]="rowHeight * t.row + vocalTop + vocalLane + 6" stroke="#888" />
+        <text [attr.x]="t.x" [attr.y]="rowHeight * t.row + vocalTop + vocalLane + 20" class="tick">{{ formatTime(t.seconds) }}</text>
       }
       <!-- playhead -->
       <line class="playhead" [attr.x1]="playheadX()" [attr.x2]="playheadX()"
-            [attr.y1]="rowHeight * rowOf(currentTime())" [attr.y2]="rowHeight * rowOf(currentTime()) + laneHeight * 2 + 8" />
+            [attr.y1]="rowHeight * rowOf(currentTime())" [attr.y2]="rowHeight * rowOf(currentTime()) + vocalTop + vocalLane + 8" />
     </svg>
 
     <div class="detail card">

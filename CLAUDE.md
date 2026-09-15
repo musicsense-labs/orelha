@@ -223,6 +223,12 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
   Título.ext`; nome `Artista - Título` separa o artista (a UI troca se a ordem for a outra);
   sufixos `(youtube)`/`[Official Video]` no fim do nome são descartados. Artista/álbum reusados por nome (case-insensitive); mesmo SHA-256 é
   pulado; número já ocupado no álbum vira null. Uma transação por faixa (`TransactionTemplate`).
+- **Voz → MIDI (0.5.0, 2026-09-15)**: basic-pitch também no stem de voz (80–1100 Hz), `vocal_notes` no
+  JSON, tabela `vocal_note` (V8), `GET /api/tracks/{id}/vocal-notes` do run canônico. Runs anteriores
+  não têm voz; o dono escolheu re-analisar o acervo inteiro em vez de um backfill só da voz.
+- **Re-análise herda overrides**: ao concluir um run novo, a tonalidade MANUAL e as partes MANUAL do run
+  canônico anterior são copiadas para ele (a tonalidade re-anota). O canônico continua sendo escolha do
+  dono (`PUT /canonical-run`).
 - Fixture do contract test = resposta real do container sobre `app/testaudio.py` (WAV sintético,
   Am F C G). Nunca gravar áudio com direitos autorais no repositório.
 
@@ -253,9 +259,11 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
   distribuições; **timeline em SVG de template Angular** dirigida por signals, sem D3: cada segmento
   é um `<rect>` num `@for`, o playhead é um `computed` sobre `currentTime`, e `<audio>` nativo faz o
   playback (`GET /api/tracks/{id}/audio`, com `Range` para seek). Clicar num segmento faz seek.
-  A timeline quebra em 1–4 **linhas** (seletor na legenda, preferência em `localStorage`): cada linha
-  cobre `duration/N` segundos com as mesmas lanes; segmentos que cruzam a borda são recortados em
-  pedaços (`pieces`), downbeats, eixo de tempo e playhead caem na linha do seu instante.
+  Três lanes: acordes (44 px), baixo efetivo (22 px, só a nota) e voz (40 px, piano roll das notas
+  de `vocal-notes` na tessitura p5–p95 da faixa; vazia em runs sem voz). A timeline quebra em 1–4
+  **linhas** (seletor na legenda, preferência em `localStorage`): cada linha cobre `duration/N`
+  segundos com as mesmas lanes; segmentos e notas que cruzam a borda são recortados em pedaços,
+  downbeats, eixo de tempo e playhead caem na linha do seu instante.
 - `httpResource` para toda leitura; sem store, sem NgRx. Rotas: `/` (acervo), `/tracks/:id`
   (timeline), `/artists/:id` e `/albums/:id` (perfil), `/compare`. Parâmetros e `data` de rota
   viram inputs (`withComponentInputBinding`).

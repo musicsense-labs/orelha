@@ -139,6 +139,14 @@ export interface PedalPassage {
   bassPc: number;
 }
 
+/** Nota MIDI transcrita de um stem (voz). */
+export interface Note {
+  startS: number;
+  endS: number;
+  midi: number;
+  velocity: number | null;
+}
+
 export type SectionSource = 'DERIVED' | 'EXTRACTOR' | 'MANUAL';
 
 /** Um acorde da progressão de uma parte (um ciclo), já anotado pela tonalidade preferida. */
