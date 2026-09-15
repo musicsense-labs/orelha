@@ -1,7 +1,7 @@
 {
   "extractor": {
     "name": "riff-extractor",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "models": {
       "chords": "chordmini/btc_model_best.pth@aa6e3a8",
       "beats": "madmom/RNNDownBeat+DBN@27f032e",
@@ -9,7 +9,8 @@
       "stems": "demucs/htdemucs@4.1.0",
       "bass": "basic-pitch/icassp2022@0.4.0",
       "timbre": "librosa@0.10.1",
-      "loudness": "pyloudnorm@0.1.1"
+      "loudness": "pyloudnorm@0.1.1",
+      "stems_codec": "opus@128k"
     }
   },
   "audio": {
@@ -176,18 +177,18 @@
         0.0964
       ],
       "chroma_low": [
-        0.9504,
-        0.4882,
-        0.0565,
-        0.3809,
-        0.7354,
-        0.3938,
-        0.033,
-        0.0433,
-        0.3538,
-        0.7152,
-        0.3733,
-        0.4876
+        0.9352,
+        0.4839,
+        0.0537,
+        0.3804,
+        0.7358,
+        0.3968,
+        0.0298,
+        0.0407,
+        0.3893,
+        0.788,
+        0.4097,
+        0.48
       ]
     },
     {
@@ -209,18 +210,18 @@
         0.0534
       ],
       "chroma_low": [
-        0.5973,
-        0.3042,
-        0.0325,
-        0.0363,
-        0.4778,
-        0.9372,
-        0.3678,
-        0.0356,
-        0.3533,
-        0.7056,
-        0.3625,
-        0.2956
+        0.5955,
+        0.3049,
+        0.0313,
+        0.0395,
+        0.483,
+        0.9381,
+        0.365,
+        0.0376,
+        0.3486,
+        0.6921,
+        0.3561,
+        0.294
       ]
     },
     {
@@ -243,17 +244,17 @@
       ],
       "chroma_low": [
         0.8519,
-        0.4415,
-        0.0657,
-        0.4837,
-        0.9394,
-        0.4878,
-        0.376,
-        0.7466,
-        0.3878,
-        0.0417,
-        0.0394,
-        0.4187
+        0.4424,
+        0.0649,
+        0.4804,
+        0.9329,
+        0.4846,
+        0.3844,
+        0.7645,
+        0.3983,
+        0.0427,
+        0.0412,
+        0.421
       ]
     },
     {
@@ -275,18 +276,18 @@
         0.2451
       ],
       "chroma_low": [
-        0.493,
-        0.3809,
-        0.7415,
-        0.4053,
-        0.0776,
-        0.0637,
-        0.3048,
-        0.6158,
-        0.3336,
-        0.0647,
-        0.4639,
-        0.9208
+        0.4869,
+        0.384,
+        0.752,
+        0.4101,
+        0.0809,
+        0.0674,
+        0.3146,
+        0.6378,
+        0.3449,
+        0.0639,
+        0.4551,
+        0.9082
       ]
     },
     {
@@ -308,18 +309,18 @@
         0.0927
       ],
       "chroma_low": [
-        0.9547,
-        0.492,
-        0.0405,
-        0.3721,
-        0.7275,
-        0.3815,
-        0.0265,
-        0.0398,
-        0.3678,
-        0.7429,
-        0.3838,
-        0.4854
+        0.9522,
+        0.4914,
+        0.0422,
+        0.3762,
+        0.7295,
+        0.3805,
+        0.027,
+        0.0378,
+        0.3362,
+        0.682,
+        0.3517,
+        0.4857
       ]
     },
     {
@@ -341,18 +342,18 @@
         0.0492
       ],
       "chroma_low": [
-        0.5967,
-        0.3063,
-        0.0256,
-        0.0401,
-        0.4664,
-        0.9209,
-        0.3516,
-        0.0355,
-        0.3499,
-        0.7066,
-        0.3598,
-        0.2985
+        0.5926,
+        0.3035,
+        0.0247,
+        0.0353,
+        0.4652,
+        0.9216,
+        0.3498,
+        0.0373,
+        0.3524,
+        0.7093,
+        0.3602,
+        0.2967
       ]
     },
     {
@@ -374,18 +375,18 @@
         0.2255
       ],
       "chroma_low": [
-        0.8713,
-        0.4557,
-        0.0701,
-        0.4799,
-        0.9341,
-        0.4864,
-        0.3799,
-        0.7445,
-        0.392,
-        0.0478,
-        0.045,
-        0.4344
+        0.8782,
+        0.46,
+        0.072,
+        0.4786,
+        0.932,
+        0.4848,
+        0.3797,
+        0.7415,
+        0.3867,
+        0.0457,
+        0.0462,
+        0.4385
       ]
     },
     {
@@ -407,18 +408,18 @@
         0.2443
       ],
       "chroma_low": [
-        0.477,
-        0.3869,
-        0.7864,
-        0.4058,
-        0.0358,
-        0.039,
-        0.3825,
-        0.7755,
-        0.3962,
-        0.0384,
-        0.4622,
-        0.9351
+        0.4696,
+        0.3798,
+        0.7764,
+        0.4013,
+        0.0349,
+        0.0385,
+        0.3926,
+        0.7974,
+        0.4074,
+        0.0368,
+        0.4568,
+        0.9231
       ]
     }
   ],
@@ -427,52 +428,52 @@
       "start_s": 0.012,
       "end_s": 0.488,
       "midi": 45,
-      "velocity": 94
+      "velocity": 96
     },
     {
       "start_s": 0.499,
-      "end_s": 0.998,
+      "end_s": 1.01,
       "midi": 45,
-      "velocity": 94
+      "velocity": 95
     },
     {
-      "start_s": 0.998,
+      "start_s": 1.01,
       "end_s": 1.498,
       "midi": 45,
-      "velocity": 94
+      "velocity": 95
     },
     {
       "start_s": 1.498,
-      "end_s": 2.01,
+      "end_s": 1.998,
       "midi": 45,
-      "velocity": 92
+      "velocity": 93
     },
     {
-      "start_s": 2.01,
+      "start_s": 1.998,
       "end_s": 2.509,
       "midi": 41,
-      "velocity": 98
+      "velocity": 97
     },
     {
       "start_s": 2.509,
       "end_s": 3.008,
       "midi": 41,
-      "velocity": 97
+      "velocity": 98
     },
     {
       "start_s": 3.008,
-      "end_s": 3.519,
+      "end_s": 3.507,
       "midi": 41,
       "velocity": 98
     },
     {
-      "start_s": 3.519,
-      "end_s": 4.02,
+      "start_s": 3.507,
+      "end_s": 4.008,
       "midi": 41,
       "velocity": 94
     },
     {
-      "start_s": 4.008,
+      "start_s": 3.996,
       "end_s": 4.507,
       "midi": 36,
       "velocity": 97
@@ -484,31 +485,31 @@
       "velocity": 95
     },
     {
-      "start_s": 5.018,
-      "end_s": 5.575,
-      "midi": 36,
-      "velocity": 97
-    },
-    {
-      "start_s": 5.506,
-      "end_s": 5.645,
+      "start_s": 5.006,
+      "end_s": 5.146,
       "midi": 48,
-      "velocity": 35
+      "velocity": 38
     },
     {
-      "start_s": 5.575,
-      "end_s": 5.995,
+      "start_s": 5.018,
+      "end_s": 5.517,
       "midi": 36,
-      "velocity": 94
+      "velocity": 96
+    },
+    {
+      "start_s": 5.517,
+      "end_s": 6.006,
+      "midi": 36,
+      "velocity": 92
     },
     {
       "start_s": 5.995,
       "end_s": 6.494,
       "midi": 43,
-      "velocity": 93
+      "velocity": 94
     },
     {
-      "start_s": 6.366,
+      "start_s": 6.389,
       "end_s": 6.61,
       "midi": 55,
       "velocity": 38
@@ -523,19 +524,19 @@
       "start_s": 7.005,
       "end_s": 7.504,
       "midi": 43,
-      "velocity": 94
+      "velocity": 93
     },
     {
       "start_s": 7.504,
       "end_s": 7.981,
       "midi": 43,
-      "velocity": 92
+      "velocity": 91
     },
     {
-      "start_s": 7.981,
-      "end_s": 8.504,
+      "start_s": 7.958,
+      "end_s": 8.492,
       "midi": 45,
-      "velocity": 95
+      "velocity": 92
     },
     {
       "start_s": 8.504,
@@ -545,12 +546,12 @@
     },
     {
       "start_s": 9.003,
-      "end_s": 9.514,
+      "end_s": 9.502,
       "midi": 45,
       "velocity": 95
     },
     {
-      "start_s": 9.514,
+      "start_s": 9.502,
       "end_s": 10.014,
       "midi": 45,
       "velocity": 92
@@ -559,16 +560,16 @@
       "start_s": 10.003,
       "end_s": 10.502,
       "midi": 41,
-      "velocity": 98
+      "velocity": 97
     },
     {
       "start_s": 10.502,
-      "end_s": 11.001,
+      "end_s": 11.013,
       "midi": 41,
       "velocity": 98
     },
     {
-      "start_s": 11.001,
+      "start_s": 11.013,
       "end_s": 11.512,
       "midi": 41,
       "velocity": 98
@@ -577,13 +578,19 @@
       "start_s": 11.512,
       "end_s": 12.012,
       "midi": 41,
-      "velocity": 94
+      "velocity": 97
     },
     {
       "start_s": 12.001,
       "end_s": 12.512,
       "midi": 36,
-      "velocity": 99
+      "velocity": 97
+    },
+    {
+      "start_s": 12.001,
+      "end_s": 12.152,
+      "midi": 48,
+      "velocity": 35
     },
     {
       "start_s": 12.512,
@@ -592,10 +599,16 @@
       "velocity": 96
     },
     {
+      "start_s": 12.999,
+      "end_s": 13.162,
+      "midi": 48,
+      "velocity": 41
+    },
+    {
       "start_s": 13.011,
       "end_s": 13.51,
       "midi": 36,
-      "velocity": 97
+      "velocity": 96
     },
     {
       "start_s": 13.51,
@@ -604,16 +617,16 @@
       "velocity": 94
     },
     {
-      "start_s": 13.987,
+      "start_s": 13.999,
       "end_s": 14.498,
       "midi": 43,
-      "velocity": 92
+      "velocity": 94
     },
     {
       "start_s": 14.498,
       "end_s": 15.009,
       "midi": 43,
-      "velocity": 95
+      "velocity": 94
     },
     {
       "start_s": 15.009,
@@ -622,55 +635,61 @@
       "velocity": 94
     },
     {
+      "start_s": 15.415,
+      "end_s": 15.59,
+      "midi": 55,
+      "velocity": 42
+    },
+    {
       "start_s": 15.508,
       "end_s": 15.891,
       "midi": 43,
-      "velocity": 98
+      "velocity": 97
     }
   ],
   "timbre": [
     {
       "stem_model": "htdemucs",
       "stem": "bass",
-      "centroid_mean": 212.8774,
-      "centroid_std": 33.9383,
+      "centroid_mean": 211.3626,
+      "centroid_std": 35.3526,
       "flatness_mean": 0,
       "rolloff_p95": 452.1973,
-      "rms_mean": 0.1483
+      "rms_mean": 0.1479
     },
     {
       "stem_model": "htdemucs",
       "stem": "drums",
-      "centroid_mean": 3752.7403,
-      "centroid_std": 480.1189,
-      "flatness_mean": 0.0059,
-      "rolloff_p95": 19186.084,
+      "centroid_mean": 3763.5959,
+      "centroid_std": 510.9794,
+      "flatness_mean": 0.0061,
+      "rolloff_p95": 19250.6836,
       "rms_mean": 0.0004
     },
     {
       "stem_model": "htdemucs",
       "stem": "other",
-      "centroid_mean": 658.2638,
-      "centroid_std": 115.1218,
+      "centroid_mean": 654.1046,
+      "centroid_std": 116.9697,
       "flatness_mean": 0,
       "rolloff_p95": 1658.0566,
-      "rms_mean": 0.0939
+      "rms_mean": 0.0946
     },
     {
       "stem_model": "htdemucs",
       "stem": "vocals",
-      "centroid_mean": 3523.7721,
-      "centroid_std": 425.3281,
-      "flatness_mean": 0.0061,
-      "rolloff_p95": 18929.8389,
+      "centroid_mean": 3532.5103,
+      "centroid_std": 437.2148,
+      "flatness_mean": 0.0069,
+      "rolloff_p95": 18865.2393,
       "rms_mean": 0.0002
     }
   ],
   "features_path": "/data/features/32d62a27cd1d2a97592672224d9830097432305b552e5044027dee65c8c5fb15.parquet",
   "stems": {
-    "bass": "/data/stems/32d62a27cd1d2a97592672224d9830097432305b552e5044027dee65c8c5fb15/bass.wav",
-    "drums": "/data/stems/32d62a27cd1d2a97592672224d9830097432305b552e5044027dee65c8c5fb15/drums.wav",
-    "other": "/data/stems/32d62a27cd1d2a97592672224d9830097432305b552e5044027dee65c8c5fb15/other.wav",
-    "vocals": "/data/stems/32d62a27cd1d2a97592672224d9830097432305b552e5044027dee65c8c5fb15/vocals.wav"
+    "bass": "/data/stems/32d62a27cd1d2a97592672224d9830097432305b552e5044027dee65c8c5fb15/bass.ogg",
+    "drums": "/data/stems/32d62a27cd1d2a97592672224d9830097432305b552e5044027dee65c8c5fb15/drums.ogg",
+    "other": "/data/stems/32d62a27cd1d2a97592672224d9830097432305b552e5044027dee65c8c5fb15/other.ogg",
+    "vocals": "/data/stems/32d62a27cd1d2a97592672224d9830097432305b552e5044027dee65c8c5fb15/vocals.ogg"
   }
 }

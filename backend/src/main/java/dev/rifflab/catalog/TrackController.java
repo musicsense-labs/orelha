@@ -209,8 +209,11 @@ public class TrackController {
         if (name.endsWith(".flac")) {
             return MediaType.parseMediaType("audio/flac");
         }
-        if (name.endsWith(".ogg")) {
+        if (name.endsWith(".ogg") || name.endsWith(".opus")) {
             return MediaType.parseMediaType("audio/ogg");
+        }
+        if (name.endsWith(".m4a") || name.endsWith(".aac")) {
+            return MediaType.parseMediaType("audio/mp4");
         }
         return MediaType.APPLICATION_OCTET_STREAM;
     }
