@@ -6,7 +6,8 @@
   border-bottom: 1px solid var(--line);
   background: var(--panel);
 
-  .brand { font-weight: 700; font-size: 1.1rem; margin-right: 0.5rem; }
+  .brand { font-weight: 700; font-size: 1.1rem; margin-right: 0.5rem; display: inline-flex; align-items: center; gap: 0.4rem; }
+  .brand img { display: block; }
   a { color: var(--ink); text-decoration: none; }
   a.active:not(.brand) { border-bottom: 2px solid var(--accent); }
   .org { margin-left: auto; font-size: 0.8rem; color: var(--muted); }
