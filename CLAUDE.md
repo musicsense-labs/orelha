@@ -3,9 +3,11 @@
 Responda e comente em **pt-BR**. Código, identificadores e mensagens de commit em inglês.
 
 **Orelha** é o produto (o app que se abre); **Music Sense Labs** é a organização: namespace
-`dev.musicsense`, GitHub, docs. Decidido em 2026-09-15. O mascote é o Orelha: um cachorro de
-orelha em pé, virado para frente, diante de uma vitrola (homenagem ao Nipper da HMV/RCA, em outra
-pose e com outro aparelho; nunca usar "hound", já é o SoundHound). Não reintroduzir "riff-lab" nem
+`dev.musicsense`, GitHub, docs. Decidido em 2026-09-15. O mascote é o Orelha, inspirado na
+cachorra Kali do dono: sentado de frente, a orelha do lado direito da imagem em pé, vitrola
+quadrada aberta ao lado, sem caixas de som (homenagem ao Nipper da HMV/RCA, em outra pose e com
+outro aparelho; nunca usar "hound", já é o SoundHound). Rascunho da marca em Claude Design
+("Marca Orelha"); fonte dos quadros no scratchpad da sessão de 2026-09-15. Não reintroduzir "riff-lab" nem
 "corpus" (hoje "Acervo" na UI e `collection` no código). Pasta (`C:\Users\dfcsa\orelha`), banco,
 usuário e volume do Postgres migraram para `orelha` em 2026-09-15 (backup `pg_dump` feito antes;
 o volume antigo `riff-lab_pgdata` foi mantido como cópia).
