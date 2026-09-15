@@ -1,4 +1,4 @@
-package dev.rifflab.corpus;
+package dev.rifflab.collection;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -7,16 +7,16 @@ import java.util.Map;
 import java.util.TreeMap;
 
 /**
- * Métricas de corpus sobre segmentos anotados. Java puro, sem I/O.
+ * Métricas do acervo sobre segmentos anotados. Java puro, sem I/O.
  * Toda distribuição sai em duas unidades (P3): por contagem de segmento e por duração.
  */
-public final class CorpusMetrics {
+public final class CollectionMetrics {
 
     /** Grafia neutra dos 12 graus para agregados que misturam tonalidades maiores e menores. */
     public static final List<String> DEGREE_LABELS = List.of(
             "I", "♭II", "II", "♭III", "III", "IV", "♯IV/♭V", "V", "♭VI", "VI", "♭VII", "VII");
 
-    private CorpusMetrics() {
+    private CollectionMetrics() {
     }
 
     /** Fração por contagem de segmentos e por duração. */

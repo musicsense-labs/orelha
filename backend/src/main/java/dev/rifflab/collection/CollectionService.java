@@ -1,11 +1,11 @@
-package dev.rifflab.corpus;
+package dev.rifflab.collection;
 
 import dev.rifflab.catalog.AlbumRepository;
 import dev.rifflab.catalog.ArtistRepository;
 import dev.rifflab.catalog.Track;
 import dev.rifflab.catalog.TrackRepository;
 import dev.rifflab.common.NotFoundException;
-import dev.rifflab.corpus.CorpusMetrics.PedalPassage;
+import dev.rifflab.collection.CollectionMetrics.PedalPassage;
 import dev.rifflab.harmony.HarmonicNormalizer;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
-public class CorpusService {
+public class CollectionService {
 
     public record Distances(double transitionJsBits, double degreeL1, double keyRelationL1) {
     }
@@ -24,9 +24,9 @@ public class CorpusService {
     private final ArtistRepository artists;
     private final AlbumRepository albums;
     private final TrackRepository tracks;
-    private final CorpusQueries queries;
+    private final CollectionQueries queries;
 
-    CorpusService(ArtistRepository artists, AlbumRepository albums, TrackRepository tracks, CorpusQueries queries) {
+    CollectionService(ArtistRepository artists, AlbumRepository albums, TrackRepository tracks, CollectionQueries queries) {
         this.artists = artists;
         this.albums = albums;
         this.tracks = tracks;
@@ -50,15 +50,15 @@ public class CorpusService {
         HarmonicProfile pa = artistProfile(a);
         HarmonicProfile pb = artistProfile(b);
         return new Comparison(pa, pb, new Distances(
-                CorpusMetrics.jensenShannonBits(pa.transitions().flattened(), pb.transitions().flattened()),
-                CorpusMetrics.l1(pa.degrees().bySegment(), pb.degrees().bySegment()),
-                CorpusMetrics.l1(pa.keyRelations(), pb.keyRelations())));
+                CollectionMetrics.jensenShannonBits(pa.transitions().flattened(), pb.transitions().flattened()),
+                CollectionMetrics.l1(pa.degrees().bySegment(), pb.degrees().bySegment()),
+                CollectionMetrics.l1(pa.keyRelations(), pb.keyRelations())));
     }
 
     @Transactional(readOnly = true)
     public List<PedalPassage> artistPedalPassages(Long artistId, String relation) {
         artists.findById(artistId).orElseThrow(() -> new NotFoundException("Artist", artistId));
-        return CorpusMetrics.pedalPassages(annotated(tracks.findByAlbumArtistId(artistId)), relation);
+        return CollectionMetrics.pedalPassages(annotated(tracks.findByAlbumArtistId(artistId)), relation);
     }
 
     private HarmonicProfile profile(String scope, Long id, String name, List<Track> scopeTracks) {
@@ -67,9 +67,9 @@ public class CorpusService {
         int analysedTracks = (int) segments.stream().mapToLong(AnnotatedSegment::trackId).distinct().count();
         double duration = segments.stream().mapToDouble(AnnotatedSegment::duration).sum();
         return new HarmonicProfile(scope, id, name, analysedTracks, segments.size(), duration,
-                CorpusMetrics.keyRelationShares(segments), CorpusMetrics.nonDiatonic(segments),
-                CorpusMetrics.DEGREE_LABELS, CorpusMetrics.degrees(segments), CorpusMetrics.transitions(segments),
-                CorpusMetrics.relationShares(segments), queries.timbreByAlbum(ids));
+                CollectionMetrics.keyRelationShares(segments), CollectionMetrics.nonDiatonic(segments),
+                CollectionMetrics.DEGREE_LABELS, CollectionMetrics.degrees(segments), CollectionMetrics.transitions(segments),
+                CollectionMetrics.relationShares(segments), queries.timbreByAlbum(ids));
     }
 
     private List<AnnotatedSegment> annotated(List<Track> scopeTracks) {

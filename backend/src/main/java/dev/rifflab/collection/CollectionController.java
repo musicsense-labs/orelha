@@ -1,7 +1,7 @@
-package dev.rifflab.corpus;
+package dev.rifflab.collection;
 
-import dev.rifflab.corpus.CorpusMetrics.PedalPassage;
-import dev.rifflab.corpus.CorpusService.Comparison;
+import dev.rifflab.collection.CollectionMetrics.PedalPassage;
+import dev.rifflab.collection.CollectionService.Comparison;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -11,34 +11,34 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/corpus")
-public class CorpusController {
+@RequestMapping("/api/collection")
+public class CollectionController {
 
-    private final CorpusService corpus;
+    private final CollectionService collection;
 
-    CorpusController(CorpusService corpus) {
-        this.corpus = corpus;
+    CollectionController(CollectionService collection) {
+        this.collection = collection;
     }
 
     @GetMapping("/artists/{id}/profile")
     HarmonicProfile artistProfile(@PathVariable Long id) {
-        return corpus.artistProfile(id);
+        return collection.artistProfile(id);
     }
 
     @GetMapping("/albums/{id}/profile")
     HarmonicProfile albumProfile(@PathVariable Long id) {
-        return corpus.albumProfile(id);
+        return collection.albumProfile(id);
     }
 
     @GetMapping("/compare")
     Comparison compare(@RequestParam Long a, @RequestParam Long b) {
-        return corpus.compareArtists(a, b);
+        return collection.compareArtists(a, b);
     }
 
     /** Passagens em que o baixo fica parado enquanto a harmonia se move pela relação dada. */
     @GetMapping("/artists/{id}/pedal-passages")
     List<PedalPassage> pedalPassages(@PathVariable Long id,
                                      @RequestParam(defaultValue = "CHROMATIC_MEDIANT") String relation) {
-        return corpus.artistPedalPassages(id, relation);
+        return collection.artistPedalPassages(id, relation);
     }
 }

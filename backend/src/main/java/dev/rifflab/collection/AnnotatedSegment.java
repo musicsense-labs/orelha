@@ -1,10 +1,10 @@
-package dev.rifflab.corpus;
+package dev.rifflab.collection;
 
 import dev.rifflab.harmony.ChordQuality;
 
 /**
- * Um segmento de acorde já anotado, como sai da query de corpus (run canônico, tonalidade preferida).
- * Entrada pura de {@link CorpusMetrics}; a ordem esperada é (trackId, seqNo).
+ * Um segmento de acorde já anotado, como sai da query do acervo (run canônico, tonalidade preferida).
+ * Entrada pura de {@link CollectionMetrics}; a ordem esperada é (trackId, seqNo).
  */
 public record AnnotatedSegment(long trackId, String trackTitle, int seqNo, double startS, double endS,
                                Integer rootPc, ChordQuality quality, Integer degreeInterval, String degreeLabel,

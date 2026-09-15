@@ -1,4 +1,4 @@
-package dev.rifflab.corpus;
+package dev.rifflab.collection;
 
 import dev.rifflab.analysis.AnalysisWorker;
 import dev.rifflab.catalog.AlbumRequest;
@@ -7,8 +7,8 @@ import dev.rifflab.catalog.ArtistRequest;
 import dev.rifflab.catalog.ArtistResponse;
 import dev.rifflab.catalog.TrackRequest;
 import dev.rifflab.catalog.TrackResponse;
-import dev.rifflab.corpus.CorpusMetrics.PedalPassage;
-import dev.rifflab.corpus.CorpusService.Comparison;
+import dev.rifflab.collection.CollectionMetrics.PedalPassage;
+import dev.rifflab.collection.CollectionService.Comparison;
 import dev.rifflab.extraction.AudioExtractor;
 import dev.rifflab.extraction.ExtractionResult;
 import dev.rifflab.extraction.ExtractionResult.AudioInfo;
@@ -55,7 +55,7 @@ import static org.assertj.core.api.Assertions.within;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = "rifflab.worker.enabled=false")
 @Testcontainers
-class CorpusIntegrationTest {
+class CollectionIntegrationTest {
 
     @Container
     @ServiceConnection
@@ -142,7 +142,7 @@ class CorpusIntegrationTest {
         long sabbath = registerArtist("Sabbath", "Paranoid", 1970, "sabbath-1.wav", "sabbath-2.wav");
         long beatles = registerArtist("Beatles", "Please", 1963, "beatles-1.wav");
 
-        HarmonicProfile ps = rest.getForObject("/api/corpus/artists/" + sabbath + "/profile", HarmonicProfile.class);
+        HarmonicProfile ps = rest.getForObject("/api/collection/artists/" + sabbath + "/profile", HarmonicProfile.class);
         assertThat(ps.tracks()).isEqualTo(2);
         assertThat(ps.segments()).isEqualTo(8);
         assertThat(ps.durationS()).isEqualTo(16.0);
@@ -158,19 +158,19 @@ class CorpusIntegrationTest {
         assertThat(ps.timbreByAlbum().get(0).tracks()).isEqualTo(2);
         assertThat(ps.timbreByAlbum().get(0).centroidMean()).isEqualTo(2500.0);
 
-        HarmonicProfile pb = rest.getForObject("/api/corpus/artists/" + beatles + "/profile", HarmonicProfile.class);
+        HarmonicProfile pb = rest.getForObject("/api/collection/artists/" + beatles + "/profile", HarmonicProfile.class);
         assertThat(pb.nonDiatonic().bySegment()).isZero();
         assertThat(pb.relations()).doesNotContainKey("CHROMATIC_MEDIANT");
 
-        Comparison cmp = rest.getForObject("/api/corpus/compare?a=" + sabbath + "&b=" + beatles, Comparison.class);
+        Comparison cmp = rest.getForObject("/api/collection/compare?a=" + sabbath + "&b=" + beatles, Comparison.class);
         assertThat(cmp.distances().transitionJsBits()).isBetween(0.3, 1.0);   // I→♭VI vs I→IV não se sobrepõem
         assertThat(cmp.distances().degreeL1()).isCloseTo(0.5, within(1e-9));  // ♭VI (0.25) troca por IV (0.25)
         assertThat(cmp.distances().keyRelationL1()).isCloseTo(0.5, within(1e-9));
-        Comparison reverse = rest.getForObject("/api/corpus/compare?a=" + beatles + "&b=" + sabbath, Comparison.class);
+        Comparison reverse = rest.getForObject("/api/collection/compare?a=" + beatles + "&b=" + sabbath, Comparison.class);
         assertThat(reverse.distances().transitionJsBits()).isEqualTo(cmp.distances().transitionJsBits());
 
         ResponseEntity<List<PedalPassage>> pedals = rest.exchange(
-                "/api/corpus/artists/" + sabbath + "/pedal-passages", HttpMethod.GET, null,
+                "/api/collection/artists/" + sabbath + "/pedal-passages", HttpMethod.GET, null,
                 new ParameterizedTypeReference<>() {
                 });
         assertThat(pedals.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -180,7 +180,7 @@ class CorpusIntegrationTest {
         assertThat(pedals.getBody().get(0).bassPc()).isZero();
         assertThat(pedals.getBody().get(0).endS()).isEqualTo(4.0);
 
-        HarmonicProfile album = rest.getForObject("/api/corpus/albums/" + ps.timbreByAlbum().get(0).albumId() + "/profile",
+        HarmonicProfile album = rest.getForObject("/api/collection/albums/" + ps.timbreByAlbum().get(0).albumId() + "/profile",
                 HarmonicProfile.class);
         assertThat(album.scope()).isEqualTo("album");
         assertThat(album.segments()).isEqualTo(8);
@@ -188,11 +188,11 @@ class CorpusIntegrationTest {
 
     @Test
     void unknownArtistIsNotFoundAndEmptyArtistIsEmpty() {
-        assertThat(rest.getForEntity("/api/corpus/artists/999999/profile", String.class).getStatusCode())
+        assertThat(rest.getForEntity("/api/collection/artists/999999/profile", String.class).getStatusCode())
                 .isEqualTo(HttpStatus.NOT_FOUND);
         long empty = rest.postForEntity("/api/artists", new ArtistRequest("Nobody", null, null), ArtistResponse.class)
                 .getBody().id();
-        HarmonicProfile p = rest.getForObject("/api/corpus/artists/" + empty + "/profile", HarmonicProfile.class);
+        HarmonicProfile p = rest.getForObject("/api/collection/artists/" + empty + "/profile", HarmonicProfile.class);
         assertThat(p.tracks()).isZero();
         assertThat(p.segments()).isZero();
         assertThat(p.transitions().total()).isZero();

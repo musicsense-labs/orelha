@@ -46,7 +46,7 @@ public class Track {
     @Column(name = "sample_rate")
     private Integer sampleRate;
 
-    /** Run escolhido para as queries de corpus; null enquanto nenhum run terminou. */
+    /** Run escolhido para as queries do acervo; null enquanto nenhum run terminou. */
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "canonical_run_id")
     private AnalysisRun canonicalRun;

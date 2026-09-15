@@ -83,7 +83,7 @@ public class TrackService {
         return queue.enqueue(track, extractor.name());
     }
 
-    /** Escolhe qual run responde pela faixa nas queries de corpus; precisa estar DONE e ser dela. */
+    /** Escolhe qual run responde pela faixa nas queries do acervo; precisa estar DONE e ser dela. */
     @Transactional
     public Track setCanonicalRun(Long trackId, Long runId) {
         Track track = tracks.findById(trackId).orElseThrow(() -> new NotFoundException("Track", trackId));

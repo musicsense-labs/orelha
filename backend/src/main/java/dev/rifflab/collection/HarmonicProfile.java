@@ -1,8 +1,8 @@
-package dev.rifflab.corpus;
+package dev.rifflab.collection;
 
-import dev.rifflab.corpus.CorpusMetrics.DegreeDistribution;
-import dev.rifflab.corpus.CorpusMetrics.Share;
-import dev.rifflab.corpus.CorpusMetrics.TransitionMatrix;
+import dev.rifflab.collection.CollectionMetrics.DegreeDistribution;
+import dev.rifflab.collection.CollectionMetrics.Share;
+import dev.rifflab.collection.CollectionMetrics.TransitionMatrix;
 
 import java.util.List;
 import java.util.Map;

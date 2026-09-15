@@ -1,6 +1,6 @@
-package dev.rifflab.corpus;
+package dev.rifflab.collection;
 
-import dev.rifflab.corpus.HarmonicProfile.AlbumTimbre;
+import dev.rifflab.collection.HarmonicProfile.AlbumTimbre;
 import dev.rifflab.harmony.ChordQuality;
 import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Repository;
@@ -10,11 +10,11 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * As duas queries do corpus. Só entram runs canônicos; a tonalidade de cada run é a preferida
+ * As duas queries do acervo. Só entram runs canônicos; a tonalidade de cada run é a preferida
  * (MANUAL > DERIVED > EXTRACTOR, a mais recente) — a mesma regra da timeline.
  */
 @Repository
-class CorpusQueries {
+class CollectionQueries {
 
     private static final String ANNOTATED_SEGMENTS = """
             WITH preferred_key AS (
@@ -49,7 +49,7 @@ class CorpusQueries {
 
     private final EntityManager em;
 
-    CorpusQueries(EntityManager em) {
+    CollectionQueries(EntityManager em) {
         this.em = em;
     }
 
