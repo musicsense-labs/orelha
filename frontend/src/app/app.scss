@@ -9,6 +9,7 @@
   .brand { font-weight: 700; font-size: 1.1rem; margin-right: 0.5rem; }
   a { color: var(--ink); text-decoration: none; }
   a.active:not(.brand) { border-bottom: 2px solid var(--accent); }
+  .org { margin-left: auto; font-size: 0.8rem; color: var(--muted); }
 }
 
 main {
