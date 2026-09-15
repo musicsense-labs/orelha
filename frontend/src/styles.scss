@@ -41,3 +41,16 @@ button.primary:disabled { opacity: 0.45; cursor: default; }
 .badge.fail { background: #f8d7da; color: #7a1c24; }
 .upload label.inline { flex-direction: row; align-items: center; gap: 0.4rem; }
 .page-head span { display: flex; gap: 0.5rem; }
+.row.between { justify-content: space-between; }
+.row.between span { display: flex; gap: 0.5rem; align-items: center; }
+button:not(.primary):not(.mini) { font: inherit; padding: 0.3rem 0.8rem; border-radius: 6px; border: 1px solid var(--line); background: #fff; cursor: pointer; }
+.scroll { overflow-x: auto; }
+table.preview { font-size: 0.85rem; }
+table.preview td { white-space: nowrap; padding: 0.15rem 0.35rem; }
+table.preview input { font: inherit; padding: 0.15rem 0.3rem; border: 1px solid var(--line); border-radius: 4px; width: 11rem; }
+table.preview input.short { width: 4rem; }
+table.preview td.file { max-width: 18rem; overflow: hidden; text-overflow: ellipsis; font-size: 0.78rem; }
+table.preview tr.off td { opacity: 0.45; }
+table.preview tr.dup td.file { color: #7a1c24; }
+button.mini { font: inherit; font-size: 0.75rem; padding: 0 0.35rem; margin-left: 0.15rem; border: 1px solid var(--line); border-radius: 4px; background: #fafafa; cursor: pointer; color: var(--muted); }
+button.mini:hover { color: var(--ink); }

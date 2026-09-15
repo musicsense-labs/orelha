@@ -1,47 +1,95 @@
 <div class="card upload">
-  <h2>Importar pasta <small class="muted">artista, álbum, ano, título e número vêm das tags do arquivo</small></h2>
+  <h2>Importar pasta <small class="muted">artista, álbum, ano, título e número vêm das tags; você revisa antes de confirmar</small></h2>
 
-  <div class="row">
-    <label>Pasta (pelo navegador)
-      <input type="file" webkitdirectory multiple (change)="onFolder($event)">
-    </label>
-    <span class="muted">{{ audioFiles().length }} arquivo(s) de áudio</span>
-    <button type="button" class="primary" [disabled]="audioFiles().length === 0 || running()" (click)="uploadFolder()">
-      {{ running() && progress() ? 'enviando ' + progress()!.sent + '/' + progress()!.total + '…' : 'enviar pasta' }}
-    </button>
-  </div>
+  @if (!hasPreview()) {
+    <div class="row">
+      <label>Pasta (pelo navegador)
+        <input type="file" webkitdirectory multiple (change)="onFolder($event)">
+      </label>
+      <span class="muted">{{ audioFiles().length }} arquivo(s) de áudio</span>
+      <button type="button" class="primary" [disabled]="audioFiles().length === 0 || running()" (click)="stageFolder()">
+        {{ running() && progress() ? 'enviando ' + progress()!.sent + '/' + progress()!.total + '…' : 'enviar e revisar' }}
+      </button>
+    </div>
 
-  <div class="row">
-    <label>ou caminho no servidor
-      <input [value]="serverPath()" (input)="serverPath.set($any($event.target).value)" size="48"
-             placeholder="C:\Users\...\Music\Black Sabbath">
-    </label>
-    <label class="inline"><input type="checkbox" [checked]="recursive()" (change)="recursive.set($any($event.target).checked)"> subpastas</label>
-    <button type="button" class="primary" [disabled]="!serverPath().trim() || running()" (click)="importServerPath()">
-      {{ running() && !progress() ? 'importando…' : 'importar do servidor' }}
-    </button>
-  </div>
-  <p class="muted small-note">Pelo navegador os arquivos são copiados para <code>data/audio/</code>; pelo caminho do servidor ficam onde estão. Arquivos já importados (mesmo conteúdo) são pulados.</p>
+    <div class="row">
+      <label>ou caminho no servidor
+        <input [value]="serverPath()" (input)="serverPath.set($any($event.target).value)" size="48"
+               placeholder="C:\Users\...\Music\Black Sabbath">
+      </label>
+      <label class="inline"><input type="checkbox" [checked]="recursive()" (change)="recursive.set($any($event.target).checked)"> subpastas</label>
+      <button type="button" class="primary" [disabled]="!serverPath().trim() || running()" (click)="previewServerPath()">
+        {{ running() && !progress() ? 'lendo…' : 'revisar' }}
+      </button>
+    </div>
+    <p class="muted small-note">Pelo navegador os arquivos são copiados para <code>data/audio/</code> ao confirmar; pelo caminho do servidor ficam onde estão. Arquivos já importados (mesmo conteúdo) vêm marcados como duplicata.</p>
+  }
 
   @if (error()) { <p class="error">{{ error() }}</p> }
 
-  @if (report(); as r) {
-    <p><strong>{{ r.imported.length }}</strong> importada(s), <strong>{{ r.skipped.length }}</strong> pulada(s) — a análise de cada faixa entra na fila.</p>
-    @if (r.imported.length) {
-      <table>
-        <thead><tr><th>arquivo</th><th>artista</th><th>álbum</th><th>título</th><th class="num">nº</th><th>origem</th></tr></thead>
+  @if (hasPreview()) {
+    <div class="row between">
+      <span><strong>{{ selectedCount() }}</strong> de {{ rows().length }} selecionada(s)
+        · <a href (click)="$event.preventDefault(); toggleAll(true)">todas</a>
+        · <a href (click)="$event.preventDefault(); toggleAll(false)">nenhuma</a></span>
+      <span>
+        <button type="button" (click)="discard()" [disabled]="running()">cancelar</button>
+        <button type="button" class="primary" [disabled]="selectedCount() === 0 || running()" (click)="confirm()">
+          {{ running() ? 'importando…' : 'confirmar e analisar' }}
+        </button>
+      </span>
+    </div>
+    <div class="scroll">
+      <table class="preview">
+        <thead>
+          <tr><th></th><th>arquivo</th><th>artista</th><th>álbum</th><th>ano</th><th>título</th><th>nº</th><th>origem</th></tr>
+        </thead>
         <tbody>
-          @for (x of r.imported; track x.trackId) {
-            <tr><td class="muted">{{ x.file }}</td><td>{{ x.artist }}</td><td>{{ x.album }}</td><td>{{ x.title }}</td>
-                <td class="num">{{ x.trackNo ?? '' }}</td><td><span class="badge" [class.ok]="x.fromTags">{{ x.fromTags ? 'tags' : 'pasta/nome' }}</span></td></tr>
+          @for (r of rows(); track r.key; let i = $index) {
+            <tr [class.off]="!r.include" [class.dup]="r.duplicate">
+              <td><input type="checkbox" [checked]="r.include" (change)="update(i, { include: $any($event.target).checked })"></td>
+              <td class="muted file" [title]="r.file">{{ r.file }}</td>
+              <td>
+                <input [value]="r.artist" (input)="update(i, { artist: $any($event.target).value })">
+                <button type="button" class="mini" title="aplicar este artista a todas as selecionadas" (click)="applyToAll('artist', i)">⇊</button>
+                <button type="button" class="mini" title="trocar artista ↔ título" (click)="swapArtistTitle(i)">↔</button>
+              </td>
+              <td>
+                <input [value]="r.album" (input)="update(i, { album: $any($event.target).value })">
+                <button type="button" class="mini" title="aplicar este álbum a todas as selecionadas" (click)="applyToAll('album', i)">⇊</button>
+              </td>
+              <td>
+                <input type="number" class="short" [value]="r.year ?? ''" (input)="update(i, { year: numberOrNull($any($event.target).value) })">
+                <button type="button" class="mini" title="aplicar este ano a todas as selecionadas" (click)="applyToAll('year', i)">⇊</button>
+              </td>
+              <td><input [value]="r.title" (input)="update(i, { title: $any($event.target).value })"></td>
+              <td><input type="number" class="short" min="1" [value]="r.trackNo ?? ''" (input)="update(i, { trackNo: numberOrNull($any($event.target).value) })"></td>
+              <td>
+                @if (r.duplicate) { <span class="badge fail">duplicata</span> }
+                @else { <span class="badge" [class.ok]="r.fromTags">{{ r.fromTags ? 'tags' : 'pasta/nome' }}</span> }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (report(); as rep) {
+    <p><strong>{{ rep.imported.length }}</strong> importada(s), <strong>{{ rep.skipped.length }}</strong> pulada(s) — a análise de cada faixa entra na fila.</p>
+    @if (rep.imported.length) {
+      <table>
+        <tbody>
+          @for (x of rep.imported; track x.trackId) {
+            <tr><td class="muted">{{ x.file }}</td><td>{{ x.artist }}</td><td>{{ x.album }}</td><td>{{ x.title }}</td><td class="num">{{ x.trackNo ?? '' }}</td></tr>
           }
         </tbody>
       </table>
     }
-    @if (r.skipped.length) {
+    @if (rep.skipped.length) {
       <table>
         <tbody>
-          @for (x of r.skipped; track x.file) {
+          @for (x of rep.skipped; track x.file) {
             <tr><td class="muted">{{ x.file }}</td><td>{{ x.reason }}</td></tr>
           }
         </tbody>
