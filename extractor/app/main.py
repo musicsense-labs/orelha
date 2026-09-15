@@ -29,7 +29,9 @@ async def analyze_endpoint(file: UploadFile = File(...), audio_sha256: str = For
     if len(audio_sha256) != 64:
         raise HTTPException(status_code=400, detail="audio_sha256 must be 64 hex chars")
     job_dir = Path(tempfile.mkdtemp(prefix=audio_sha256[:12] + "-", dir=WORK_DIR))
-    audio_path = job_dir / (Path(file.filename or "audio").name or "audio")
+    # Nome neutro: títulos com pontos ("N.I.B..mp3"), espaços ou unicode já derrubaram o ChordMini.
+    suffix = Path(file.filename or "").suffix.lower() or ".audio"
+    audio_path = job_dir / f"audio{suffix}"
     try:
         with audio_path.open("wb") as out:
             shutil.copyfileobj(file.file, out)

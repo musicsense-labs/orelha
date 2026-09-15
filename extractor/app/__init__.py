@@ -1,6 +1,6 @@
 """riff-extractor: extração de features de áudio para o riff-lab. Sem teoria musical aqui."""
 
-VERSION = "0.3.0"
+VERSION = "0.4.0"
 
 MODELS = {
     "chords": "chordmini/btc_model_best.pth@aa6e3a8",

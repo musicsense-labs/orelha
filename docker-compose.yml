@@ -20,6 +20,8 @@ services:
     build: ./extractor
     image: riff-extractor
     container_name: riff-lab-extractor
+    environment:
+      STEM_FORMAT: opus          # opus | aac | flac | wav (stems persistidos para o player)
     ports:
       - "8000:8000"
     volumes:

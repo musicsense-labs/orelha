@@ -31,7 +31,7 @@ teoria musical** — rótulos Harte, tempos, vetores. O Spring Boot interpreta.
   "timbre": [{"stem_model": "htdemucs", "stem": "bass", "centroid_mean": 412.5, "centroid_std": 88.1,
               "flatness_mean": 0.02, "rolloff_p95": 1800.0, "rms_mean": 0.12}],
   "features_path": "/data/features/<sha256>.parquet",
-  "stems": {"bass": "/data/stems/<sha256>/bass.wav", "drums": "...", "other": "...", "vocals": "..."}
+  "stems": {"bass": "/data/stems/<sha256>/bass.ogg", "drums": "...", "other": "...", "vocals": "..."}
 }
 ```
 
@@ -40,7 +40,12 @@ evidência para decidir power chord sem o 5º harmônico da distorção.
 
 `features_path` e `stems` apontam para os volumes do container (`/data/features`, `/data/stems`),
 bind-mounted no host pelo compose (`./data`): o backend guarda os caminhos e serve os stems para o
-player multi-stem.
+player multi-stem. Os stems persistidos são codificados com ffmpeg no formato `STEM_FORMAT`
+(`opus` a 128 kbps em Ogg por padrão, ~11× menor que WAV; `aac`, `flac` e `wav` também valem);
+as análises por stem (baixo→MIDI, chroma_low, timbre) usam o WAV temporário, sem perda. A
+proveniência registra `models.stems_codec`. Para converter stems antigos sem reanalisar:
+`docker exec riff-lab-extractor python -m app.convert_stems` e atualize `analysis_run.stems`
+com o mapeamento impresso.
 
 ## Build e smoke test
 

@@ -26,10 +26,12 @@ def recognize_chords(audio_path: Path, out_dir: Path) -> list[dict]:
         "--min_segment_duration", "0.5",
         "--smooth_predictions",
     ]
-    subprocess.run(cmd, cwd=CHORDMINI_DIR, check=True, capture_output=True, text=True)
+    run = subprocess.run(cmd, cwd=CHORDMINI_DIR, check=True, capture_output=True, text=True)
     labs = sorted(out_dir.rglob("*.lab"))
     if not labs:
-        raise RuntimeError(f"ChordMini produced no .lab file in {out_dir}")
+        # O script engole erros por arquivo e sai com 0: a causa real está na saída dele.
+        tail = "\n".join((run.stdout + "\n" + run.stderr).strip().splitlines()[-8:])
+        raise RuntimeError(f"ChordMini produced no .lab file in {out_dir}; script output:\n{tail}")
     return parse_lab(labs[0])
 
 
