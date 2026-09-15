@@ -5,6 +5,7 @@ import { httpResource } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 import { Beat, Segment, Timeline as TimelineDto, Track } from '../api/models';
 import { Metronome } from '../shared/metronome';
+import { Sections } from './sections';
 import {
   KEY_RELATION_COLORS, KEY_RELATION_ORDER, chordName, formatTime, keyName, noteName, percent,
 } from '../shared/music';
@@ -20,7 +21,7 @@ import {
  */
 @Component({
   selector: 'app-timeline',
-  imports: [RouterLink],
+  imports: [RouterLink, Sections],
   templateUrl: './timeline.html',
   styleUrl: './timeline.scss',
 })

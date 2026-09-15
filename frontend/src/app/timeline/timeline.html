@@ -123,5 +123,7 @@
         <span class="muted">Passe o mouse ou dê play: o segmento atual aparece aqui.</span>
       }
     </div>
+
+    <app-sections [trackId]="id()" [currentTime]="currentTime()" (seek)="seekTo($event)" />
   }
 }

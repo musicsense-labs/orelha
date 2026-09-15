@@ -1,0 +1,50 @@
+@if (parts().length > 0) {
+  <section class="sections card">
+    <header>
+      <h2>Partes</h2>
+      <span class="muted small">
+        @switch (source()) {
+          @case ('MANUAL') { editadas por você }
+          @case ('EXTRACTOR') { do extrator }
+          @default { por repetição harmônica — clique no nome para renomear }
+        }
+      </span>
+      @if (source() === 'MANUAL') {
+        <button type="button" class="link" (click)="revert()" [disabled]="saving()">voltar à derivação</button>
+      }
+      @if (error(); as e) { <span class="error">{{ e }}</span> }
+    </header>
+
+    @for (p of parts(); track p.id; let i = $index) {
+      <div class="part" [class.current]="p.id === currentId()">
+        <div class="head">
+          @if (editing() === p.id) {
+            <input #name type="text" class="name" [value]="p.label" maxlength="64" autofocus
+                   (keydown.enter)="rename(p, name.value)" (keydown.escape)="editing.set(null)"
+                   (blur)="rename(p, name.value)">
+          } @else {
+            <button type="button" class="name" (click)="editing.set(p.id)" title="renomear">{{ p.label }}</button>
+          }
+          <button type="button" class="link time" (click)="seek.emit(p.startS)" title="ir para o início da parte">
+            {{ formatTime(p.startS) }}–{{ formatTime(p.endS) }}
+          </button>
+          @if (i > 0) {
+            <button type="button" class="link" (click)="mergeWithPrevious(i)" [disabled]="saving()"
+                    title="juntar com a parte anterior">⤴ juntar</button>
+          }
+        </div>
+        <div class="progression">
+          @for (c of p.chords; track c.startS) {
+            <button type="button" class="chord" [style.background]="color(c)" (click)="seek.emit(c.startS)"
+                    [title]="(c.degreeLabel ?? '—') + ' · ' + (c.keyRelation ?? '—') + ' · ' + formatTime(c.startS)">
+              {{ chord(c) }}
+            </button>
+          }
+          @if (p.repeats > 1) { <span class="repeats">×{{ p.repeats }}</span> }
+        </div>
+      </div>
+    }
+  </section>
+} @else if (sections.isLoading()) {
+  <p class="muted">Carregando partes…</p>
+}

@@ -138,3 +138,42 @@ export interface PedalPassage {
   relation: string;
   bassPc: number;
 }
+
+export type SectionSource = 'DERIVED' | 'EXTRACTOR' | 'MANUAL';
+
+/** Um acorde da progressão de uma parte (um ciclo), já anotado pela tonalidade preferida. */
+export interface SectionChord {
+  startS: number;
+  endS: number;
+  rootPc: number | null;
+  quality: ChordQuality;
+  bassPc: number | null;
+  degreeLabel: string | null;
+  keyRelation: KeyRelation | null;
+}
+
+export interface SectionPart {
+  id: number;
+  label: string;
+  startS: number;
+  endS: number;
+  cycleEndS: number;
+  repeats: number;
+  chords: SectionChord[];
+}
+
+export interface Sections {
+  trackId: number;
+  runId: number | null;
+  source: SectionSource | null;
+  parts: SectionPart[];
+}
+
+/** O que o PUT /sections recebe: a lista inteira, como editada. */
+export interface SectionRequest {
+  startS: number;
+  endS: number;
+  label: string;
+  cycleEndS?: number | null;
+  repeats?: number | null;
+}

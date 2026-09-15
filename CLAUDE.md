@@ -275,6 +275,11 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
   de `/api/tracks` a cada 5 s enquanto houver run QUEUED/RUNNING; badges na fila/analisando…/falhou.
   Cada faixa tem **reprocessar** (`POST /api/tracks/{id}/analyze`): destacado quando falhou, `↻`
   nas demais; o run anterior é mantido e o canônico só muda por escolha do dono.
+- **Partes** (`timeline/sections`): abaixo do acorde atual, uma linha por parte com nome, tempo, a
+  progressão de um ciclo em cifras coloridas pelo eixo A e "×N"; clicar na cifra ou no tempo faz seek;
+  a parte em execução fica destacada. Clicar no nome renomeia, "juntar" funde com a anterior; toda
+  edição manda a lista inteira no PUT (vira MANUAL) e "voltar à derivação" manda lista vazia. Sem
+  edição de início/fim na UI por enquanto (backlog: arrastar bordas na timeline).
 - **Nomes de arquivo com `..`** ("N.I.B..mp3"): o guarda de path traversal do staging descarta
   segmentos `..`, nunca substitui a sequência dentro de um nome (bug corrigido em 2026-09-15:
   virava `N.I.B..b_mp3` e o ChordMini não reconhecia a extensão).
