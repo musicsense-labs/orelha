@@ -1,7 +1,7 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: riff-lab-postgres
+    container_name: orelha-postgres
     environment:
       POSTGRES_DB: rifflab
       POSTGRES_USER: rifflab
@@ -18,8 +18,8 @@ services:
 
   extractor:
     build: ./extractor
-    image: riff-extractor
-    container_name: riff-lab-extractor
+    image: orelha-extractor
+    container_name: orelha-extractor
     environment:
       STEM_FORMAT: opus          # opus | aac | flac | wav (stems persistidos para o player)
     ports:

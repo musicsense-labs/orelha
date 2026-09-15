@@ -50,7 +50,7 @@ def analyze(audio_path: Path, audio_sha256: str, work_dir: Path) -> dict:
     timbre = timbre_summaries(stems, "htdemucs", features_path)
 
     return {
-        "extractor": {"name": "riff-extractor", "version": VERSION,
+        "extractor": {"name": "orelha-extractor", "version": VERSION,
                       "models": {**MODELS, "stems_codec": codec_label()}},
         "audio": {"duration_s": round(duration_s, 3), "sample_rate": int(sr), "integrated_lufs": round(lufs, 2)},
         "key": key,

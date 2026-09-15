@@ -1,4 +1,4 @@
-# riff-extractor
+# orelha-extractor
 
 Camada [1] da arquitetura: recebe áudio, devolve JSON. Modelos de terceiros e DSP; **nenhuma
 teoria musical** — rótulos Harte, tempos, vetores. O Spring Boot interpreta.
@@ -20,7 +20,7 @@ teoria musical** — rótulos Harte, tempos, vetores. O Spring Boot interpreta.
 
 ```json
 {
-  "extractor": {"name": "riff-extractor", "version": "0.1.0", "models": {"chords": "...", "...": "..."}},
+  "extractor": {"name": "orelha-extractor", "version": "0.1.0", "models": {"chords": "...", "...": "..."}},
   "audio": {"duration_s": 32.0, "sample_rate": 44100, "integrated_lufs": -14.2},
   "key": {"tonic_pc": 9, "mode": "minor", "confidence": 0.71},
   "tempo": {"bpm": 120.0, "time_signature": "4/4"},
@@ -44,14 +44,14 @@ player multi-stem. Os stems persistidos são codificados com ffmpeg no formato `
 (`opus` a 128 kbps em Ogg por padrão, ~11× menor que WAV; `aac`, `flac` e `wav` também valem);
 as análises por stem (baixo→MIDI, chroma_low, timbre) usam o WAV temporário, sem perda. A
 proveniência registra `models.stems_codec`. Para converter stems antigos sem reanalisar:
-`docker exec riff-lab-extractor python -m app.convert_stems` e atualize `analysis_run.stems`
+`docker exec orelha-extractor python -m app.convert_stems` e atualize `analysis_run.stems`
 com o mapeamento impresso.
 
 ## Build e smoke test
 
 ```bash
-docker build -t riff-extractor extractor/
-docker run --rm -v "$PWD/extractor/out:/out" riff-extractor python -m app.testaudio /out/progression.wav
-docker run --rm -p 8000:8000 riff-extractor
+docker build -t orelha-extractor extractor/
+docker run --rm -v "$PWD/extractor/out:/out" orelha-extractor python -m app.testaudio /out/progression.wav
+docker run --rm -p 8000:8000 orelha-extractor
 curl -F file=@extractor/out/progression.wav -F audio_sha256=$(sha256sum extractor/out/progression.wav | cut -d' ' -f1) http://localhost:8000/analyze
 ```

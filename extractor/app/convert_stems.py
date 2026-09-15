@@ -1,6 +1,6 @@
 """Converte stems já persistidos (WAV de runs anteriores) para STEM_FORMAT, sem reanalisar.
 
-    docker exec riff-lab-extractor python -m app.convert_stems
+    docker exec orelha-extractor python -m app.convert_stems
 
 Imprime um JSON {caminho_antigo: caminho_novo}; o backend precisa atualizar analysis_run.stems com
 esse mapeamento (ver README). Os WAVs são apagados após a conversão bem-sucedida.

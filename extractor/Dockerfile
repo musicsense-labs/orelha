@@ -1,9 +1,9 @@
-# riff-extractor — camada de extração "burra": modelos de terceiros + DSP, zero teoria musical.
+# orelha-extractor — camada de extração "burra": modelos de terceiros + DSP, zero teoria musical.
 # Devolve JSON com rótulos Harte, tempos, chroma e descritores; nunca graus ou funções.
 FROM python:3.10-slim
 
 ENV PIP_NO_CACHE_DIR=1 PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
-    CHORDMINI_DIR=/opt/chordmini FEATURES_DIR=/data/features STEMS_DIR=/data/stems WORK_DIR=/tmp/riff-extractor
+    CHORDMINI_DIR=/opt/chordmini FEATURES_DIR=/data/features STEMS_DIR=/data/stems WORK_DIR=/tmp/orelha-extractor
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends build-essential git ffmpeg libsndfile1 \

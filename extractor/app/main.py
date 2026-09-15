@@ -11,11 +11,11 @@ from . import MODELS, VERSION
 from .pipeline import analyze
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
-log = logging.getLogger("riff-extractor")
+log = logging.getLogger("orelha-extractor")
 
-WORK_DIR = Path(os.environ.get("WORK_DIR", "/tmp/riff-extractor"))
+WORK_DIR = Path(os.environ.get("WORK_DIR", "/tmp/orelha-extractor"))
 
-app = FastAPI(title="riff-extractor", version=VERSION)
+app = FastAPI(title="orelha-extractor", version=VERSION)
 
 
 @app.get("/health")

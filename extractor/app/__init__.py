@@ -1,4 +1,4 @@
-"""riff-extractor: extração de features de áudio para o riff-lab. Sem teoria musical aqui."""
+"""orelha-extractor: extração de features de áudio para o Orelha. Sem teoria musical aqui."""
 
 VERSION = "0.4.0"
 
