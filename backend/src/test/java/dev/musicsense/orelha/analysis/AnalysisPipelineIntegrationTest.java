@@ -280,5 +280,13 @@ class AnalysisPipelineIntegrationTest {
         assertThat(switched.getBody().canonicalRunId()).isEqualTo(secondRun);
         assertThat(rest.getForObject("/api/tracks/" + trackId + "/timeline", TimelineResponse.class).runId())
                 .isEqualTo(secondRun);
+
+        // Apagar a faixa leva os runs e tudo que deriva deles (V5: ON DELETE CASCADE).
+        ResponseEntity<Void> deleted = rest.exchange("/api/tracks/" + trackId, org.springframework.http.HttpMethod.DELETE,
+                null, Void.class);
+        assertThat(deleted.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(rest.getForEntity("/api/tracks/" + trackId, String.class).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(rest.getForEntity("/api/analysis/runs/" + canonical, String.class).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(rest.getForEntity("/api/analysis/runs/" + secondRun, String.class).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 }
