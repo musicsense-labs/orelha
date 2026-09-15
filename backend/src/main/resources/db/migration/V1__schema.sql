@@ -1,4 +1,4 @@
--- orelha — schema inicial.
+-- riff-lab — schema inicial.
 -- Convenções: pitch class (pc) = 0..11 com C = 0; tempos em segundos (NUMERIC(9,3)).
 -- Dado BRUTO (o que o extrator devolveu) e dado DERIVADO (o que o HarmonicNormalizer
 -- calculou) nunca ficam na mesma tabela: chord_segment é bruto, harmonic_annotation é derivado.
