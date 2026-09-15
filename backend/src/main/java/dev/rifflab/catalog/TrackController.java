@@ -2,6 +2,7 @@ package dev.rifflab.catalog;
 
 import dev.rifflab.analysis.AnalysisRun;
 import dev.rifflab.analysis.AnalysisRunRepository;
+import dev.rifflab.analysis.BeatRepository;
 import dev.rifflab.common.NotFoundException;
 import dev.rifflab.extraction.DataPaths;
 import jakarta.validation.Valid;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -40,14 +42,16 @@ public class TrackController {
     private final DataPaths dataPaths;
     private final AnalysisRunRepository runs;
     private final ImportService importer;
+    private final BeatRepository beats;
 
     TrackController(TrackRepository tracks, TrackService service, DataPaths dataPaths, AnalysisRunRepository runs,
-                    ImportService importer) {
+                    ImportService importer, BeatRepository beats) {
         this.tracks = tracks;
         this.service = service;
         this.dataPaths = dataPaths;
         this.runs = runs;
         this.importer = importer;
+        this.beats = beats;
     }
 
     private TrackResponse response(Track track) {
@@ -144,6 +148,22 @@ public class TrackController {
             throw new NotFoundException("Audio of track", id);
         }
         return audioResponse(path);
+    }
+
+    public record BeatResponse(BigDecimal timeS, int beatNo, Integer barNo, boolean downbeat) {
+    }
+
+    /** Beats e downbeats do run canônico: a grade do metrônomo e das barras da timeline. */
+    @GetMapping("/{id}/beats")
+    @Transactional(readOnly = true)
+    List<BeatResponse> beats(@PathVariable Long id) {
+        AnalysisRun run = find(id).getCanonicalRun();
+        if (run == null) {
+            return List.of();
+        }
+        return beats.findByRunIdOrderByBeatNo(run.getId()).stream()
+                .map(b -> new BeatResponse(b.getTimeS(), b.getBeatNo(), b.getBarNo(), b.isDownbeat()))
+                .toList();
     }
 
     /** Nomes dos stems disponíveis no run canônico (vazio para runs anteriores ao extrator 0.3.0). */

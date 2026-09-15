@@ -179,6 +179,17 @@ class AnalysisPipelineIntegrationTest {
         assertThat(timeline.segments().get(0).endS()).isEqualByComparingTo("2.000");   // Am fundido
         assertThat(timeline.key().source()).isEqualTo(KeySource.EXTRACTOR);
 
+        // Beats do run canônico, com compasso contado a partir do primeiro downbeat.
+        ResponseEntity<List<dev.rifflab.catalog.TrackController.BeatResponse>> beats = rest.exchange(
+                "/api/tracks/" + track.id() + "/beats", org.springframework.http.HttpMethod.GET, null,
+                new org.springframework.core.ParameterizedTypeReference<>() {
+                });
+        assertThat(beats.getBody()).hasSize(5);
+        assertThat(beats.getBody()).extracting(dev.rifflab.catalog.TrackController.BeatResponse::barNo)
+                .containsExactly(1, 1, 1, 1, 2);
+        assertThat(beats.getBody()).extracting(dev.rifflab.catalog.TrackController.BeatResponse::downbeat)
+                .containsExactly(true, false, false, false, true);
+
         // Stems do run canônico: só os que existem no host são servidos.
         ResponseEntity<List<String>> stems = rest.exchange("/api/tracks/" + track.id() + "/stems",
                 org.springframework.http.HttpMethod.GET, null,
