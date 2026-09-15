@@ -1,9 +1,7 @@
 package dev.musicsense.orelha.harmony;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -14,15 +12,24 @@ import java.util.Objects;
  * o acorde de cada compasso é o que o ocupa (≥ {@value #MIN_BAR_SHARE} do compasso), em ordem.
  * <p>
  * Java puro, sem I/O. Regras decididas em 2026-09-15: ciclo aceito só se cobrir ≥ {@value #MIN_CYCLE_BARS}
- * compassos (um acorde de dois compassos não vira parte); período máximo {@value #MAX_PERIOD} compassos;
- * empate por cobertura vai para o período menor; compassos sem acorde (N.C.) no início e no fim não
- * viram parte.
+ * compassos (um acorde de dois compassos não vira parte); período máximo {@value #MAX_PERIOD} compassos
+ * (cabe o blues de 12); a repetição tolera até 1 compasso diferente a cada {@value #TOLERANCE_EVERY},
+ * nunca no primeiro nem no último compasso do ciclo (o extrator erra rótulos isolados e o ciclo não
+ * pode quebrar por isso, mas as bordas ancoram o alinhamento); entre ciclos candidatos vence o de
+ * período menor, a menos que um maior cubra ≥ {@value #LONGER_CYCLE_GAIN}× mais compassos (o resumo
+ * é mais útil em unidades curtas: verso, refrão); sobras de menos de {@value #MIN_CYCLE_BARS}
+ * compassos entre partes (viradas, anacruses) ficam na parte anterior; compassos sem acorde (N.C.)
+ * no início e no fim não viram parte.
  */
 public final class SectionDeriver {
 
-    public static final int MAX_PERIOD = 8;
+    public static final int MAX_PERIOD = 16;
     public static final int MIN_CYCLE_BARS = 4;
+    /** Um compasso divergente é tolerado a cada tantos compassos do ciclo (período 4 → 1, período 12 → 3). */
+    public static final int TOLERANCE_EVERY = 4;
     public static final double MIN_BAR_SHARE = 0.2;
+    /** Um ciclo mais longo só vence um mais curto se cobrir tantas vezes mais compassos. */
+    public static final double LONGER_CYCLE_GAIN = 1.5;
 
     /** Um acorde no tempo; {@code id} é a identidade (fundamental + qualidade), {@code null} para N.C. */
     public record ChordSpan(double startS, double endS, String id) {
@@ -33,6 +40,9 @@ public final class SectionDeriver {
     }
 
     private record Bar(double startS, double endS, String signature) {
+    }
+
+    private record Part(double startS, double endS, double cycleEndS, int repeats, List<String> signature) {
     }
 
     private SectionDeriver() {
@@ -66,24 +76,33 @@ public final class SectionDeriver {
                 i++;
                 continue;
             }
-            flush(parts, pending);
+            flush(parts, pending);   // sobra curta entre partes vai para a anterior (ver flush)
             List<Bar> cycleBars = bars.subList(i, i + cycle.period());
             parts.add(new Part(cycleBars.get(0).startS(), bars.get(i + cycle.period() * cycle.repeats() - 1).endS(),
-                    cycleBars.get(cycle.period() - 1).endS(), cycle.repeats(), signature(cycleBars)));
+                    cycleBars.get(cycle.period() - 1).endS(), cycle.repeats(), signatures(cycleBars)));
             i += cycle.period() * cycle.repeats();
         }
         flush(parts, pending);
 
-        Map<String, String> labels = new LinkedHashMap<>();
+        // Mesma harmonia (com a mesma tolerância da repetição) = mesma letra, em ordem de aparição.
+        List<List<String>> known = new ArrayList<>();
+        List<String> letters = new ArrayList<>();
         List<Section> sections = new ArrayList<>(parts.size());
         for (Part part : parts) {
-            String label = labels.computeIfAbsent(part.signature(), s -> letter(labels.size()));
-            sections.add(new Section(part.startS(), part.endS(), part.cycleEndS(), part.repeats(), label));
+            int idx = -1;
+            for (int k = 0; k < known.size() && idx < 0; k++) {
+                if (similar(known.get(k), part.signature())) {
+                    idx = k;
+                }
+            }
+            if (idx < 0) {
+                known.add(part.signature());
+                letters.add(letter(letters.size()));
+                idx = known.size() - 1;
+            }
+            sections.add(new Section(part.startS(), part.endS(), part.cycleEndS(), part.repeats(), letters.get(idx)));
         }
         return sections;
-    }
-
-    private record Part(double startS, double endS, double cycleEndS, int repeats, String signature) {
     }
 
     private record Cycle(int period, int repeats) {
@@ -94,11 +113,16 @@ public final class SectionDeriver {
             return;
         }
         double end = pending.get(pending.size() - 1).endS();
-        parts.add(new Part(pending.get(0).startS(), end, end, 1, signature(pending)));
+        if (pending.size() < MIN_CYCLE_BARS && !parts.isEmpty()) {
+            Part previous = parts.remove(parts.size() - 1);
+            parts.add(new Part(previous.startS(), end, previous.cycleEndS(), previous.repeats(), previous.signature()));
+        } else {
+            parts.add(new Part(pending.get(0).startS(), end, end, 1, signatures(pending)));
+        }
         pending.clear();
     }
 
-    /** O ciclo que mais compassos cobre a partir de {@code i}; {@code null} se nada se repete o bastante. */
+    /** O ciclo a partir de {@code i}: o de menor período, salvo um maior que cubra bem mais; {@code null} se nada se repete. */
     private static Cycle bestCycle(List<Bar> bars, int i, int to) {
         Cycle best = null;
         int bestCoverage = 0;
@@ -108,7 +132,7 @@ public final class SectionDeriver {
                 k++;
             }
             int coverage = k * p;
-            if (k >= 2 && coverage >= MIN_CYCLE_BARS && coverage > bestCoverage) {
+            if (k >= 2 && coverage >= MIN_CYCLE_BARS && coverage >= bestCoverage * LONGER_CYCLE_GAIN) {
                 best = new Cycle(p, k);
                 bestCoverage = coverage;
             }
@@ -116,21 +140,28 @@ public final class SectionDeriver {
         return best;
     }
 
+    /** Os {@code length} compassos a partir de {@code b} repetem os de {@code a}, com a tolerância. */
     private static boolean sameBars(List<Bar> bars, int a, int b, int length) {
-        for (int j = 0; j < length; j++) {
-            if (!Objects.equals(bars.get(a + j).signature(), bars.get(b + j).signature())) {
-                return false;
-            }
-        }
-        return true;
+        return similar(signatures(bars.subList(a, a + length)), signatures(bars.subList(b, b + length)));
     }
 
-    private static String signature(List<Bar> bars) {
-        StringBuilder sb = new StringBuilder();
-        for (Bar bar : bars) {
-            sb.append(bar.signature() == null ? "N" : bar.signature()).append('|');
+    /** Mesma harmonia: bordas iguais e no máximo 1 compasso diferente a cada TOLERANCE_EVERY no meio. */
+    private static boolean similar(List<String> a, List<String> b) {
+        int n = a.size();
+        if (n != b.size() || !Objects.equals(a.get(0), b.get(0)) || !Objects.equals(a.get(n - 1), b.get(n - 1))) {
+            return false;
         }
-        return sb.toString();
+        int mismatches = 0;
+        for (int j = 1; j < n - 1; j++) {
+            if (!Objects.equals(a.get(j), b.get(j))) {
+                mismatches++;
+            }
+        }
+        return mismatches <= n / TOLERANCE_EVERY;
+    }
+
+    private static List<String> signatures(List<Bar> bars) {
+        return bars.stream().map(Bar::signature).toList();
     }
 
     /** Grade de compassos: os downbeats, mais um compasso de anacruse antes do primeiro e o resto após o último. */

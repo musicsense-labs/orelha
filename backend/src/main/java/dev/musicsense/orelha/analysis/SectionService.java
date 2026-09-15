@@ -1,5 +1,6 @@
 package dev.musicsense.orelha.analysis;
 
+import dev.musicsense.orelha.harmony.ChordQuality;
 import dev.musicsense.orelha.harmony.HarmonicNormalizer;
 import dev.musicsense.orelha.harmony.SectionDeriver;
 import dev.musicsense.orelha.harmony.SectionDeriver.ChordSpan;
@@ -118,8 +119,19 @@ public class SectionService {
         return out;
     }
 
-    private static String chordId(ChordSegment s) {
-        return s.getRootPc() == null || !s.getQuality().hasRoot() ? null : s.getRootPc() + ":" + s.getQuality();
+    /**
+     * Identidade do acorde para o teste de repetição: fundamental + família da tríade (maior, menor,
+     * diminuta, aumentada). Sétimas, sextas e sus não separam partes — Cmaj7, C7 e Csus2 são "C" aqui.
+     * Sus e power chord (sem terça) contam como a família maior só para este teste: o BTC rotula sus2
+     * onde a guitarra toca cordas soltas sobre a mesma fundamental, e isso não é outra parte. Não é
+     * classificação harmônica; a progressão exibida continua com as qualidades completas.
+     */
+    static String chordId(ChordSegment s) {
+        if (s.getRootPc() == null || !s.getQuality().hasRoot()) {
+            return null;
+        }
+        ChordQuality.TriadFamily family = s.getQuality().triadFamily();
+        return s.getRootPc() + ":" + (family == ChordQuality.TriadFamily.NONE ? ChordQuality.TriadFamily.MAJOR : family);
     }
 
     private static BigDecimal seconds(double v) {

@@ -97,7 +97,7 @@ class SectionDeriverTest {
     }
 
     @Test
-    void silenceAtTheEdgesIsNotAPartButSilenceInsideIs() {
+    void silenceAtTheEdgesIsNotAPartAndAShortBreakInsideStaysWithThePreviousPart() {
         List<ChordSpan> chords = concat(
                 List.of(new ChordSpan(0, 4, null)),
                 barChords(2, "C", "F", "C", "F"),
@@ -107,9 +107,13 @@ class SectionDeriverTest {
 
         List<Section> sections = SectionDeriver.derive(chords, downbeats(13));
 
-        assertThat(sections).extracting(Section::label).containsExactly("A", "B", "A");
+        // o compasso de silêncio (< MIN_CYCLE_BARS) fica na parte anterior; o ciclo seguinte é A de novo
+        assertThat(sections).extracting(Section::label).containsExactly("A", "A");
         assertThat(sections.get(0).startS()).isEqualTo(4);
-        assertThat(sections.get(2).endS()).isEqualTo(22);
+        assertThat(sections.get(0).endS()).isEqualTo(14);
+        assertThat(sections.get(0).repeats()).isEqualTo(2);
+        assertThat(sections.get(1).startS()).isEqualTo(14);
+        assertThat(sections.get(1).endS()).isEqualTo(22);
     }
 
     @Test
@@ -128,6 +132,29 @@ class SectionDeriverTest {
         List<Section> sections = SectionDeriver.derive(chords, downbeats(12));
 
         assertThat(sections).containsExactly(new Section(0, 24, 8, 3, "A"));
+    }
+
+    @Test
+    void oneMislabelledBarDoesNotBreakAnEightBarCycle() {
+        // 8 compassos repetidos 3 vezes; na segunda vez o extrator trocou o 6º compasso (Am → A)
+        List<ChordSpan> chords = concat(
+                barChords(0, "C", "G", "Am", "F", "C", "Am", "F", "G"),
+                barChords(8, "C", "G", "Am", "F", "C", "A", "F", "G"),
+                barChords(16, "C", "G", "Am", "F", "C", "Am", "F", "G"));
+
+        List<Section> sections = SectionDeriver.derive(chords, downbeats(24));
+
+        assertThat(sections).containsExactly(new Section(0, 48, 16, 3, "A"));
+    }
+
+    @Test
+    void twelveBarBluesIsOneCycle() {
+        String[] blues = {"A7", "A7", "A7", "A7", "D7", "D7", "A7", "A7", "E7", "D7", "A7", "E7"};
+        List<ChordSpan> chords = concat(barChords(0, blues), barChords(12, blues));
+
+        List<Section> sections = SectionDeriver.derive(chords, downbeats(24));
+
+        assertThat(sections).containsExactly(new Section(0, 48, 24, 2, "A"));
     }
 
     @Test
