@@ -28,9 +28,34 @@ export class Sections {
   readonly parts = computed(() => this.sections.value()?.parts ?? []);
   readonly source = computed(() => this.sections.value()?.source ?? null);
 
-  readonly currentId = computed(() => {
+  readonly currentPart = computed(() => {
     const t = this.currentTime();
-    return this.parts().find((p) => p.startS <= t && t < p.endS)?.id ?? null;
+    return this.parts().find((p) => p.startS <= t && t < p.endS) ?? null;
+  });
+
+  readonly currentId = computed(() => this.currentPart()?.id ?? null);
+
+  /**
+   * O acorde em execução, projetado no ciclo exibido: a parte mostra só a primeira repetição, então o
+   * instante atual é reduzido módulo o comprimento do ciclo e casado com o último acorde que começa antes.
+   */
+  readonly currentChordStart = computed(() => {
+    const p = this.currentPart();
+    if (!p || p.chords.length === 0) {
+      return null;
+    }
+    const cycle = p.cycleEndS - p.startS;
+    const offset = cycle > 0 ? (this.currentTime() - p.startS) % cycle : 0;
+    const inCycle = p.startS + offset;
+    let found: number | null = null;
+    for (const c of p.chords) {
+      if (c.startS <= inCycle) {
+        found = c.startS;
+      } else {
+        break;
+      }
+    }
+    return found;
   });
 
   chord(c: SectionChord): string {
