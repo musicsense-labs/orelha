@@ -11,11 +11,11 @@ import { Import } from './import';
  * que cria artista/álbum se preciso, envia o arquivo e acompanha a análise até DONE/FAILED.
  */
 @Component({
-  selector: 'app-library',
+  selector: 'app-collection',
   imports: [RouterLink, Import],
-  templateUrl: './library.html',
+  templateUrl: './collection.html',
 })
-export class Library {
+export class Collection {
   private readonly http = inject(HttpClient);
 
   /** Muda a cada 5 s enquanto houver run QUEUED/RUNNING: força o reload das faixas. */

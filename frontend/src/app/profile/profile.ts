@@ -16,9 +16,9 @@ export class Profile {
   readonly scope = input.required<'artists' | 'albums'>();
   readonly id = input.required<string>();
 
-  readonly profile = httpResource<HarmonicProfile>(() => `/api/corpus/${this.scope()}/${this.id()}/profile`);
+  readonly profile = httpResource<HarmonicProfile>(() => `/api/collection/${this.scope()}/${this.id()}/profile`);
   readonly pedals = httpResource<PedalPassage[]>(() =>
-    this.scope() === 'artists' ? `/api/corpus/artists/${this.id()}/pedal-passages` : undefined);
+    this.scope() === 'artists' ? `/api/collection/artists/${this.id()}/pedal-passages` : undefined);
 
   readonly keyRelationRows = computed(() => {
     const p = this.profile.value();

@@ -21,7 +21,7 @@ export class Compare {
   readonly comparison = httpResource<Comparison>(() => {
     const a = this.a();
     const b = this.b();
-    return a != null && b != null && a !== b ? `/api/corpus/compare?a=${a}&b=${b}` : undefined;
+    return a != null && b != null && a !== b ? `/api/collection/compare?a=${a}&b=${b}` : undefined;
   });
 
   readonly degreeSeries = computed(() => {

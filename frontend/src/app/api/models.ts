@@ -1,4 +1,4 @@
-// Espelho dos DTOs do backend (dev.rifflab.*Response / corpus). Só o que a UI consome.
+// Espelho dos DTOs do backend (dev.rifflab.*Response / acervo). Só o que a UI consome.
 
 export interface Artist {
   id: number;
