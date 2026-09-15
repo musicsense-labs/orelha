@@ -175,12 +175,18 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
 - **Upload pela UI**: `POST /api/tracks/upload` (multipart `file`, `albumId`, `title?`, `trackNo?`)
   grava em `rifflab.library.dir/<albumId>/<título>.<ext>` (sem sobrescrever) e enfileira;
   `TrackResponse` traz o último run (`latestRunId/Status/Error`) numa query só para a lista.
-- **Importar pasta**: `POST /api/tracks/import` (multipart `files`, nome = caminho relativo da pasta)
-  copia para a biblioteca; `POST /api/tracks/import-path {path, recursive}` referencia os arquivos
-  no lugar. `AudioTags` (jaudiotagger) lê ID3/Vorbis/MP4/WAV: artista = album artist ou artist;
+- **Importar pasta em dois passos**: preview → edição na UI → confirm. `POST /api/tracks/import/stage`
+  (multipart `files`, nome = caminho relativo da pasta) guarda em `rifflab.staging.dir/<uuid>/` e
+  devolve `Preview{stagingId, items[]}`; `POST /api/tracks/import-path/preview {path, recursive}`
+  faz o mesmo para uma pasta do servidor (`stagingId` null, arquivos ficam no lugar). Nada entra no
+  catálogo no preview. `POST /api/tracks/import/confirm {stagingId, items[]}` cadastra os itens
+  **como a UI os editou** (staging → biblioteca por `move`; staging apagado); `DELETE
+  /api/tracks/import/stage/{id}` descarta. `/import` e `/import-path` são atalhos (preview +
+  confirmar tudo). Na UI: tabela editável, ↔ troca artista/título, ⇊ aplica artista/álbum/ano às
+  linhas selecionadas, duplicatas vêm desmarcadas. `AudioTags` (jaudiotagger) lê ID3/Vorbis/MP4/WAV: artista = album artist ou artist;
   álbum; ano (4 dígitos); título; número (`3/12` → 3). Sem tags: convenção `Artista/Álbum/01
-  Título.ext`; pasta plana sem tags dá nomes ruins (a pasta-mãe vira artista) — corrigir via
-  `PUT /api/artists|albums`. Artista/álbum reusados por nome (case-insensitive); mesmo SHA-256 é
+  Título.ext`; nome `Artista - Título` separa o artista (a UI troca se a ordem for a outra);
+  sufixos `(youtube)`/`[Official Video]` no fim do nome são descartados. Artista/álbum reusados por nome (case-insensitive); mesmo SHA-256 é
   pulado; número já ocupado no álbum vira null. Uma transação por faixa (`TransactionTemplate`).
 - Fixture do contract test = resposta real do container sobre `app/testaudio.py` (WAV sintético,
   Am F C G). Nunca gravar áudio com direitos autorais no repositório.
