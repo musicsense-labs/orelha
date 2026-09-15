@@ -5,7 +5,6 @@ import dev.musicsense.orelha.analysis.AnalysisRun;
 import dev.musicsense.orelha.analysis.RunStatus;
 import dev.musicsense.orelha.common.NotFoundException;
 import dev.musicsense.orelha.extraction.AudioExtractor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -33,15 +32,15 @@ public class TrackService {
     private final AlbumRepository albums;
     private final AnalysisQueue queue;
     private final AudioExtractor extractor;
-    private final Path libraryDir;
+    private final AudioLibrary library;
 
     TrackService(TrackRepository tracks, AlbumRepository albums, AnalysisQueue queue, AudioExtractor extractor,
-                 @Value("${orelha.library.dir:../data/audio}") String libraryDir) {
+                 AudioLibrary library) {
         this.tracks = tracks;
         this.albums = albums;
         this.queue = queue;
         this.extractor = extractor;
-        this.libraryDir = Path.of(libraryDir).toAbsolutePath().normalize();
+        this.library = library;
     }
 
     /** Cadastra uma faixa a partir de um arquivo já no disco, fixa a identidade dos bytes e enfileira a análise. */
@@ -64,7 +63,7 @@ public class TrackService {
             throw new IllegalArgumentException("Unsupported audio file: " + original);
         }
         String baseName = (title == null || title.isBlank()) ? original.substring(0, original.length() - extension.length() - 1) : title;
-        Path target = uniquePath(libraryDir.resolve(String.valueOf(album.getId())), sanitize(baseName), extension);
+        Path target = uniquePath(library.dir().resolve(String.valueOf(album.getId())), sanitize(baseName), extension);
         try {
             Files.createDirectories(target.getParent());
             try (InputStream in = file.getInputStream()) {
@@ -99,7 +98,7 @@ public class TrackService {
     }
 
     private Track register(Album album, String title, Integer trackNo, Path audio) {
-        Track track = tracks.save(new Track(album, title, trackNo, audio.toAbsolutePath().toString(), sha256(audio)));
+        Track track = tracks.save(new Track(album, title, trackNo, library.store(audio), sha256(audio)));
         queue.enqueue(track, extractor.name());
         return track;
     }

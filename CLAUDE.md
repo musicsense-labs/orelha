@@ -201,10 +201,12 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
   `DataPaths` traduz `/data/...` → `orelha.data.host-root` (default `../data`). O backend serve
   `GET /api/tracks/{id}/stems` e `/stems/{name}` (Range) a partir do run canônico; runs anteriores
   a 0.3.0 não têm stems (a UI avisa e sugere re-análise). `data/` é ignorado pelo git.
-- **`track.audio_path` é absoluto** (`<repo>/data/audio/<albumId>/...`, ou o caminho original
-  quando a faixa foi cadastrada por path). Mover a pasta do repositório quebra o player:
-  em 2026-09-15 a mudança riff-lab → orelha exigiu `UPDATE track SET audio_path = replace(...)` em
-  235 faixas. Backlog: guardar caminho relativo a `orelha.library.dir` para faixas da biblioteca.
+- **`track.audio_path`**: relativo a `orelha.library.dir` com `/` (`25/Evil Woman.mp3`) para arquivos
+  dentro da biblioteca; absoluto só para faixas cadastradas por path fora dela. `AudioLibrary` decide
+  (`store`/`resolve`) e é o único lugar que conhece a raiz; `TrackResponse.audioPath` devolve o caminho
+  resolvido. Decidido em 2026-09-15 depois que mover a pasta riff-lab → orelha quebrou o player em 235
+  faixas (V6 converteu o que já existia). Mover a pasta ou trocar de máquina agora é só apontar
+  `orelha.library.dir`.
 - **Upload pela UI**: `POST /api/tracks/upload` (multipart `file`, `albumId`, `title?`, `trackNo?`)
   grava em `orelha.library.dir/<albumId>/<título>.<ext>` (sem sobrescrever) e enfileira;
   `TrackResponse` traz o último run (`latestRunId/Status/Error`) numa query só para a lista.

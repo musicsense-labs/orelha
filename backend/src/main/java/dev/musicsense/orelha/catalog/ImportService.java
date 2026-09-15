@@ -44,12 +44,11 @@ public class ImportService {
     private final AnalysisQueue queue;
     private final AudioExtractor extractor;
     private final TransactionTemplate tx;
-    private final Path libraryDir;
+    private final AudioLibrary library;
     private final Path stagingDir;
 
     ImportService(ArtistRepository artists, AlbumRepository albums, TrackRepository tracks, AnalysisQueue queue,
-                  AudioExtractor extractor, PlatformTransactionManager transactionManager,
-                  @Value("${orelha.library.dir:../data/audio}") String libraryDir,
+                  AudioExtractor extractor, PlatformTransactionManager transactionManager, AudioLibrary library,
                   @Value("${orelha.staging.dir:../data/staging}") String stagingDir) {
         this.artists = artists;
         this.albums = albums;
@@ -57,7 +56,7 @@ public class ImportService {
         this.queue = queue;
         this.extractor = extractor;
         this.tx = new TransactionTemplate(transactionManager);
-        this.libraryDir = Path.of(libraryDir).toAbsolutePath().normalize();
+        this.library = library;
         this.stagingDir = Path.of(stagingDir).toAbsolutePath().normalize();
     }
 
@@ -195,14 +194,14 @@ public class ImportService {
             trackNo = null;   // número já ocupado neste álbum: cadastra sem número em vez de falhar
         }
         Path audio = keepInPlace ? content : moveIntoLibrary(content, album, tags.title());
-        Track track = tracks.save(new Track(album, tags.title(), trackNo, audio.toAbsolutePath().toString(), sha));
+        Track track = tracks.save(new Track(album, tags.title(), trackNo, library.store(audio), sha));
         queue.enqueue(track, extractor.name());
         return new Registered(track, artist.getName(), album.getTitle());
     }
 
     private Path moveIntoLibrary(Path content, Album album, String title) {
         try {
-            Path dir = libraryDir.resolve(String.valueOf(album.getId()));
+            Path dir = library.dir().resolve(String.valueOf(album.getId()));
             Files.createDirectories(dir);
             Path target = uniquePath(dir, TrackService.sanitize(title), extensionOf(content.getFileName().toString()));
             Files.move(content, target, StandardCopyOption.REPLACE_EXISTING);

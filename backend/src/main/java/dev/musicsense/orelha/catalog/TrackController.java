@@ -43,19 +43,21 @@ public class TrackController {
     private final AnalysisRunRepository runs;
     private final ImportService importer;
     private final BeatRepository beats;
+    private final AudioLibrary library;
 
     TrackController(TrackRepository tracks, TrackService service, DataPaths dataPaths, AnalysisRunRepository runs,
-                    ImportService importer, BeatRepository beats) {
+                    ImportService importer, BeatRepository beats, AudioLibrary library) {
         this.tracks = tracks;
         this.service = service;
         this.dataPaths = dataPaths;
         this.runs = runs;
         this.importer = importer;
         this.beats = beats;
+        this.library = library;
     }
 
     private TrackResponse response(Track track) {
-        return TrackResponse.of(track, runs.findFirstByTrackIdOrderByIdDesc(track.getId()).orElse(null));
+        return TrackResponse.of(track, runs.findFirstByTrackIdOrderByIdDesc(track.getId()).orElse(null), library);
     }
 
     @GetMapping
@@ -64,7 +66,7 @@ public class TrackController {
         List<Track> result = albumId == null ? tracks.findAll() : tracks.findByAlbumIdOrderByTrackNoAsc(albumId);
         Map<Long, AnalysisRun> latest = runs.findLatestPerTrack().stream()
                 .collect(Collectors.toMap(r -> r.getTrack().getId(), r -> r));
-        return result.stream().map(t -> TrackResponse.of(t, latest.get(t.getId()))).toList();
+        return result.stream().map(t -> TrackResponse.of(t, latest.get(t.getId()), library)).toList();
     }
 
     @GetMapping("/{id}")
@@ -143,7 +145,7 @@ public class TrackController {
     @Transactional(readOnly = true)
     ResponseEntity<Resource> audio(@PathVariable Long id) {
         Track track = find(id);
-        Path path = Path.of(track.getAudioPath());
+        Path path = library.resolve(track);
         if (!Files.isRegularFile(path)) {
             throw new NotFoundException("Audio of track", id);
         }

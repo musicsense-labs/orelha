@@ -1,5 +1,6 @@
 package dev.musicsense.orelha.analysis;
 
+import dev.musicsense.orelha.catalog.AudioLibrary;
 import dev.musicsense.orelha.catalog.Track;
 import dev.musicsense.orelha.common.NotFoundException;
 import dev.musicsense.orelha.extraction.ChordEvents;
@@ -34,11 +35,13 @@ public class AnalysisPipeline {
     private final EntityManager em;
     private final HarmonicNormalizer normalizer = new HarmonicNormalizer();
     private final PowerChordDetector powerChords;
+    private final AudioLibrary library;
 
-    AnalysisPipeline(AnalysisRunRepository runs, EntityManager em, PowerChordDetector powerChords) {
+    AnalysisPipeline(AnalysisRunRepository runs, EntityManager em, PowerChordDetector powerChords, AudioLibrary library) {
         this.runs = runs;
         this.em = em;
         this.powerChords = powerChords;
+        this.library = library;
     }
 
     public record Input(String audioPath, String audioSha256) {
@@ -48,7 +51,7 @@ public class AnalysisPipeline {
     public Input load(long runId) {
         AnalysisRun run = find(runId);
         Track track = run.getTrack();
-        return new Input(track.getAudioPath(), track.getAudioSha256());
+        return new Input(library.resolve(track).toString(), track.getAudioSha256());
     }
 
     @Transactional

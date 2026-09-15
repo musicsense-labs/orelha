@@ -64,6 +64,9 @@ class ImportIntegrationTest {
     @Autowired
     TestRestTemplate rest;
 
+    @Autowired
+    TrackRepository trackRepository;
+
     @TempDir
     Path tempDir;
 
@@ -171,6 +174,9 @@ class ImportIntegrationTest {
         assertThat(copied.audioPath()).endsWith("Hell Patrol.wav");
         assertThat(Path.of(copied.audioPath())).exists().isNotEqualTo(noTags.toAbsolutePath());
         assertThat(Path.of(copied.audioPath())).startsWith(libraryDir);
+        // Persistido relativo à biblioteca, com '/': mover a pasta do projeto não quebra o acervo.
+        assertThat(trackRepository.findById(copied.id()).orElseThrow().getAudioPath())
+                .isEqualTo(copied.albumId() + "/Hell Patrol.wav");
         try (var dirs = Files.list(stagingDir)) {
             assertThat(dirs).as("staging apagado após confirmar").isEmpty();
         }

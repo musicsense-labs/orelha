@@ -5,14 +5,17 @@ import dev.musicsense.orelha.analysis.RunStatus;
 
 import java.math.BigDecimal;
 
-/** Faixa + o run mais recente (para a UI mostrar "analisando…", DONE ou FAILED sem outra chamada). */
+/**
+ * Faixa + o run mais recente (para a UI mostrar "analisando…", DONE ou FAILED sem outra chamada).
+ * {@code audioPath} é o caminho absoluto resolvido, não o valor persistido (relativo na biblioteca).
+ */
 public record TrackResponse(Long id, Long albumId, String title, Integer trackNo, BigDecimal durationS,
                             String audioPath, String audioSha256, Integer sampleRate, Long canonicalRunId,
                             Long latestRunId, RunStatus latestRunStatus, String latestRunError) {
 
-    static TrackResponse of(Track t, AnalysisRun latestRun) {
+    static TrackResponse of(Track t, AnalysisRun latestRun, AudioLibrary library) {
         return new TrackResponse(t.getId(), t.getAlbum().getId(), t.getTitle(), t.getTrackNo(), t.getDurationS(),
-                t.getAudioPath(), t.getAudioSha256(), t.getSampleRate(),
+                library.resolve(t).toString(), t.getAudioSha256(), t.getSampleRate(),
                 t.getCanonicalRun() == null ? null : t.getCanonicalRun().getId(),
                 latestRun == null ? null : latestRun.getId(),
                 latestRun == null ? null : latestRun.getStatus(),
