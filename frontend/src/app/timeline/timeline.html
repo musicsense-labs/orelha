@@ -66,48 +66,56 @@
       @for (l of legend; track l.relation) {
         <span><i [style.background]="l.color"></i>{{ l.relation }}</span>
       }
+      <span class="rows-picker" title="quebra a timeline em linhas: útil em faixas longas ou com muita troca de acorde">
+        linhas
+        @for (n of [1, 2, 3, 4]; track n) {
+          <button type="button" [class.on]="rows() === n" (click)="setRows(n)">{{ n }}</button>
+        }
+      </span>
     </div>
 
-    <svg class="timeline" [attr.viewBox]="'0 0 ' + width + ' ' + (laneHeight * 2 + 30)" preserveAspectRatio="none"
-         (mouseleave)="hovered.set(null)">
-      <!-- lane 1: acordes com grau -->
-      @for (s of segments(); track s.seqNo) {
-        <g class="segment" [class.active]="current()?.seqNo === s.seqNo"
-           (click)="seek(s)" (mouseenter)="hovered.set(s)">
-          <rect [attr.x]="x(s.startS)" y="0" [attr.width]="widthOf(s)" [attr.height]="laneHeight"
-                [attr.fill]="color(s)" stroke="#fff" stroke-width="0.5" />
-          @if (showsLabel(s)) {
-            <text [attr.x]="x(s.startS) + widthOf(s) / 2" y="17" text-anchor="middle" class="chord">{{ label(s) }}</text>
-            <text [attr.x]="x(s.startS) + widthOf(s) / 2" y="34" text-anchor="middle" class="degree">{{ s.degreeLabel ?? '' }}</text>
-          }
-        </g>
-      }
-      <!-- lane 2: baixo efetivo (stem) -->
-      @for (s of segments(); track s.seqNo) {
-        <g class="segment" (click)="seek(s)" (mouseenter)="hovered.set(s)">
-          <rect [attr.x]="x(s.startS)" [attr.y]="laneHeight + 4" [attr.width]="widthOf(s)" [attr.height]="laneHeight - 8"
-                [attr.fill]="s.effectiveBassPc == null ? '#eee' : (s.effectiveBassPc === s.rootPc ? '#cfd8dc' : '#ffcc80')"
-                stroke="#fff" stroke-width="0.5" />
-          @if (showsLabel(s)) {
-            <text [attr.x]="x(s.startS) + widthOf(s) / 2" [attr.y]="laneHeight + 27" text-anchor="middle" class="bass">
-              {{ noteName(s.effectiveBassPc) }}
-            </text>
-          }
+    <!-- A timeline quebra em N linhas; cada linha cobre duration/N segundos e tem as mesmas lanes. -->
+    <svg class="timeline" [attr.viewBox]="'0 0 ' + width + ' ' + (rowHeight * rows())" preserveAspectRatio="none"
+         [style.height.px]="130 * rows()" (mouseleave)="hovered.set(null)">
+      @for (p of pieces(); track p.key) {
+        <g [attr.transform]="'translate(0 ' + rowHeight * p.row + ')'">
+          <!-- lane 1: acordes com grau -->
+          <g class="segment" [class.active]="current()?.seqNo === p.s.seqNo"
+             (click)="seek(p.s)" (mouseenter)="hovered.set(p.s)">
+            <rect [attr.x]="p.x" y="0" [attr.width]="p.w" [attr.height]="laneHeight"
+                  [attr.fill]="color(p.s)" stroke="#fff" stroke-width="0.5" />
+            @if (p.w >= 22) {
+              <text [attr.x]="p.x + p.w / 2" y="17" text-anchor="middle" class="chord">{{ label(p.s) }}</text>
+              <text [attr.x]="p.x + p.w / 2" y="34" text-anchor="middle" class="degree">{{ p.s.degreeLabel ?? '' }}</text>
+            }
+          </g>
+          <!-- lane 2: baixo efetivo (stem) -->
+          <g class="segment" (click)="seek(p.s)" (mouseenter)="hovered.set(p.s)">
+            <rect [attr.x]="p.x" [attr.y]="laneHeight + 4" [attr.width]="p.w" [attr.height]="laneHeight - 8"
+                  [attr.fill]="p.s.effectiveBassPc == null ? '#eee' : (p.s.effectiveBassPc === p.s.rootPc ? '#cfd8dc' : '#ffcc80')"
+                  stroke="#fff" stroke-width="0.5" />
+            @if (p.w >= 22) {
+              <text [attr.x]="p.x + p.w / 2" [attr.y]="laneHeight + 27" text-anchor="middle" class="bass">
+                {{ noteName(p.s.effectiveBassPc) }}
+              </text>
+            }
+          </g>
         </g>
       }
       <!-- downbeats: início de cada compasso -->
       @for (b of downbeats(); track b.beatNo) {
-        <line class="downbeat" [attr.x1]="x(b.timeS)" [attr.x2]="x(b.timeS)" y1="0" [attr.y2]="laneHeight * 2" />
+        <line class="downbeat" [attr.x1]="xIn(b.timeS)" [attr.x2]="xIn(b.timeS)"
+              [attr.y1]="rowHeight * rowOf(b.timeS)" [attr.y2]="rowHeight * rowOf(b.timeS) + laneHeight * 2" />
       }
-      <!-- eixo de tempo -->
-      @for (m of [0, 1, 2, 3, 4, 5, 6, 7, 8]; track m) {
-        @if (m * 30 < duration()) {
-          <line [attr.x1]="x(m * 30)" [attr.x2]="x(m * 30)" [attr.y1]="laneHeight * 2" [attr.y2]="laneHeight * 2 + 6" stroke="#888" />
-          <text [attr.x]="x(m * 30)" [attr.y]="laneHeight * 2 + 20" class="tick">{{ formatTime(m * 30) }}</text>
-        }
+      <!-- eixo de tempo, por linha -->
+      @for (t of ticks(); track t.seconds) {
+        <line [attr.x1]="t.x" [attr.x2]="t.x" [attr.y1]="rowHeight * t.row + laneHeight * 2"
+              [attr.y2]="rowHeight * t.row + laneHeight * 2 + 6" stroke="#888" />
+        <text [attr.x]="t.x" [attr.y]="rowHeight * t.row + laneHeight * 2 + 20" class="tick">{{ formatTime(t.seconds) }}</text>
       }
       <!-- playhead -->
-      <line class="playhead" [attr.x1]="playheadX()" [attr.x2]="playheadX()" y1="0" [attr.y2]="laneHeight * 2 + 8" />
+      <line class="playhead" [attr.x1]="playheadX()" [attr.x2]="playheadX()"
+            [attr.y1]="rowHeight * rowOf(currentTime())" [attr.y2]="rowHeight * rowOf(currentTime()) + laneHeight * 2 + 8" />
     </svg>
 
     <div class="detail card">

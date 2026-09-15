@@ -19,6 +19,15 @@ import {
  * silencia os stems; ligar um stem silencia o mix); stems se combinam entre si; cada canal tem
  * volume. O metrônomo (Web Audio sobre os beats do run) é independente e toca por cima.
  */
+function readRows(): number {
+  try {
+    const n = Number(localStorage.getItem('orelha.timeline.rows'));
+    return n >= 1 && n <= 4 ? n : 1;
+  } catch {
+    return 1;
+  }
+}
+
 @Component({
   selector: 'app-timeline',
   imports: [RouterLink, Sections],
@@ -49,6 +58,10 @@ export class Timeline {
   /** Largura lógica do SVG; o viewBox escala para a largura real. */
   readonly width = 1200;
   readonly laneHeight = 44;
+  /** Altura de uma linha da timeline: duas lanes + eixo de tempo. */
+  readonly rowHeight = this.laneHeight * 2 + 30;
+  /** Em quantas linhas a timeline quebra (preferência do visitante, guardada no navegador). */
+  readonly rows = signal(readRows());
 
   readonly stemLabels: Record<string, string> = { drums: 'bateria', bass: 'baixo', other: 'guitarras/teclados', vocals: 'voz' };
 
@@ -81,7 +94,41 @@ export class Timeline {
 
   readonly focus = computed(() => this.hovered() ?? this.current());
 
-  readonly playheadX = computed(() => this.x(this.currentTime()));
+  readonly playheadX = computed(() => this.xIn(this.currentTime()));
+
+  /** Segundos por linha. */
+  readonly rowSpan = computed(() => this.duration() / this.rows());
+
+  /** Segmentos recortados por linha: um pedaço por linha que o segmento atravessa. */
+  readonly pieces = computed(() => {
+    const span = this.rowSpan();
+    const rows = this.rows();
+    const out: { key: string; s: Segment; row: number; x: number; w: number }[] = [];
+    for (const s of this.segments()) {
+      const first = Math.min(rows - 1, Math.floor(s.startS / span));
+      const last = Math.min(rows - 1, Math.max(first, Math.ceil(s.endS / span) - 1));
+      for (let row = first; row <= last; row++) {
+        const start = Math.max(s.startS, row * span);
+        const end = Math.min(s.endS, (row + 1) * span);
+        if (end <= start) {
+          continue;
+        }
+        const x = ((start - row * span) / span) * this.width;
+        const w = Math.max(((end - start) / span) * this.width, 0.5);
+        out.push({ key: s.seqNo + ':' + row, s, row, x, w });
+      }
+    }
+    return out;
+  });
+
+  /** Marcas de tempo a cada 30 s, cada uma na sua linha. */
+  readonly ticks = computed(() => {
+    const out: { seconds: number; row: number; x: number }[] = [];
+    for (let seconds = 0; seconds < this.duration(); seconds += 30) {
+      out.push({ seconds, row: this.rowOf(seconds), x: this.xIn(seconds) });
+    }
+    return out;
+  });
 
   readonly keyLabel = computed(() => {
     const k = this.timeline.value()?.key;
@@ -120,12 +167,24 @@ export class Timeline {
     });
   }
 
-  x(seconds: number): number {
-    return (seconds / this.duration()) * this.width;
+  /** Linha em que cai um instante. */
+  rowOf(seconds: number): number {
+    return Math.min(this.rows() - 1, Math.max(0, Math.floor(seconds / this.rowSpan())));
   }
 
-  widthOf(s: Segment): number {
-    return Math.max(this.x(s.endS) - this.x(s.startS), 0.5);
+  /** Posição horizontal de um instante dentro da sua linha. */
+  xIn(seconds: number): number {
+    const span = this.rowSpan();
+    return ((seconds - this.rowOf(seconds) * span) / span) * this.width;
+  }
+
+  setRows(n: number): void {
+    this.rows.set(n);
+    try {
+      localStorage.setItem('orelha.timeline.rows', String(n));
+    } catch {
+      // sem storage: a escolha vale só nesta visita
+    }
   }
 
   color(s: Segment): string {
@@ -136,9 +195,6 @@ export class Timeline {
     return chordName(s.rootPc, s.quality, s.bassPc);
   }
 
-  showsLabel(s: Segment): boolean {
-    return this.widthOf(s) >= 22;
-  }
 
   // --- mixer ----------------------------------------------------------------------------------
 

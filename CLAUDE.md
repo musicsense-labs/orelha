@@ -253,6 +253,9 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
   distribuições; **timeline em SVG de template Angular** dirigida por signals, sem D3: cada segmento
   é um `<rect>` num `@for`, o playhead é um `computed` sobre `currentTime`, e `<audio>` nativo faz o
   playback (`GET /api/tracks/{id}/audio`, com `Range` para seek). Clicar num segmento faz seek.
+  A timeline quebra em 1–4 **linhas** (seletor na legenda, preferência em `localStorage`): cada linha
+  cobre `duration/N` segundos com as mesmas lanes; segmentos que cruzam a borda são recortados em
+  pedaços (`pieces`), downbeats, eixo de tempo e playhead caem na linha do seu instante.
 - `httpResource` para toda leitura; sem store, sem NgRx. Rotas: `/` (acervo), `/tracks/:id`
   (timeline), `/artists/:id` e `/albums/:id` (perfil), `/compare`. Parâmetros e `data` de rota
   viram inputs (`withComponentInputBinding`).
