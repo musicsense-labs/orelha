@@ -6,7 +6,7 @@ Responda e comente em **pt-BR**. Código, identificadores e mensagens de commit 
 
 Plataforma de análise harmônica e tímbrica de música gravada. O objetivo não é
 detectar BPM ou acorde de uma faixa — isso já existe pronto. O objetivo é
-**acumular um corpus e comparar vocabulário harmônico entre artistas, álbuns e eras**,
+**acumular um acervo e comparar vocabulário harmônico entre artistas, álbuns e eras**,
 respondendo perguntas como:
 
 - Que percentual dos acordes do Black Sabbath está fora do campo harmônico da tonalidade?
@@ -30,7 +30,7 @@ Três camadas com fronteiras rígidas:
 [2] NÚCLEO (Spring Boot — o coração do projeto)
     Orquestra jobs de análise, persiste, e faz TODA a interpretação musical:
     normalização para graus, classificação funcional, matrizes de transição,
-    métricas de corpus.
+    métricas do acervo.
         ↓ REST
 [3] UI (Angular)
     Visualização: timeline harmônica, heatmap de transições, comparação entre artistas.
@@ -103,7 +103,7 @@ Revisado em relação ao esboço original; ver `backend/src/main/resources/db/mi
 - **Baixo tem duas fontes:** `bass_pc` (rótulo do extrator, nullable) e
   `effective_bass_pc` (derivado de `bass_note`, o stem MIDI). O segundo é o confiável.
 - **Beats têm tabela própria** (`beat`), com `bar_no` e `is_downbeat`.
-- **Um run canônico por faixa** (`track.canonical_run_id`) para as queries de corpus.
+- **Um run canônico por faixa** (`track.canonical_run_id`) para as queries do acervo.
 - **A fila é `analysis_run`** (`status`, `attempts`, `locked_at`), poller `@Scheduled`
   com `SELECT … FOR UPDATE SKIP LOCKED`. Sem Kafka, sem Redis.
 - **Grau é inteiro** (`degree_interval`, 0–11 semitons acima da tônica); o numeral
@@ -162,7 +162,7 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
   power chords entram como o maj/min que o BTC escolheu e `AMBIGUOUS` não ocorre com este extrator.
   O `chroma_low` continua coletado para tentativas futuras (extrator com classe "5", outra evidência).
 - **Tonalidade corrigível sem re-extrair**: `PUT /api/tracks/{id}/key` grava `key_segment MANUAL`
-  (inclusive modos) e re-anota o run canônico; timeline e corpus preferem `MANUAL > DERIVED >
+  (inclusive modos) e re-anota o run canônico; timeline e acervo preferem `MANUAL > DERIVED >
   EXTRACTOR`. A leitura com a tonalidade do extrator permanece (unicidade da anotação inclui o
   `key_segment`). Creep: madmom deu C maior com 0,31; a correção para G maior devolve I III IV iv.
 - **Run canônico é escolha do dono**: `PUT /api/tracks/{id}/canonical-run` (run DONE da faixa);
@@ -204,7 +204,7 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
   distribuições; **timeline em SVG de template Angular** dirigida por signals, sem D3: cada segmento
   é um `<rect>` num `@for`, o playhead é um `computed` sobre `currentTime`, e `<audio>` nativo faz o
   playback (`GET /api/tracks/{id}/audio`, com `Range` para seek). Clicar num segmento faz seek.
-- `httpResource` para toda leitura; sem store, sem NgRx. Rotas: `/` (corpus), `/tracks/:id`
+- `httpResource` para toda leitura; sem store, sem NgRx. Rotas: `/` (acervo), `/tracks/:id`
   (timeline), `/artists/:id` e `/albums/:id` (perfil), `/compare`. Parâmetros e `data` de rota
   viram inputs (`withComponentInputBinding`).
 - Sem mock: cada tela mostra vazio ou a mensagem do backend quando não há dados.
@@ -222,7 +222,7 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
   (`GET /api/tracks/{id}/beats`, downbeat acentuado a 1400 Hz, beat a 950 Hz), agendados 250 ms à
   frente do relógio do mestre a cada frame; `reset` em seek/pause. Independente do mix/stems: toca
   por cima do que estiver soando. A timeline desenha os downbeats como linhas de compasso.
-- **Upload** (corpus): formulário cria artista/álbum se preciso, envia multipart e faz polling
+- **Upload** (acervo): formulário cria artista/álbum se preciso, envia multipart e faz polling
   de `/api/tracks` a cada 5 s enquanto houver run QUEUED/RUNNING; badges na fila/analisando…/falhou.
   Cada faixa tem **reprocessar** (`POST /api/tracks/{id}/analyze`): destacado quando falhou, `↻`
   nas demais; o run anterior é mantido e o canônico só muda por escolha do dono.
@@ -240,27 +240,27 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
 - [x] Onda 1 — `HarmonicNormalizer`: validado contra as 30 progressões do dono
   (`ProgressionClassificationTest`); portão aprovado em 2026-09-13 com estas convenções:
   power chord em caixa alta neutra (`I5`); `AMBIGUOUS` conta como *dentro* do campo nas métricas
-  de corpus; `7sus4` reduz a `sus4`; modos (mixolídio/dórico de blues, frígio) só existem se
+  do acervo; `7sus4` reduz a `sus4`; modos (mixolídio/dórico de blues, frígio) só existem se
   atribuídos — `key_segment.source = MANUAL` ou heurística futura (backlog Onda 3).
 - [x] Onda 2 — extrator próprio em `extractor/` (0.2.0), adapter, fila, worker, pipeline até
   `harmonic_annotation`, endpoints de run/timeline/key/canonical-run; contract test com a resposta
   real do container. Portão aprovado em 2026-09-14 com Valerie, Smells Like Teen Spirit e Creep:
   acordes e transições batem com o ouvido do dono; power chord não é inferível (ver Extração);
   tonalidade de baixa confiança corrigida por override manual.
-- [ ] Onda 3 — analítica de corpus, entregue em 2026-09-14 (portão pendente): `GET
-  /api/corpus/artists/{id}/profile`, `/albums/{id}/profile`, `/compare?a&b`,
+- [ ] Onda 3 — analítica do acervo, entregue em 2026-09-14 (portão pendente): `GET
+  /api/collection/artists/{id}/profile`, `/albums/{id}/profile`, `/compare?a&b`,
   `/artists/{id}/pedal-passages?relation=`. Perfil = eixo A por contagem e duração, fração fora do
   campo (`AMBIGUOUS` conta como dentro), distribuição de graus (12 bins, grafia neutra `♯IV/♭V`) +
   entropia de Shannon em bits, matriz de transição 12×12 (`counts`, `rowNormalized`), relações do
   eixo B, timbre médio por álbum e stem. Comparação = JS divergence (bits, base 2) das matrizes
-  normalizadas globalmente + L1 de graus e do eixo A. Uma query nativa (`CorpusQueries`) sobre run
-  canônico + tonalidade preferida; métricas em Java puro (`CorpusMetrics`). A diagonal da matriz
+  normalizadas globalmente + L1 de graus e do eixo A. Uma query nativa (`CollectionQueries`) sobre run
+  canônico + tonalidade preferida; métricas em Java puro (`CollectionMetrics`). A diagonal da matriz
   existe e significa troca de qualidade/baixo sobre a mesma fundamental (`IV → iv` do Creep).
   (+ backlog: tonalidade `DERIVED` por perfil de fundamentais
   quando a confiança do madmom for baixa; heurística de modo por I7/IV7 recorrentes; query de
   linha de baixo sob acorde sustentado — Valerie 3:18, Kashmir; `min_segment_duration` do BTC
   vs segmentos de < 1 s)
-- [x] Onda 4 — Angular, entregue e aprovada em 2026-09-14: corpus, timeline com playback
+- [x] Onda 4 — Angular, entregue e aprovada em 2026-09-14: acervo, timeline com playback
   sincronizado e lane de baixo efetivo, perfil com heatmap/barras/timbre/pedais, comparação com
   distâncias. Verificado ao vivo contra os runs reais (Creep, Nirvana × Radiohead).
 
