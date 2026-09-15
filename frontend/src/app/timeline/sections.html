@@ -41,7 +41,9 @@
               {{ chord(c) }}
             </button>
           }
-          @if (p.repeats > 1) { <span class="repeats">×{{ p.repeats }}</span> }
+          @if (p.repeats > 1) {
+            <span class="repeats">×{{ p.repeats }}@if (p.id === currentId() && currentRepeat(); as r) { <b>({{ r }})</b> }</span>
+          }
         </div>
       </div>
     }

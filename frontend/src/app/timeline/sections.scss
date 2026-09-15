@@ -78,4 +78,5 @@
   .chord.playing { outline: 2px solid #111; outline-offset: 1px; }
 
   .repeats { margin-left: 0.3rem; font-size: 0.85rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .repeats b { margin-left: 0.25rem; color: var(--ink); }
 }

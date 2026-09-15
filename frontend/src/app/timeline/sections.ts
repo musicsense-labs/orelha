@@ -35,6 +35,19 @@ export class Sections {
 
   readonly currentId = computed(() => this.currentPart()?.id ?? null);
 
+  /** Em que repetição do ciclo a parte atual está (1..repeats); null fora dela ou sem repetição. */
+  readonly currentRepeat = computed(() => {
+    const p = this.currentPart();
+    if (!p || p.repeats <= 1) {
+      return null;
+    }
+    const cycle = p.cycleEndS - p.startS;
+    if (cycle <= 0) {
+      return null;
+    }
+    return Math.min(p.repeats, Math.floor((this.currentTime() - p.startS) / cycle) + 1);
+  });
+
   /**
    * O acorde em execução, projetado no ciclo exibido: a parte mostra só a primeira repetição, então o
    * instante atual é reduzido módulo o comprimento do ciclo e casado com o último acorde que começa antes.
