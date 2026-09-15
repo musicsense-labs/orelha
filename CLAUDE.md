@@ -207,9 +207,14 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
 - Só apresentação em TypeScript (`shared/music.ts`: nomes de nota, cifra, cores); a teoria fica
   no backend.
 - **Player multi-stem** (timeline): a mixagem é o `<audio>` mestre (relógio); cada stem é um
-  `<audio>` escondido que segue play/pause/seek e é corrigido se derivar > 150 ms. Botões
-  mix/bateria/baixo/guitarras/voz: clique liga/desliga, duplo clique = solo. Sem Web Audio API
-  (decodificar 4 × 50 MB não vale a sincronia por amostra num uso local).
+  `<audio>` escondido que segue play/pause/seek e é corrigido se derivar > 150 ms. **Mix e stems
+  são mutuamente exclusivos** (ligar o mix silencia os stems; ligar um stem silencia o mix);
+  stems se combinam entre si; duplo clique = solo; cada canal tem volume (`audio.volume`). Sem
+  Web Audio para os stems (decodificar 4 × 50 MB não vale a sincronia por amostra num uso local).
+- **Metrônomo** (`shared/metronome.ts`): Web Audio, cliques sintetizados sobre os beats do run
+  (`GET /api/tracks/{id}/beats`, downbeat acentuado a 1400 Hz, beat a 950 Hz), agendados 250 ms à
+  frente do relógio do mestre a cada frame; `reset` em seek/pause. Independente do mix/stems: toca
+  por cima do que estiver soando. A timeline desenha os downbeats como linhas de compasso.
 - **Upload** (corpus): formulário cria artista/álbum se preciso, envia multipart e faz polling
   de `/api/tracks` a cada 5 s enquanto houver run QUEUED/RUNNING; badges na fila/analisando…/falhou.
 
