@@ -54,3 +54,5 @@ table.preview tr.off td { opacity: 0.45; }
 table.preview tr.dup td.file { color: #7a1c24; }
 button.mini { font: inherit; font-size: 0.75rem; padding: 0 0.35rem; margin-left: 0.15rem; border: 1px solid var(--line); border-radius: 4px; background: #fafafa; cursor: pointer; color: var(--muted); }
 button.mini:hover { color: var(--ink); }
+td.actions { width: 7rem; text-align: right; }
+button.mini.primary-mini { background: var(--accent); color: #fff; border-color: var(--accent); padding: 0.1rem 0.5rem; }

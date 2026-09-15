@@ -105,6 +105,15 @@
                     @default { <span class="badge">sem análise</span> }
                   }
                 </td>
+                <td class="actions">
+                  @if (t.latestRunStatus !== 'QUEUED' && t.latestRunStatus !== 'RUNNING') {
+                    <button type="button" class="mini" [class.primary-mini]="t.latestRunStatus === 'FAILED'"
+                            [disabled]="reanalysing().has(t.id)" (click)="reanalyse(t)"
+                            [title]="t.latestRunStatus === 'FAILED' ? ('reprocessar — ' + (t.latestRunError ?? '')) : 'reprocessar com o extrator atual (novo run; o anterior é mantido)'">
+                      {{ t.latestRunStatus === 'FAILED' ? 'reprocessar' : '↻' }}
+                    </button>
+                  }
+                </td>
               </tr>
             }
           </tbody>

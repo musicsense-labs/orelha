@@ -79,6 +79,21 @@ export class Library {
     inject(DestroyRef).onDestroy(() => clearInterval(timer));
   }
 
+  readonly reanalysing = signal<ReadonlySet<number>>(new Set());
+
+  /** Novo run para a faixa (o anterior é mantido; o canônico só muda se o dono trocar). */
+  async reanalyse(track: Track): Promise<void> {
+    this.reanalysing.update((s) => new Set([...s, track.id]));
+    try {
+      await firstValueFrom(this.http.post<{ runId: number }>(`/api/tracks//analyze`, null));
+      this.tick.update((n) => n + 1);
+    } catch (e: unknown) {
+      this.formError.set((e as { error?: { detail?: string } })?.error?.detail ?? String(e));
+    } finally {
+      this.reanalysing.update((s) => new Set([...s].filter((id) => id !== track.id)));
+    }
+  }
+
   onImported(): void {
     this.artists.reload();
     this.albums.reload();
