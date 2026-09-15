@@ -50,10 +50,15 @@ class ImportIntegrationTest {
     @ServiceConnection
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
 
+    static Path libraryDir;
+    static Path stagingDir;
+
     @DynamicPropertySource
-    static void libraryDir(DynamicPropertyRegistry registry) throws IOException {
-        Path dir = Files.createTempDirectory("riff-library");
-        registry.add("rifflab.library.dir", dir::toString);
+    static void dirs(DynamicPropertyRegistry registry) throws IOException {
+        libraryDir = Files.createTempDirectory("riff-library");
+        stagingDir = Files.createTempDirectory("riff-staging");
+        registry.add("rifflab.library.dir", () -> libraryDir.toString());
+        registry.add("rifflab.staging.dir", () -> stagingDir.toString());
     }
 
     @Autowired
@@ -160,12 +165,87 @@ class ImportIntegrationTest {
         assertThat(report.imported()).extracting(ImportReport.Imported::title).containsExactly("Painkiller", "Hell Patrol");
         assertThat(report.imported()).extracting(ImportReport.Imported::artist).containsOnly("Judas Priest");
         assertThat(report.imported()).extracting(ImportReport.Imported::trackNo).containsExactly(1, 2);
-        assertThat(report.skipped()).hasSize(1);
-        assertThat(report.skipped().get(0).reason()).isEqualTo("não é áudio");
+        assertThat(report.skipped()).isEmpty();   // notes.txt é ignorado no staging
 
         TrackResponse copied = rest.getForObject("/api/tracks/" + report.imported().get(1).trackId(), TrackResponse.class);
         assertThat(copied.audioPath()).endsWith("Hell Patrol.wav");
         assertThat(Path.of(copied.audioPath())).exists().isNotEqualTo(noTags.toAbsolutePath());
+        assertThat(Path.of(copied.audioPath())).startsWith(libraryDir);
+        try (var dirs = Files.list(stagingDir)) {
+            assertThat(dirs).as("staging apagado após confirmar").isEmpty();
+        }
+    }
+
+    @Test
+    void previewCanBeEditedBeforeConfirmingAndDuplicatesAreFlagged() throws Exception {
+        Path root = tempDir.resolve("rips");
+        Path a = wav(root.resolve("Valerie - The Zutons (youtube).wav"), 11);
+        Path b = wav(root.resolve("Radiohead - Creep (Remastered).wav"), 12);
+
+        ImportReport.Preview preview = rest.postForEntity("/api/tracks/import-path/preview",
+                new TrackController.ImportPathRequest(root.toString(), false), ImportReport.Preview.class).getBody();
+        assertThat(preview.stagingId()).isNull();
+        assertThat(preview.items()).hasSize(2);
+        ImportReport.Item creep = preview.items().get(0);
+        ImportReport.Item valerie = preview.items().get(1);
+        assertThat(creep.artist()).isEqualTo("Radiohead");           // "Artista - Título", sufixo limpo
+        assertThat(creep.title()).isEqualTo("Creep");
+        assertThat(valerie.artist()).isEqualTo("Valerie");           // ordem trocada no nome: a UI corrige
+        assertThat(valerie.title()).isEqualTo("The Zutons");
+        assertThat(preview.items()).allSatisfy(i -> assertThat(i.duplicate()).isFalse());
+        assertThat(rest.getForObject("/api/tracks", TrackResponse[].class))
+                .as("preview não cadastra nada").noneMatch(t -> t.audioPath().equals(a.toAbsolutePath().toString()));
+
+        // O usuário corrige a linha da Valerie e descarta a do Creep.
+        ImportReport.Item fixed = new ImportReport.Item(valerie.key(), valerie.file(), "The Zutons",
+                "Tired of Hanging Around", 2006, "Valerie", 3, false, false);
+        ImportReport report = rest.postForEntity("/api/tracks/import/confirm",
+                new ImportReport.Confirmation(null, List.of(fixed)), ImportReport.class).getBody();
+        assertThat(report.imported()).hasSize(1);
+        assertThat(report.imported().get(0).artist()).isEqualTo("The Zutons");
+        assertThat(report.imported().get(0).album()).isEqualTo("Tired of Hanging Around");
+        assertThat(report.imported().get(0).title()).isEqualTo("Valerie");
+        assertThat(report.imported().get(0).trackNo()).isEqualTo(3);
+        TrackResponse track = rest.getForObject("/api/tracks/" + report.imported().get(0).trackId(), TrackResponse.class);
+        assertThat(track.audioPath()).isEqualTo(a.toAbsolutePath().toString());   // no lugar
+
+        // Nova pré-visualização: Valerie agora é duplicata; confirmar mesmo assim é pulado.
+        ImportReport.Preview again = rest.postForEntity("/api/tracks/import-path/preview",
+                new TrackController.ImportPathRequest(root.toString(), false), ImportReport.Preview.class).getBody();
+        assertThat(again.items()).extracting(ImportReport.Item::duplicate).containsExactly(false, true);
+        ImportReport forced = rest.postForEntity("/api/tracks/import/confirm",
+                new ImportReport.Confirmation(null, again.items()), ImportReport.class).getBody();
+        assertThat(forced.imported()).extracting(ImportReport.Imported::title).containsExactly("Creep");
+        assertThat(forced.skipped()).extracting(ImportReport.Skipped::reason).containsExactly("já importado (mesmo conteúdo)");
+        assertThat(Files.exists(b)).isTrue();
+    }
+
+    @Test
+    void stagedUploadCanBeDiscarded() throws Exception {
+        Path src = wav(tempDir.resolve("disc/x/y/01 Song.wav"), 21);
+        MultiValueMap<String, Object> form = new LinkedMultiValueMap<>();
+        form.add("files", named(src, "x/y/01 Song.wav"));
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+        ImportReport.Preview preview = rest.postForEntity("/api/tracks/import/stage", new HttpEntity<>(form, headers),
+                ImportReport.Preview.class).getBody();
+        assertThat(preview.stagingId()).isNotBlank();
+        assertThat(preview.items()).hasSize(1);
+        Path staged = Path.of(preview.items().get(0).key());
+        assertThat(staged).exists().startsWith(stagingDir.resolve(preview.stagingId()));
+        assertThat(preview.items().get(0).artist()).isEqualTo("x");
+        assertThat(preview.items().get(0).album()).isEqualTo("y");
+
+        rest.delete("/api/tracks/import/stage/" + preview.stagingId());
+        assertThat(staged).doesNotExist();
+        assertThat(stagingDir.resolve(preview.stagingId())).doesNotExist();
+
+        // Confirmar um staging que não existe mais só pula, não quebra.
+        ImportReport report = rest.postForEntity("/api/tracks/import/confirm",
+                new ImportReport.Confirmation(preview.stagingId(), preview.items()), ImportReport.class).getBody();
+        assertThat(report.imported()).isEmpty();
+        assertThat(report.skipped()).extracting(ImportReport.Skipped::reason).containsExactly("arquivo não encontrado");
     }
 
     /** Resource com o nome relativo que o navegador manda num upload de pasta (webkitRelativePath). */

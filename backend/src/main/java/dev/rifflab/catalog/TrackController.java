@@ -92,16 +92,43 @@ public class TrackController {
         return response(service.upload(albumId, title, trackNo, file));
     }
 
-    /** Upload de pasta pela UI: vários arquivos, tags lidas de cada um, artista/álbum criados ou reusados. */
-    @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    ImportReport importUploads(@RequestPart("files") List<MultipartFile> files) {
-        return importer.importUploads(files);
+    // --- importação de pasta: preview editável + confirmação -----------------------------------
+
+    /** Upload de pasta: guarda em staging e devolve a pré-visualização (nada entra no catálogo ainda). */
+    @PostMapping(value = "/import/stage", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    ImportReport.Preview stage(@RequestPart("files") List<MultipartFile> files) {
+        return importer.stageUploads(files);
     }
 
     public record ImportPathRequest(@jakarta.validation.constraints.NotBlank String path, boolean recursive) {
     }
 
-    /** Pasta já no disco do servidor: as faixas referenciam os arquivos onde estão. */
+    /** Pasta do servidor: pré-visualização (os arquivos ficarão no lugar). */
+    @PostMapping("/import-path/preview")
+    ImportReport.Preview previewPath(@Valid @RequestBody ImportPathRequest req) {
+        return importer.previewDirectory(Path.of(req.path()), req.recursive());
+    }
+
+    /** Cadastra os itens como a UI os editou (staging → biblioteca; servidor → no lugar). */
+    @PostMapping("/import/confirm")
+    ImportReport confirmImport(@Valid @RequestBody ImportReport.Confirmation confirmation) {
+        return importer.confirm(confirmation);
+    }
+
+    /** Cancelou a pré-visualização de um upload: apaga o staging. */
+    @DeleteMapping("/import/stage/{stagingId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void discardStaging(@PathVariable String stagingId) {
+        importer.discardStaging(stagingId);
+    }
+
+    /** Atalho sem edição: upload de pasta importado inteiro. */
+    @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    ImportReport importUploads(@RequestPart("files") List<MultipartFile> files) {
+        return importer.importUploads(files);
+    }
+
+    /** Atalho sem edição: pasta do servidor importada inteira. */
     @PostMapping("/import-path")
     ImportReport importPath(@Valid @RequestBody ImportPathRequest req) {
         return importer.importDirectory(Path.of(req.path()), req.recursive());

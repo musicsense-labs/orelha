@@ -28,6 +28,8 @@ rifflab:
     host-root: ../data          # onde o compose faz o bind mount (./data na raiz do repo)
   library:
     dir: ../data/audio          # uploads pela UI: <dir>/<albumId>/<título>.<ext>
+  staging:
+    dir: ../data/staging        # uploads de pasta entre a pré-visualização e a confirmação
   worker:
     enabled: true
     poll-ms: 5000
