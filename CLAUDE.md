@@ -10,7 +10,7 @@ outro aparelho; nunca usar "hound", já é o SoundHound). Rascunho da marca em C
 ("Marca Orelha"); fonte dos quadros no scratchpad da sessão de 2026-09-15. Não reintroduzir "riff-lab" nem
 "corpus" (hoje "Acervo" na UI e `collection` no código). Pasta (`C:\Users\dfcsa\orelha`), banco,
 usuário e volume do Postgres migraram para `orelha` em 2026-09-15 (backup `pg_dump` feito antes;
-o volume antigo `riff-lab_pgdata` foi mantido como cópia).
+o volume antigo `riff-lab_pgdata` foi apagado no mesmo dia).
 
 ## Mapa de produto
 
