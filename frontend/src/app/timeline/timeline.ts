@@ -79,6 +79,7 @@ export class Timeline {
 
   readonly segments = computed(() => this.timeline.value()?.segments ?? []);
   readonly downbeats = computed(() => (this.beats.value() ?? []).filter((b) => b.downbeat));
+  readonly downbeatTimes = computed(() => this.downbeats().map((b) => b.timeS));
 
   readonly current = computed(() => {
     const t = this.currentTime();

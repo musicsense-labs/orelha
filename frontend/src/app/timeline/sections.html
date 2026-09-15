@@ -9,9 +9,15 @@
           @default { por repetição harmônica — clique no nome para renomear }
         }
       </span>
-      @if (source() === 'MANUAL') {
-        <button type="button" class="link" (click)="revert()" [disabled]="saving()">voltar à derivação</button>
-      }
+      <span class="tools">
+        <button type="button" class="link" (click)="splitHere()" [disabled]="saving() || currentId() == null"
+                title="corta a parte em execução no compasso mais próximo do playhead">✂ dividir aqui</button>
+        <button type="button" class="link" (click)="reset()" [disabled]="saving()"
+                title="descarta tudo: a música vira uma parte só, para marcar do zero">zerar partes</button>
+        @if (source() === 'MANUAL') {
+          <button type="button" class="link" (click)="revert()" [disabled]="saving()">voltar à derivação</button>
+        }
+      </span>
       @if (error(); as e) { <span class="error">{{ e }}</span> }
     </header>
 
@@ -25,9 +31,17 @@
           } @else {
             <button type="button" class="name" (click)="editing.set(p.id)" title="renomear">{{ p.label }}</button>
           }
-          <button type="button" class="link time" (click)="seek.emit(p.startS)" title="ir para o início da parte">
-            {{ formatTime(p.startS) }}–{{ formatTime(p.endS) }}
-          </button>
+          <span class="edge">
+            @if (i > 0) {
+              <button type="button" class="nudge" (click)="nudge(i, 'start', -1)" [disabled]="saving()" title="início um compasso antes">◀</button>
+              <button type="button" class="nudge" (click)="nudge(i, 'start', 1)" [disabled]="saving()" title="início um compasso depois">▶</button>
+            }
+            <button type="button" class="link time" (click)="seek.emit(p.startS)" title="ir para o início da parte">
+              {{ formatTime(p.startS) }}–{{ formatTime(p.endS) }}
+            </button>
+            <button type="button" class="nudge" (click)="nudge(i, 'end', -1)" [disabled]="saving()" title="fim um compasso antes">◀</button>
+            <button type="button" class="nudge" (click)="nudge(i, 'end', 1)" [disabled]="saving()" title="fim um compasso depois">▶</button>
+          </span>
           @if (i > 0) {
             <button type="button" class="link" (click)="mergeWithPrevious(i)" [disabled]="saving()"
                     title="juntar com a parte anterior">⤴ juntar</button>

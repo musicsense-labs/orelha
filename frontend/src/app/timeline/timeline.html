@@ -145,6 +145,7 @@
       }
     </div>
 
-    <app-sections [trackId]="id()" [currentTime]="currentTime()" (seek)="seekTo($event)" />
+    <app-sections [trackId]="id()" [currentTime]="currentTime()" [downbeats]="downbeatTimes()" [duration]="duration()"
+                  (seek)="seekTo($event)" />
   }
 }

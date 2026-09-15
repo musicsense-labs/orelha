@@ -8,11 +8,12 @@
 
     h2 { margin: 0; font-size: 1rem; }
     .small { font-size: 0.8rem; }
+    .tools { margin-left: auto; display: inline-flex; gap: 0.8rem; }
   }
 
   .part {
     display: grid;
-    grid-template-columns: minmax(9rem, 12rem) 1fr;
+    grid-template-columns: minmax(12rem, 16rem) 1fr;
     gap: 0.4rem 1rem;
     align-items: start;
     padding: 0.35rem 0.4rem;
@@ -55,6 +56,22 @@
   }
   .link:disabled { opacity: 0.5; cursor: default; }
   .time { font-variant-numeric: tabular-nums; text-decoration: none; }
+  .edge { display: inline-flex; align-items: center; gap: 0.1rem; }
+  .nudge {
+    font: inherit;
+    font-size: 0.6rem;
+    width: 1.1rem;
+    height: 1.1rem;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    background: #fff;
+    color: var(--muted);
+    cursor: pointer;
+    line-height: 1;
+  }
+  .nudge:hover { color: var(--ink); border-color: var(--ink); }
+  .nudge:disabled { opacity: 0.4; cursor: default; }
 
   .progression {
     display: flex;

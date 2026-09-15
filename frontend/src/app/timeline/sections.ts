@@ -16,6 +16,9 @@ import { KEY_RELATION_COLORS, chordName, formatTime } from '../shared/music';
 export class Sections {
   readonly trackId = input.required<string>();
   readonly currentTime = input(0);
+  /** Inícios de compasso (downbeats) e duração da faixa: bordas editadas encaixam no compasso. */
+  readonly downbeats = input<number[]>([]);
+  readonly duration = input(0);
   readonly seek = output<number>();
 
   private readonly http = inject(HttpClient);
@@ -101,6 +104,121 @@ export class Sections {
 
   revert(): void {
     this.save([]);
+  }
+
+  /** Descarta tudo: a música vira uma parte manual só, para marcar do zero com "dividir aqui". */
+  reset(): void {
+    this.save([{ id: 0, label: 'A', startS: 0, endS: this.duration(), cycleEndS: this.duration(), repeats: 1, chords: [] }]);
+  }
+
+  /** Corta a parte em execução no compasso mais próximo do playhead. */
+  splitHere(): void {
+    const parts = this.parts();
+    const index = parts.findIndex((p) => p.id === this.currentId());
+    if (index < 0) {
+      return;
+    }
+    const p = parts[index];
+    const cut = this.snap(this.currentTime());
+    if (cut <= p.startS || cut >= p.endS) {
+      return;
+    }
+    const cycle = p.cycleEndS - p.startS;
+    const keepsCycle = p.repeats > 1 && p.cycleEndS <= cut;
+    const first: SectionPart = {
+      ...p, endS: cut,
+      cycleEndS: keepsCycle ? p.cycleEndS : cut,
+      repeats: keepsCycle ? Math.max(1, Math.round((cut - p.startS) / cycle)) : 1,
+    };
+    const second: SectionPart = { ...p, id: -1, label: this.nextLabel(parts), startS: cut, cycleEndS: p.endS, repeats: 1 };
+    this.save([...parts.slice(0, index), first, second, ...parts.slice(index + 1)]);
+  }
+
+  /** Move a borda entre a parte {@code index} e a anterior (start) ou a seguinte (end) um compasso. */
+  nudge(index: number, edge: 'start' | 'end', direction: -1 | 1): void {
+    const parts = this.parts().map((p) => ({ ...p }));
+    const p = parts[index];
+    const boundary = edge === 'start' ? p.startS : p.endS;
+    const target = this.neighbourDownbeat(boundary, direction);
+    if (target == null) {
+      return;
+    }
+    if (edge === 'start') {
+      const previous = index > 0 ? parts[index - 1] : null;
+      const low = previous ? previous.startS + this.minBar() : 0;
+      if (target < low || target > p.endS - this.minBar()) {
+        return;
+      }
+      p.startS = target;
+      if (previous) {
+        previous.endS = target;
+        previous.cycleEndS = Math.min(previous.cycleEndS, target);
+      }
+      p.cycleEndS = Math.max(p.cycleEndS, target + this.minBar());
+    } else {
+      const next = index + 1 < parts.length ? parts[index + 1] : null;
+      const high = next ? next.endS - this.minBar() : this.duration();
+      if (target > high || target < p.startS + this.minBar()) {
+        return;
+      }
+      p.endS = target;
+      p.cycleEndS = Math.min(p.cycleEndS, target);
+      if (next) {
+        next.startS = target;
+        next.cycleEndS = Math.max(next.cycleEndS, target + this.minBar());
+      }
+    }
+    this.save(parts);
+  }
+
+  private minBar(): number {
+    const d = this.downbeats();
+    return d.length > 1 ? (d[d.length - 1] - d[0]) / (d.length - 1) : 1;
+  }
+
+  /** O downbeat mais próximo de um instante (o próprio instante se não há beats). */
+  private snap(seconds: number): number {
+    let best: number | null = null;
+    for (const d of this.downbeats()) {
+      if (best == null || Math.abs(d - seconds) < Math.abs(best - seconds)) {
+        best = d;
+      }
+    }
+    return best ?? seconds;
+  }
+
+  /** O downbeat estritamente antes (-1) ou depois (+1) de uma borda; a borda pode não estar num downbeat. */
+  private neighbourDownbeat(boundary: number, direction: -1 | 1): number | null {
+    const d = this.downbeats();
+    if (d.length === 0) {
+      return boundary + direction * 2;
+    }
+    const eps = 0.02;
+    if (direction < 0) {
+      for (let i = d.length - 1; i >= 0; i--) {
+        if (d[i] < boundary - eps) {
+          return d[i];
+        }
+      }
+      return boundary > 0 ? 0 : null;
+    }
+    for (const t of d) {
+      if (t > boundary + eps) {
+        return t;
+      }
+    }
+    return boundary < this.duration() ? this.duration() : null;
+  }
+
+  private nextLabel(parts: SectionPart[]): string {
+    const used = new Set(parts.map((p) => p.label));
+    for (let i = 0; i < 26; i++) {
+      const letter = String.fromCharCode(65 + i);
+      if (!used.has(letter)) {
+        return letter;
+      }
+    }
+    return 'parte ' + (parts.length + 1);
   }
 
   private save(parts: SectionPart[]): void {
