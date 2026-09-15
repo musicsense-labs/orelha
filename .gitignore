@@ -18,3 +18,5 @@ extractor/out/
 # Ferramentas locais da sessão
 .claude/
 frontend/proxy.local.json
+
+CLAUDE.local.md

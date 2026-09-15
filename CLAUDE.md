@@ -8,9 +8,8 @@ cachorra Kali do dono: sentado de frente, a orelha do lado direito da imagem em 
 quadrada aberta ao lado, sem caixas de som (homenagem ao Nipper da HMV/RCA, em outra pose e com
 outro aparelho; nunca usar "hound", já é o SoundHound). Rascunho da marca em Claude Design
 ("Marca Orelha"); fonte dos quadros no scratchpad da sessão de 2026-09-15. Não reintroduzir "riff-lab" nem
-"corpus" (hoje "Acervo" na UI e `collection` no código). Pasta (`C:\Users\dfcsa\orelha`), banco,
-usuário e volume do Postgres migraram para `orelha` em 2026-09-15 (backup `pg_dump` feito antes;
-o volume antigo `riff-lab_pgdata` foi apagado no mesmo dia).
+"corpus" (hoje "Acervo" na UI e `collection` no código). Pasta do repositório, banco, usuário e
+volume do Postgres migraram para `orelha` em 2026-09-15.
 
 ## Mapa de produto
 
@@ -83,21 +82,19 @@ frontend/   Angular CLI
 docker-compose.yml   Postgres local (orelha/orelha@localhost:5432/orelha, projeto compose `orelha`, volume `orelha_pgdata`)
 ```
 
-## Ambiente desta máquina
+## Ambiente
 
-- `JAVA_HOME` do sistema aponta para JDK 1.8. Para Maven use o JDK 21:
-  `JAVA_HOME="/c/Program Files/Eclipse Adoptium/jdk-21.0.10.7-hotspot"` (bash)
-  ou `$env:JAVA_HOME="C:\Program Files\Eclipse Adoptium\jdk-21.0.10.7-hotspot"` (pwsh).
-- `~/.m2/settings.xml` aponta para um Nexus corporativo inacessível fora da rede; por isso
-  `backend/.mvn/maven.config` força `.mvn/settings.xml` (Maven Central). Não alterar o global.
-- Angular CLI não é global: use `npx ng ...` dentro de `frontend/`.
-- Docker Desktop disponível; Testcontainers usa o daemon local.
+- Requisitos: JDK 21, Node 24 (Angular CLI não é global: `npx ng ...` em `frontend/`), Docker.
+- `backend/.mvn/maven.config` força `.mvn/settings.xml` (Maven Central), ignorando qualquer
+  mirror do `~/.m2/settings.xml`.
 - Testes do backend: `cd backend && mvn test` (sobe Postgres via Testcontainers, ~40 s).
 - Extrator: `docker compose build extractor` (~10 min na primeira vez, imagem de 4,2 GB: torch CPU
   + demucs). WAV sintético para smoke test: `docker run --rm -v "$PWD/extractor/out:/out"
   orelha-extractor python -m app.testaudio /out/progression.wav`. `extractor/out/` é ignorado pelo git.
 - Stack completo: `docker compose up -d` (Postgres + extractor em :8000) e `mvn spring-boot:run`
   em `backend/` (API em :8080; o worker faz polling da fila a cada 5 s).
+- Particularidades da máquina do dono (portas ocupadas, JDK do sistema, caminhos) ficam em
+  `CLAUDE.local.md`, não versionado.
 
 ## Regras de trabalho
 
@@ -204,8 +201,8 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
   `DataPaths` traduz `/data/...` → `orelha.data.host-root` (default `../data`). O backend serve
   `GET /api/tracks/{id}/stems` e `/stems/{name}` (Range) a partir do run canônico; runs anteriores
   a 0.3.0 não têm stems (a UI avisa e sugere re-análise). `data/` é ignorado pelo git.
-- **`track.audio_path` é absoluto** (`C:\Users\dfcsa\orelha\data\audio\<albumId>\...`, ou o caminho
-  original quando a faixa foi cadastrada por path). Mover a pasta do repositório quebra o player:
+- **`track.audio_path` é absoluto** (`<repo>/data/audio/<albumId>/...`, ou o caminho original
+  quando a faixa foi cadastrada por path). Mover a pasta do repositório quebra o player:
   em 2026-09-15 a mudança riff-lab → orelha exigiu `UPDATE track SET audio_path = replace(...)` em
   235 faixas. Backlog: guardar caminho relativo a `orelha.library.dir` para faixas da biblioteca.
 - **Upload pela UI**: `POST /api/tracks/upload` (multipart `file`, `albumId`, `title?`, `trackNo?`)
@@ -237,9 +234,9 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
   (timeline), `/artists/:id` e `/albums/:id` (perfil), `/compare`. Parâmetros e `data` de rota
   viram inputs (`withComponentInputBinding`).
 - Sem mock: cada tela mostra vazio ou a mensagem do backend quando não há dados.
-- Dev: `npx ng serve` usa `proxy.conf.json` (→ :8080). Se o 8080 estiver ocupado (WildFly do
-  IntelliJ nesta máquina), rode `.\backend\run.ps1 -Port 8081` e `npx ng serve --proxy-config
-  proxy.local.json` (arquivo local, ignorado pelo git).
+- Dev: `npx ng serve` usa `proxy.conf.json` (→ :8080). Se o 8080 estiver ocupado, rode
+  `.\backend\run.ps1 -Port 8081` e `npx ng serve --proxy-config proxy.local.json` (arquivo local,
+  ignorado pelo git).
 - Só apresentação em TypeScript (`shared/music.ts`: nomes de nota, cifra, cores); a teoria fica
   no backend.
 - **Player multi-stem** (timeline): a mixagem é o `<audio>` mestre (relógio); cada stem é um
