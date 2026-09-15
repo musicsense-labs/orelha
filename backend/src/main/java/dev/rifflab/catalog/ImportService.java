@@ -212,9 +212,17 @@ public class ImportService {
         }
     }
 
+    /** Caminho relativo do upload sob o staging: segmentos "." e ".." são descartados (nomes como "N.I.B..mp3" ficam intactos). */
     private Path safeStagingPath(Path dir, String relative) {
-        Path target = dir.resolve(relative.replace("..", "_")).normalize();
-        if (!target.startsWith(dir)) {
+        Path target = dir;
+        for (String segment : relative.split("/")) {
+            if (segment.isBlank() || segment.equals(".") || segment.equals("..")) {
+                continue;
+            }
+            target = target.resolve(TrackService.sanitizeSegment(segment));
+        }
+        target = target.normalize();
+        if (target.equals(dir) || !target.startsWith(dir)) {
             throw new IllegalArgumentException("Invalid upload path: " + relative);
         }
         return target;

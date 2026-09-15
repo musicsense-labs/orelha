@@ -116,8 +116,16 @@ public class TrackService {
         return candidate;
     }
 
+    /** Um segmento de caminho vindo do cliente: só troca caracteres proibidos; a extensão fica intacta. */
+    static String sanitizeSegment(String segment) {
+        String cleaned = segment.replaceAll("[\\\\:*?\"<>|\\p{Cntrl}]+", "-").strip();
+        return cleaned.isBlank() ? "_" : cleaned;
+    }
+
+    /** Nome de arquivo seguro: sem caracteres proibidos e sem ponto/espaço no fim ("N.I.B." → "N.I.B"). */
     static String sanitize(String name) {
-        String cleaned = name.strip().replaceAll("[\\\\/:*?\"<>|\\p{Cntrl}]+", "-").replaceAll("\\s+", " ");
+        String cleaned = name.strip().replaceAll("[\\\\/:*?\"<>|\\p{Cntrl}]+", "-").replaceAll("\\s+", " ")
+                .replaceAll("[. ]+$", "");
         return cleaned.isBlank() ? "track" : cleaned;
     }
 

@@ -221,6 +221,32 @@ class ImportIntegrationTest {
     }
 
     @Test
+    void namesWithDotsKeepTheirExtensionThroughStaging() throws Exception {
+        Path src = wav(tempDir.resolve("dots/Black Sabbath/Black Sabbath/04 N.I.B..wav"), 31);
+        MultiValueMap<String, Object> form = new LinkedMultiValueMap<>();
+        form.add("files", named(src, "Black Sabbath/Black Sabbath/04 N.I.B..wav"));
+        form.add("files", named(src, "../../etc/passwd.wav"));   // traversal: segmentos ".." caem fora
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+        ImportReport.Preview preview = rest.postForEntity("/api/tracks/import/stage", new HttpEntity<>(form, headers),
+                ImportReport.Preview.class).getBody();
+        assertThat(preview.items()).hasSize(2);
+        assertThat(preview.items().get(0).key()).endsWith("04 N.I.B..wav");
+        assertThat(preview.items().get(0).title()).isEqualTo("N.I.B.");
+        assertThat(preview.items().get(0).trackNo()).isEqualTo(4);
+        assertThat(Path.of(preview.items().get(1).key())).startsWith(stagingDir.resolve(preview.stagingId()))
+                .satisfies(p -> assertThat(p.toString()).endsWith("etc" + java.io.File.separator + "passwd.wav"));
+
+        ImportReport report = rest.postForEntity("/api/tracks/import/confirm",
+                new ImportReport.Confirmation(preview.stagingId(), List.of(preview.items().get(0))), ImportReport.class).getBody();
+        assertThat(report.imported()).hasSize(1);
+        TrackResponse track = rest.getForObject("/api/tracks/" + report.imported().get(0).trackId(), TrackResponse.class);
+        assertThat(track.title()).isEqualTo("N.I.B.");
+        assertThat(track.audioPath()).endsWith(java.io.File.separator + "N.I.B.wav");   // sem ponto duplo, extensão certa
+    }
+
+    @Test
     void stagedUploadCanBeDiscarded() throws Exception {
         Path src = wav(tempDir.resolve("disc/x/y/01 Song.wav"), 21);
         MultiValueMap<String, Object> form = new LinkedMultiValueMap<>();
