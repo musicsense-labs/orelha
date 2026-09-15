@@ -1,6 +1,6 @@
 spring:
   application:
-    name: riff-lab
+    name: orelha
   datasource:
     url: jdbc:postgresql://localhost:5432/rifflab
     username: rifflab
@@ -19,7 +19,7 @@ spring:
 server:
   port: 8080
 
-rifflab:
+orelha:
   extractor:
     url: http://localhost:8000
     timeout: 30m          # uma faixa leva minutos em CPU (demucs + BTC + madmom)

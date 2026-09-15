@@ -11,10 +11,10 @@
     <relativePath/>
   </parent>
 
-  <groupId>dev.rifflab</groupId>
-  <artifactId>riff-lab-backend</artifactId>
+  <groupId>dev.musicsense</groupId>
+  <artifactId>orelha-backend</artifactId>
   <version>0.1.0-SNAPSHOT</version>
-  <name>riff-lab backend</name>
+  <name>orelha backend</name>
   <description>Harmonic and timbral corpus analysis — domain, normalization and analytics</description>
 
   <properties>
