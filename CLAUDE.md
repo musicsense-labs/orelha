@@ -167,8 +167,15 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
   `key_segment`). Creep: madmom deu C maior com 0,31; a correção para G maior devolve I III IV iv.
 - **Run canônico é escolha do dono**: `PUT /api/tracks/{id}/canonical-run` (run DONE da faixa);
   o padrão continua sendo o primeiro run concluído.
-- **Stems persistidos (0.3.0)**: o extrator grava `/data/stems/<sha>/{drums,bass,other,vocals}.wav`
-  e devolve `stems` no JSON; o compose faz bind mount de `./data/{features,stems}` no host e
+- **Stems persistidos (0.4.0, Opus)**: o demucs grava WAV no diretório de trabalho — é o que
+  basic-pitch, `chroma_low` e timbre leem, sem perda — e o que fica em `/data/stems/<sha>/` é a
+  versão codificada por ffmpeg no formato `STEM_FORMAT` (compose: `opus` = Ogg/Opus 128 kbps,
+  ~11× menor que WAV; `aac`, `flac`, `wav` também valem). `models.stems_codec` registra o codec.
+  Stems antigos: `docker exec riff-lab-extractor python -m app.convert_stems` + `UPDATE
+  analysis_run SET stems = replace(stems::text, '.wav"', '.ogg"')::jsonb`. Tipos MIME servidos:
+  ogg/opus → `audio/ogg`, m4a/aac → `audio/mp4`, flac, wav, mp3. O extrator grava o upload como
+  `audio.<ext>` (nome neutro) porque títulos com pontos já derrubaram o ChordMini, e inclui a saída
+  do script na mensagem de erro quando não há `.lab`. O extrator devolve `stems` no JSON; o compose faz bind mount de `./data/{features,stems}` no host e
   `DataPaths` traduz `/data/...` → `rifflab.data.host-root` (default `../data`). O backend serve
   `GET /api/tracks/{id}/stems` e `/stems/{name}` (Range) a partir do run canônico; runs anteriores
   a 0.3.0 não têm stems (a UI avisa e sugere re-análise). `data/` é ignorado pelo git.
@@ -217,6 +224,11 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
   por cima do que estiver soando. A timeline desenha os downbeats como linhas de compasso.
 - **Upload** (corpus): formulário cria artista/álbum se preciso, envia multipart e faz polling
   de `/api/tracks` a cada 5 s enquanto houver run QUEUED/RUNNING; badges na fila/analisando…/falhou.
+  Cada faixa tem **reprocessar** (`POST /api/tracks/{id}/analyze`): destacado quando falhou, `↻`
+  nas demais; o run anterior é mantido e o canônico só muda por escolha do dono.
+- **Nomes de arquivo com `..`** ("N.I.B..mp3"): o guarda de path traversal do staging descarta
+  segmentos `..`, nunca substitui a sequência dentro de um nome (bug corrigido em 2026-09-15:
+  virava `N.I.B..b_mp3` e o ChordMini não reconhecia a extensão).
 
 ## Decisões pendentes
 
