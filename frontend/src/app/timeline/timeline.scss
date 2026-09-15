@@ -17,9 +17,14 @@
 
 .mixer {
   display: flex;
-  gap: 0.35rem;
+  gap: 0.6rem;
   flex-wrap: wrap;
   justify-content: flex-end;
+
+  .channel { display: flex; align-items: center; gap: 0.3rem; }
+  .channel input[type="range"] { width: 70px; accent-color: var(--ink); }
+  .channel.metronome { margin-left: 0.6rem; padding-left: 0.6rem; border-left: 1px solid var(--line); }
+  .channel.metronome button.on { background: var(--accent); border-color: var(--accent); }
 
   button {
     font: inherit;
@@ -61,6 +66,7 @@
   .segment:hover rect { filter: brightness(1.12); }
   .segment.active rect { stroke: #111; stroke-width: 1.5; }
   .playhead { stroke: #111; stroke-width: 1.5; pointer-events: none; }
+  .downbeat { stroke: rgba(0, 0, 0, 0.28); stroke-width: 0.6; pointer-events: none; }
 }
 
 .detail {

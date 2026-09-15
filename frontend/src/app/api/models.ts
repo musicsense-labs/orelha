@@ -68,6 +68,13 @@ export interface Timeline {
   segments: Segment[];
 }
 
+export interface Beat {
+  timeS: number;
+  beatNo: number;
+  barNo: number | null;
+  downbeat: boolean;
+}
+
 export interface Share {
   bySegment: number;
   byDuration: number;

@@ -15,12 +15,19 @@
       <audio #audio controls preload="metadata" [src]="'/api/tracks/' + t.id + '/audio'"
              (play)="onPlay()" (pause)="onPause()" (ended)="onPause()" (seeked)="onSeeked()"></audio>
       <div class="mixer">
-        <button type="button" [class.on]="isAudible('mix')" (click)="toggle('mix')" (dblclick)="solo('mix')">mix</button>
+        <div class="channel">
+          <button type="button" [class.on]="isAudible('mix')" (click)="toggle('mix')" title="a mixagem original; liga-la silencia os stems">mix</button>
+          <input type="range" min="0" max="1" step="0.01" [value]="volume('mix')" (input)="setVolume('mix', +$any($event.target).value)" title="volume do mix">
+        </div>
         @for (name of stems.value() ?? []; track name) {
-          <button type="button" [class.on]="isAudible(name)" (click)="toggle(name)" (dblclick)="solo(name)"
-                  [title]="'clique: liga/desliga · duplo clique: só ' + (stemLabels[name] ?? name)">
-            {{ stemLabels[name] ?? name }}
-          </button>
+          <div class="channel">
+            <button type="button" [class.on]="isAudible(name)" (click)="toggle(name)" (dblclick)="solo(name)"
+                    [title]="'clique: liga/desliga (silencia o mix) · duplo clique: só ' + (stemLabels[name] ?? name)">
+              {{ stemLabels[name] ?? name }}
+            </button>
+            <input type="range" min="0" max="1" step="0.01" [value]="volume(name)" (input)="setVolume(name, +$any($event.target).value)"
+                   [title]="'volume: ' + (stemLabels[name] ?? name)">
+          </div>
           <audio #stemAudio [attr.data-stem]="name" preload="auto" muted
                  [src]="'/api/tracks/' + t.id + '/stems/' + name"></audio>
         } @empty {
@@ -28,6 +35,14 @@
             <span class="muted small-note">sem stems neste run — re-analise a faixa com o extrator 0.3.0</span>
           }
         }
+        <div class="channel metronome">
+          <button type="button" [class.on]="metronomeOn()" (click)="toggleMetronome()"
+                  [disabled]="(beats.value()?.length ?? 0) === 0"
+                  [title]="(beats.value()?.length ?? 0) === 0 ? 'sem beats neste run' : 'metrônomo sobre os beats do extrator (downbeat acentuado); toca por cima de tudo'">
+            metrônomo
+          </button>
+          <input type="range" min="0" max="1" step="0.01" [value]="volume('metronome')" (input)="setVolume('metronome', +$any($event.target).value)" title="volume do metrônomo">
+        </div>
       </div>
     </div>
   </header>
@@ -70,6 +85,10 @@
           }
         </g>
       }
+      <!-- downbeats: início de cada compasso -->
+      @for (b of downbeats(); track b.beatNo) {
+        <line class="downbeat" [attr.x1]="x(b.timeS)" [attr.x2]="x(b.timeS)" y1="0" [attr.y2]="laneHeight * 2" />
+      }
       <!-- eixo de tempo -->
       @for (m of [0, 1, 2, 3, 4, 5, 6, 7, 8]; track m) {
         @if (m * 30 < duration()) {
@@ -87,6 +106,7 @@
         <span class="degree-big">{{ s.degreeLabel ?? '—' }}</span>
         <span class="badge" [style.background]="color(s)">{{ s.keyRelation }}</span>
         <span class="muted">{{ formatTime(s.startS) }}–{{ formatTime(s.endS) }}</span>
+        @if (currentBar() != null) { <span class="muted">compasso {{ currentBar() }}</span> }
         @if (s.relationFromPrev) { <span>← {{ s.relationFromPrev }}</span> }
         <span>baixo {{ noteName(s.effectiveBassPc) }}@if (s.inverted) { (invertido) }</span>
       } @else {
