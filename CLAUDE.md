@@ -1,6 +1,28 @@
-# riff-lab
+# Orelha (Music Sense Labs)
 
 Responda e comente em **pt-BR**. Código, identificadores e mensagens de commit em inglês.
+
+**Orelha** é o produto (o app que se abre); **Music Sense Labs** é a organização: namespace
+`dev.musicsense`, GitHub, docs. Decidido em 2026-09-15. O mascote é o Orelha: um cachorro de
+orelha em pé, virado para frente, diante de uma vitrola (homenagem ao Nipper da HMV/RCA, em outra
+pose e com outro aparelho; nunca usar "hound", já é o SoundHound). Não reintroduzir "riff-lab" nem
+"corpus" (hoje "Acervo" na UI e `collection` no código). Banco (`rifflab`) e pasta do repositório
+mantêm o nome antigo até uma migração explícita.
+
+## Mapa de produto
+
+Music Sense Labs é o guarda-chuva; Orelha é o app, com módulos que são **lentes sobre o mesmo
+Acervo** (uma faixa, um run, stems, anotações). Módulo = pacote Java + grupo de rotas + seção do
+menu; nada de serviço ou repositório por módulo antes de um módulo ter ciclo de vida próprio
+(o extrator já tem, por ser Python).
+
+| Módulo | Pergunta que responde | Existe | Próximo |
+|---|---|---|---|
+| Harmony | O que acontece harmonicamente e como artistas se comparam | `harmony`, `collection`, timeline, perfil, comparação | tonalidade `DERIVED`, modo por I7/IV7, linha de baixo sob acorde |
+| Stems | Que instrumento faz o quê | extrator (demucs), player multi-stem | — |
+| Practice | Como tocar junto | mixer, volumes, metrônomo | versão violão e voz, andamento, loop |
+| Production | Como o som foi construído | `timbre_summary` por álbum e stem | análise de produção (estudo em andamento) |
+| Guide | O que é ouvir e entender isso | — | guia cultural e nerd na entrada; referência: Music Genome Project |
 
 ## Contexto
 
@@ -53,7 +75,7 @@ Se você se pegar querendo cruzar essa linha, pare e pergunte.
 ## Layout do repositório
 
 ```
-backend/    Maven, pacote raiz dev.rifflab
+backend/    Maven, pacote raiz dev.musicsense.orelha (org: dev.musicsense)
 frontend/   Angular CLI
 docker-compose.yml   Postgres local (rifflab/rifflab@localhost:5432/rifflab)
 ```
@@ -70,7 +92,7 @@ docker-compose.yml   Postgres local (rifflab/rifflab@localhost:5432/rifflab)
 - Testes do backend: `cd backend && mvn test` (sobe Postgres via Testcontainers, ~40 s).
 - Extrator: `docker compose build extractor` (~10 min na primeira vez, imagem de 4,2 GB: torch CPU
   + demucs). WAV sintético para smoke test: `docker run --rm -v "$PWD/extractor/out:/out"
-  riff-extractor python -m app.testaudio /out/progression.wav`. `extractor/out/` é ignorado pelo git.
+  orelha-extractor python -m app.testaudio /out/progression.wav`. `extractor/out/` é ignorado pelo git.
 - Stack completo: `docker compose up -d` (Postgres + extractor em :8000) e `mvn spring-boot:run`
   em `backend/` (API em :8080; o worker faz polling da fila a cada 5 s).
 
@@ -112,7 +134,7 @@ Revisado em relação ao esboço original; ver `backend/src/main/resources/db/mi
 
 ## Regras do `HarmonicNormalizer` (P1/P2/P3 decididos em 2026-09-13)
 
-Pacote `dev.rifflab.harmony`, Java puro. Versão em `HarmonicNormalizer.VERSION`; mude a cada
+Pacote `dev.musicsense.orelha.harmony`, Java puro. Versão em `HarmonicNormalizer.VERSION`; mude a cada
 alteração de regra (vai para `harmonic_annotation.normalizer_version`).
 
 - **Dois eixos (P1).** Eixo A `KeyRelation` (acorde × tonalidade), precedência:
@@ -152,7 +174,7 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
 - `POST /analyze` é síncrono (minutos); a assincronia é a fila do Spring (`analysis_run` +
   `AnalysisWorker`). Cliente Java com `RestClient` (bloqueante por desenho; WebClient traria
   reactor sem ganho).
-- Só aqui se conhece o JSON do extrator: `extraction/riffextractor/*`. O domínio vê
+- Só aqui se conhece o JSON do extrator: `extraction/orelhaextractor/*`. O domínio vê
   `ExtractionResult`; rótulos Harte são traduzidos por `HarteLabel`.
 - **Power chord não é inferível pelo chroma** (medido em 2026-09-14, três faixas reais): sob
   distorção a intermodulação de fundamental e quinta gera 2,5f — a terça maior uma oitava acima,
@@ -171,19 +193,19 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
   basic-pitch, `chroma_low` e timbre leem, sem perda — e o que fica em `/data/stems/<sha>/` é a
   versão codificada por ffmpeg no formato `STEM_FORMAT` (compose: `opus` = Ogg/Opus 128 kbps,
   ~11× menor que WAV; `aac`, `flac`, `wav` também valem). `models.stems_codec` registra o codec.
-  Stems antigos: `docker exec riff-lab-extractor python -m app.convert_stems` + `UPDATE
+  Stems antigos: `docker exec orelha-extractor python -m app.convert_stems` + `UPDATE
   analysis_run SET stems = replace(stems::text, '.wav"', '.ogg"')::jsonb`. Tipos MIME servidos:
   ogg/opus → `audio/ogg`, m4a/aac → `audio/mp4`, flac, wav, mp3. O extrator grava o upload como
   `audio.<ext>` (nome neutro) porque títulos com pontos já derrubaram o ChordMini, e inclui a saída
   do script na mensagem de erro quando não há `.lab`. O extrator devolve `stems` no JSON; o compose faz bind mount de `./data/{features,stems}` no host e
-  `DataPaths` traduz `/data/...` → `rifflab.data.host-root` (default `../data`). O backend serve
+  `DataPaths` traduz `/data/...` → `orelha.data.host-root` (default `../data`). O backend serve
   `GET /api/tracks/{id}/stems` e `/stems/{name}` (Range) a partir do run canônico; runs anteriores
   a 0.3.0 não têm stems (a UI avisa e sugere re-análise). `data/` é ignorado pelo git.
 - **Upload pela UI**: `POST /api/tracks/upload` (multipart `file`, `albumId`, `title?`, `trackNo?`)
-  grava em `rifflab.library.dir/<albumId>/<título>.<ext>` (sem sobrescrever) e enfileira;
+  grava em `orelha.library.dir/<albumId>/<título>.<ext>` (sem sobrescrever) e enfileira;
   `TrackResponse` traz o último run (`latestRunId/Status/Error`) numa query só para a lista.
 - **Importar pasta em dois passos**: preview → edição na UI → confirm. `POST /api/tracks/import/stage`
-  (multipart `files`, nome = caminho relativo da pasta) guarda em `rifflab.staging.dir/<uuid>/` e
+  (multipart `files`, nome = caminho relativo da pasta) guarda em `orelha.staging.dir/<uuid>/` e
   devolve `Preview{stagingId, items[]}`; `POST /api/tracks/import-path/preview {path, recursive}`
   faz o mesmo para uma pasta do servidor (`stagingId` null, arquivos ficam no lugar). Nada entra no
   catálogo no preview. `POST /api/tracks/import/confirm {stagingId, items[]}` cadastra os itens
