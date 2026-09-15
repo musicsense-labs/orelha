@@ -2,9 +2,9 @@ spring:
   application:
     name: orelha
   datasource:
-    url: jdbc:postgresql://localhost:5432/rifflab
-    username: rifflab
-    password: rifflab
+    url: jdbc:postgresql://localhost:5432/orelha
+    username: orelha
+    password: orelha
   jpa:
     open-in-view: false
     hibernate:

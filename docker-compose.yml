@@ -1,17 +1,19 @@
+name: orelha
+
 services:
   postgres:
     image: postgres:16-alpine
     container_name: orelha-postgres
     environment:
-      POSTGRES_DB: rifflab
-      POSTGRES_USER: rifflab
-      POSTGRES_PASSWORD: rifflab
+      POSTGRES_DB: orelha
+      POSTGRES_USER: orelha
+      POSTGRES_PASSWORD: orelha
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U rifflab -d rifflab"]
+      test: ["CMD-SHELL", "pg_isready -U orelha -d orelha"]
       interval: 5s
       timeout: 3s
       retries: 10

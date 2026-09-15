@@ -6,8 +6,9 @@ Responda e comente em **pt-BR**. Código, identificadores e mensagens de commit 
 `dev.musicsense`, GitHub, docs. Decidido em 2026-09-15. O mascote é o Orelha: um cachorro de
 orelha em pé, virado para frente, diante de uma vitrola (homenagem ao Nipper da HMV/RCA, em outra
 pose e com outro aparelho; nunca usar "hound", já é o SoundHound). Não reintroduzir "riff-lab" nem
-"corpus" (hoje "Acervo" na UI e `collection` no código). Banco (`rifflab`) e pasta do repositório
-mantêm o nome antigo até uma migração explícita.
+"corpus" (hoje "Acervo" na UI e `collection` no código). Pasta (`C:\Users\dfcsa\orelha`), banco,
+usuário e volume do Postgres migraram para `orelha` em 2026-09-15 (backup `pg_dump` feito antes;
+o volume antigo `riff-lab_pgdata` foi mantido como cópia).
 
 ## Mapa de produto
 
@@ -77,7 +78,7 @@ Se você se pegar querendo cruzar essa linha, pare e pergunte.
 ```
 backend/    Maven, pacote raiz dev.musicsense.orelha (org: dev.musicsense)
 frontend/   Angular CLI
-docker-compose.yml   Postgres local (rifflab/rifflab@localhost:5432/rifflab)
+docker-compose.yml   Postgres local (orelha/orelha@localhost:5432/orelha, projeto compose `orelha`, volume `orelha_pgdata`)
 ```
 
 ## Ambiente desta máquina
