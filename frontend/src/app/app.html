@@ -1,8 +1,13 @@
 <nav class="topbar">
-  <a routerLink="/" class="brand"><img src="brand/orelha-icon.svg" alt="" width="26" height="26"> Orelha</a>
+  <a routerLink="/" class="brand" aria-label="Orelha, Music Sense Labs">
+    <img src="brand/orelha-signature.svg" alt="" height="40">
+    <span class="wordmark">
+      <span class="name">Orelha</span>
+      <span class="org">Music Sense Labs</span>
+    </span>
+  </a>
   <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">acervo</a>
   <a routerLink="/compare" routerLinkActive="active">comparar</a>
-  <span class="org">Music Sense Labs</span>
 </nav>
 <main>
   <router-outlet />
