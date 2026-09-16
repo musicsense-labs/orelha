@@ -13,8 +13,8 @@ import java.util.Map;
  */
 public record ExtractionResult(Provenance provenance, AudioInfo audio, KeyEstimate key, Tempo tempo,
                                List<BeatEvent> beats, List<ChordEvent> chords, List<NoteEvent> bassNotes,
-                               List<NoteEvent> vocalNotes, List<TimbreStat> timbre, String featuresPath,
-                               Map<String, String> stems) {
+                               List<NoteEvent> vocalNotes, Lyrics lyrics, List<TimbreStat> timbre,
+                               String featuresPath, Map<String, String> stems) {
 
     public record Provenance(String name, String version, Map<String, String> models) {
     }
@@ -42,6 +42,21 @@ public record ExtractionResult(Provenance provenance, AudioInfo audio, KeyEstima
 
     /** Nota MIDI transcrita de um stem (baixo ou voz). */
     public record NoteEvent(BigDecimal startS, BigDecimal endS, int midi, Integer velocity) {
+    }
+
+    /**
+     * Letra por ASR sobre o stem de voz (extrator ≥ 0.6.0): trechos com a probabilidade de "não é fala" e
+     * palavras com tempo. Vazio (não null) quando o extrator não transcreve.
+     */
+    public record Lyrics(String language, Float languageConfidence, List<LyricSegmentEvent> segments) {
+        public static final Lyrics NONE = new Lyrics(null, null, List.of());
+    }
+
+    public record LyricSegmentEvent(BigDecimal startS, BigDecimal endS, String text, Float noSpeechProb,
+                                    List<LyricWordEvent> words) {
+    }
+
+    public record LyricWordEvent(BigDecimal startS, BigDecimal endS, String text, Float probability) {
     }
 
     public record TimbreStat(String stemModel, String stem, Float centroidMean, Float centroidStd,

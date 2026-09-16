@@ -34,6 +34,13 @@ public class TrackAnalysis {
     @Column(name = "integrated_lufs", precision = 6, scale = 2)
     private BigDecimal integratedLufs;
 
+    /** Idioma detectado pelo ASR da letra (ISO 639-1) e a confiança; null sem letra (extrator < 0.6.0). */
+    @Column(name = "lyrics_language")
+    private String lyricsLanguage;
+
+    @Column(name = "lyrics_language_confidence")
+    private Float lyricsLanguageConfidence;
+
     protected TrackAnalysis() {
     }
 
@@ -46,6 +53,19 @@ public class TrackAnalysis {
 
     public Long getId() {
         return id;
+    }
+
+    public void setLyricsLanguage(String language, Float confidence) {
+        this.lyricsLanguage = language;
+        this.lyricsLanguageConfidence = confidence;
+    }
+
+    public String getLyricsLanguage() {
+        return lyricsLanguage;
+    }
+
+    public Float getLyricsLanguageConfidence() {
+        return lyricsLanguageConfidence;
     }
 
     public AnalysisRun getRun() {

@@ -97,7 +97,7 @@ class CollectionIntegrationTest {
         return new ExtractionResult(new Provenance("stub", "0", Map.of()),
                 new AudioInfo(new BigDecimal("8.000"), 44100, new BigDecimal("-14.00")),
                 new KeyEstimate(tonic, mode, 0.9f), new Tempo(new BigDecimal("120.00"), "4/4"),
-                List.of(), chords, bass, List.of(),
+                List.of(), chords, bass, List.of(), ExtractionResult.Lyrics.NONE,
                 List.of(new TimbreStat("htdemucs", "other", centroid, 10f, 0.1f, 3000f, 0.2f)),
                 "/data/features/stub.parquet", Map.of());
     }

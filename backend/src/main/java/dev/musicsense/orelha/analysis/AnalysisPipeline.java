@@ -72,15 +72,24 @@ public class AnalysisPipeline {
         track.setDurationS(result.audio().durationS());
         track.setSampleRate(result.audio().sampleRate());
 
-        em.persist(new TrackAnalysis(run,
+        TrackAnalysis analysis = new TrackAnalysis(run,
                 result.tempo() == null ? null : result.tempo().bpm(),
                 result.tempo() == null ? null : result.tempo().timeSignature(),
-                result.audio().integratedLufs()));
+                result.audio().integratedLufs());
+        if (!result.lyrics().segments().isEmpty()) {
+            analysis.setLyricsLanguage(result.lyrics().language(), result.lyrics().languageConfidence());
+        }
+        em.persist(analysis);
 
         persistBeats(run, result);
         List<NoteEvent> bassNotes = result.bassNotes();
         bassNotes.forEach(n -> em.persist(new BassNote(run, n.startS(), n.endS(), n.midi(), n.velocity())));
         result.vocalNotes().forEach(n -> em.persist(new VocalNote(run, n.startS(), n.endS(), n.midi(), n.velocity())));
+        result.lyrics().segments().forEach(s -> {
+            LyricSegment segment = new LyricSegment(run, s.startS(), s.endS(), s.text(), s.noSpeechProb());
+            s.words().forEach(w -> segment.addWord(w.startS(), w.endS(), w.text(), w.probability()));
+            em.persist(segment);
+        });
         result.timbre().forEach(t -> em.persist(new TimbreSummary(run, t.stemModel(), t.stem(), t.centroidMean(),
                 t.centroidStd(), t.flatnessMean(), t.rolloffP95(), t.rmsMean())));
 

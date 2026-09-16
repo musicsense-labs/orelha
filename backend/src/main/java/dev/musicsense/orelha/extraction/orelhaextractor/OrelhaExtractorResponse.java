@@ -10,8 +10,8 @@ import java.util.Map;
 /** Espelho do JSON do orelha-extractor (extractor/README.md). Só aqui se conhece esse formato. */
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 record OrelhaExtractorResponse(Extractor extractor, Audio audio, Key key, Tempo tempo, List<Beat> beats,
-                             List<ChordSegment> chords, List<BassNote> bassNotes, List<BassNote> vocalNotes, List<Timbre> timbre,
-                             String featuresPath, Map<String, String> stems) {
+                             List<ChordSegment> chords, List<BassNote> bassNotes, List<BassNote> vocalNotes, Lyrics lyrics,
+                             List<Timbre> timbre, String featuresPath, Map<String, String> stems) {
 
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     record Extractor(String name, String version, Map<String, String> models) {
@@ -39,6 +39,18 @@ record OrelhaExtractorResponse(Extractor extractor, Audio audio, Key key, Tempo 
 
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     record BassNote(BigDecimal startS, BigDecimal endS, int midi, Integer velocity) {   // também as notas de voz
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    record Lyrics(String language, Float languageProbability, List<LyricSegment> segments) {
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    record LyricSegment(BigDecimal startS, BigDecimal endS, String text, Float noSpeechProb, List<LyricWord> words) {
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    record LyricWord(BigDecimal startS, BigDecimal endS, String text, Float probability) {
     }
 
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)

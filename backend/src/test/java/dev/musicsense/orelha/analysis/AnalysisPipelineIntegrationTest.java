@@ -103,8 +103,12 @@ class AnalysisPipelineIntegrationTest {
                     new NoteEvent(bd(2.0), bd(4.0), 41, 100),        // F sob F
                     new NoteEvent(bd(4.0), bd(6.0), 43, 100),        // G sob G
                     new NoteEvent(bd(6.0), bd(8.0), 45, 100)),       // A sob E5: pedal
-            List.of(new NoteEvent(bd(0.5), bd(1.5), 64, 90),         // voz: E4 sobre Am
-                    new NoteEvent(bd(2.5), bd(3.5), 65, 90)),        // F4 sobre F
+            List.of(new NoteEvent(bd(0.5), bd(1.5), 64, 90),         // voz: E4 sobre Am, sob a palavra "let"
+                    new NoteEvent(bd(2.5), bd(3.5), 65, 90),         // F4 sobre F, dentro do trecho mas sem palavra
+                    new NoteEvent(bd(6.0), bd(7.0), 67, 90)),        // G4 sobre E5, fora de qualquer trecho: vazamento
+            new ExtractionResult.Lyrics("en", 0.9f, List.of(new ExtractionResult.LyricSegmentEvent(bd(0.4), bd(4.0),
+                    "let it", 0.1f, List.of(new ExtractionResult.LyricWordEvent(bd(0.4), bd(1.4), "let", 0.9f),
+                            new ExtractionResult.LyricWordEvent(bd(1.6), bd(2.2), "it", 0.8f))))),
             List.of(new TimbreStat("htdemucs", "bass", 400f, 50f, 0.02f, 1800f, 0.1f)),
             "/data/features/stub.parquet",
             Map.of("bass", "/data/stems/stub/bass.wav", "drums", "/data/stems/stub/drums.wav"));
@@ -189,13 +193,24 @@ class AnalysisPipelineIntegrationTest {
         assertThat(bassLine.getBody()).extracting(dev.musicsense.orelha.catalog.TrackController.NoteResponse::midi)
                 .containsExactly(45, 41, 43, 45);
 
-        // Notas da voz do run canônico (extrator ≥ 0.5.0).
+        // Notas da voz do run canônico (extrator ≥ 0.5.0), classificadas pela letra (≥ 0.6.0).
         ResponseEntity<List<dev.musicsense.orelha.catalog.TrackController.NoteResponse>> vocals = rest.exchange(
                 "/api/tracks/" + track.id() + "/vocal-notes", org.springframework.http.HttpMethod.GET, null,
                 new org.springframework.core.ParameterizedTypeReference<>() {
                 });
         assertThat(vocals.getBody()).extracting(dev.musicsense.orelha.catalog.TrackController.NoteResponse::midi)
-                .containsExactly(64, 65);
+                .containsExactly(64, 65, 67);
+        assertThat(vocals.getBody()).extracting(dev.musicsense.orelha.catalog.TrackController.NoteResponse::kind)
+                .containsExactly(VocalNoteKind.LEXICAL, VocalNoteKind.NON_LEXICAL, VocalNoteKind.LIKELY_LEAK);
+
+        // Letra do run canônico, com o compasso de cada palavra pela grade de beats.
+        LyricsResponse lyrics = rest.getForObject("/api/tracks/" + track.id() + "/lyrics", LyricsResponse.class);
+        assertThat(lyrics.language()).isEqualTo("en");
+        assertThat(lyrics.segments()).hasSize(1);
+        assertThat(lyrics.segments().get(0).text()).isEqualTo("let it");
+        assertThat(lyrics.segments().get(0).words()).extracting(LyricsResponse.Word::text).containsExactly("let", "it");
+        assertThat(lyrics.segments().get(0).words().get(0).barNo()).isEqualTo(1);
+        assertThat(lyrics.segments().get(0).words().get(1).barNo()).isEqualTo(1);   // 1,6 s: ainda no compasso 1 (2,0 s abre o 2)
 
         // Beats do run canônico, com compasso contado a partir do primeiro downbeat.
         ResponseEntity<List<dev.musicsense.orelha.catalog.TrackController.BeatResponse>> beats = rest.exchange(

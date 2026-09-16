@@ -7,6 +7,9 @@ import dev.musicsense.orelha.extraction.ExtractionResult.NoteEvent;
 import dev.musicsense.orelha.extraction.ExtractionResult.BeatEvent;
 import dev.musicsense.orelha.extraction.ExtractionResult.ChordEvent;
 import dev.musicsense.orelha.extraction.ExtractionResult.KeyEstimate;
+import dev.musicsense.orelha.extraction.ExtractionResult.LyricSegmentEvent;
+import dev.musicsense.orelha.extraction.ExtractionResult.LyricWordEvent;
+import dev.musicsense.orelha.extraction.ExtractionResult.Lyrics;
 import dev.musicsense.orelha.extraction.ExtractionResult.Provenance;
 import dev.musicsense.orelha.extraction.ExtractionResult.Tempo;
 import dev.musicsense.orelha.extraction.ExtractionResult.TimbreStat;
@@ -55,12 +58,25 @@ public class OrelhaExtractorAdapter implements AudioExtractor {
                         .map(n -> new NoteEvent(n.startS(), n.endS(), n.midi(), n.velocity())).toList(),
                 orEmpty(r.vocalNotes()).stream()   // ausente antes do 0.5.0: lista vazia
                         .map(n -> new NoteEvent(n.startS(), n.endS(), n.midi(), n.velocity())).toList(),
+                lyrics(r.lyrics()),                // ausente antes do 0.6.0: Lyrics.NONE
                 orEmpty(r.timbre()).stream()
                         .map(t -> new TimbreStat(t.stemModel(), t.stem(), t.centroidMean(), t.centroidStd(),
                                 t.flatnessMean(), t.rolloffP95(), t.rmsMean()))
                         .toList(),
                 r.featuresPath(),
                 r.stems() == null ? Map.of() : r.stems());
+    }
+
+    private static Lyrics lyrics(OrelhaExtractorResponse.Lyrics l) {
+        if (l == null) {
+            return Lyrics.NONE;
+        }
+        return new Lyrics(l.language(), l.languageProbability(), orEmpty(l.segments()).stream()
+                .map(s -> new LyricSegmentEvent(s.startS(), s.endS(), s.text(), s.noSpeechProb(),
+                        orEmpty(s.words()).stream()
+                                .map(w -> new LyricWordEvent(w.startS(), w.endS(), w.text(), w.probability()))
+                                .toList()))
+                .toList());
     }
 
     /** O madmom só conhece 'major' e 'minor'; modos são atribuídos depois (MANUAL/DERIVED). */
