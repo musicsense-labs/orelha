@@ -60,8 +60,8 @@ export class Heatmap {
         axisLabel: { fontSize: 11 }, splitArea: { show: true } },
       yAxis: { type: 'category', data: labels, name: 'de', inverse: true, axisLabel: { fontSize: 11 },
         splitArea: { show: true } },
-      visualMap: { min: 0, max: 1, show: false, inRange: { color: ['#f4f4f4', '#f6c26b', '#d9534f', '#5a1a1a'] } },
-      series: [{ type: 'heatmap', data, emphasis: { itemStyle: { borderColor: '#333', borderWidth: 1 } } }],
+      visualMap: { min: 0, max: 1, show: false, inRange: { color: ['#f6f1e8', '#e9c06a', '#d9532b', '#1c1a17'] } },
+      series: [{ type: 'heatmap', data, emphasis: { itemStyle: { borderColor: '#1c1a17', borderWidth: 1 } } }],
     });
   }
 }

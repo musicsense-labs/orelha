@@ -13,8 +13,8 @@
   .brand { display: inline-flex; align-items: center; gap: 0.9rem; margin-right: 1rem; }
   .brand img { display: block; }
   .wordmark { display: flex; flex-direction: column; line-height: 1; }
-  .name { font-family: 'Bricolage Grotesque', 'Trebuchet MS', system-ui, sans-serif; font-weight: 800; font-size: 1.9rem; letter-spacing: -0.03em; }
-  .org { font-family: 'IBM Plex Mono', 'Courier New', monospace; font-size: 0.7rem; letter-spacing: 0.24em; text-transform: uppercase; color: var(--muted); margin-top: 0.2rem; }
+  .name { font-family: var(--font-sans); font-weight: 800; font-size: 1.9rem; letter-spacing: -0.03em; }
+  .org { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.24em; text-transform: uppercase; color: var(--muted); margin-top: 0.2rem; }
 }
 
 main {

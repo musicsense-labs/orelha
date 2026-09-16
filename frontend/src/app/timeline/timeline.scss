@@ -20,7 +20,7 @@
     border-radius: 50%;
     border: 1px solid var(--ink);
     background: var(--ink);
-    color: #fff;
+    color: var(--paper);
     cursor: pointer;
     line-height: 1;
   }
@@ -58,12 +58,12 @@
     padding: 0.2rem 0.6rem;
     border: 1px solid var(--line);
     border-radius: 999px;
-    background: #fff;
+    background: var(--surface);
     color: var(--muted);
     cursor: pointer;
     user-select: none;
   }
-  button.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  button.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
   .small-note { font-size: 0.8rem; }
 }
 
@@ -83,11 +83,11 @@
     padding: 0.05rem 0.5rem;
     border: 1px solid var(--line);
     border-radius: 3px;
-    background: #fff;
+    background: var(--surface);
     color: var(--muted);
     cursor: pointer;
   }
-  .leak-toggle.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .leak-toggle.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
   .leak-toggle + .rows-picker { margin-left: 0; }
 
   .rows-picker {
@@ -104,11 +104,11 @@
       height: 1.4rem;
       border: 1px solid var(--line);
       border-radius: 4px;
-      background: #fff;
+      background: var(--surface);
       color: var(--muted);
       cursor: pointer;
     }
-    button.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+    button.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
   }
 }
 
@@ -118,27 +118,27 @@
   cursor: pointer;
   user-select: none;
 
-  text { font-size: 11px; fill: #111; pointer-events: none; }
+  text { font-size: 11px; fill: var(--ink); pointer-events: none; }
   .chord { font-weight: 600; }
-  .degree { font-size: 10px; fill: #222; }
-  .bass { font-size: 10px; fill: #333; }
-  .vocal-bg { fill: #f7f5f0; }
-  .vocal { fill: #5b6ee1; opacity: 0.85; }
-  .vocal:hover { fill: #2e3fb8; }
+  .degree { font-size: 10px; fill: var(--ink); opacity: 0.85; }
+  .bass { font-size: 10px; fill: var(--ink); opacity: 0.75; }
+  .vocal-bg { fill: var(--panel); }
+  .vocal { fill: var(--voice); opacity: 0.9; }
+  .vocal:hover { fill: var(--voice-strong); }
   .vocal.non-lexical { opacity: 0.45; }
-  .vocal.leak { fill: none; stroke: #5b6ee1; stroke-width: 0.8; stroke-dasharray: 2 1.5; opacity: 0.7; }
-  .lyric-bg { fill: #fbfaf6; }
+  .vocal.leak { fill: none; stroke: var(--voice); stroke-width: 0.8; stroke-dasharray: 2 1.5; opacity: 0.7; }
+  .lyric-bg { fill: var(--surface); }
   .lyric { cursor: pointer; }
-  .lyric rect { fill: #e8e6f8; }
-  .lyric text { font-size: 10px; fill: #333; pointer-events: none; }
-  .lyric:hover rect { fill: #d4d0f0; }
-  .bass-bg { stroke: #fff; stroke-width: 0.5; }
-  .bass-note { fill: #b9770e; opacity: 0.9; }
-  .bass-note:hover { fill: #8a5606; }
-  .tick { font-size: 10px; fill: #666; }
+  .lyric rect { fill: var(--voice-tint); }
+  .lyric text { font-size: 10px; fill: var(--ink); pointer-events: none; }
+  .lyric:hover rect { fill: #cfe0dc; }
+  .bass-bg { stroke: var(--surface); stroke-width: 0.5; }
+  .bass-note { fill: var(--bass); opacity: 0.9; }
+  .bass-note:hover { fill: var(--bass-strong); }
+  .tick { font-size: 10px; fill: var(--muted); }
   .segment:hover rect { filter: brightness(1.12); }
-  .segment.active rect { stroke: #111; stroke-width: 1.5; }
-  .playhead { stroke: #111; stroke-width: 1.5; pointer-events: none; }
+  .segment.active rect { stroke: var(--ink); stroke-width: 1.5; }
+  .playhead { stroke: var(--ink); stroke-width: 1.5; pointer-events: none; }
   .downbeat { stroke: rgba(0, 0, 0, 0.28); stroke-width: 0.6; pointer-events: none; }
 }
 
@@ -162,7 +162,7 @@
   }
   .cell:last-child { border-right: none; }
   .chord-cell { min-width: 12rem; }
-  .vocal-cell .val { color: #2e3fb8; }
+  .vocal-cell .val { color: var(--voice-strong); }
   .lyric-cell { min-width: 14rem; max-width: 28rem; }
   .lyric-cell .val.line { font-size: 0.95rem; font-weight: 400; display: inline; line-height: 1.35; }
   .lyric-cell .word {
@@ -176,13 +176,13 @@
     border-radius: 3px;
     transition: color 0.15s, font-weight 0.15s;
   }
-  .lyric-cell .word.on { font-weight: 700; color: #2e3fb8; }
-  .lyric-cell .word:hover { background: #eef0fb; color: var(--ink); }
+  .lyric-cell .word.on { font-weight: 700; color: var(--voice-strong); }
+  .lyric-cell .word:hover { background: var(--voice-tint); color: var(--ink); }
   .lyric-cell .word-edit {
     font: inherit;
     font-size: 0.95rem;
     padding: 0 0.2rem;
-    border: 1px solid #2e3fb8;
+    border: 1px solid var(--voice-strong);
     border-radius: 3px;
     min-width: 4ch;
   }
@@ -195,12 +195,12 @@
     background: none;
     border: 0;
     padding: 0;
-    color: #2e3fb8;
+    color: var(--voice-strong);
     cursor: pointer;
     text-decoration: underline;
   }
-  .lyric-cell .error { color: #b3261e; }
-  .bass-cell .val { color: #8a5606; }
+  .lyric-cell .error { color: var(--accent-hover); }
+  .bass-cell .val { color: var(--bass-strong); }
   /* nota em execução em negrito; depois que termina fica leve até a próxima chegar (não pisca) */
   .val.note { font-weight: 700; transition: opacity 0.25s, font-weight 0.25s; }
   .val.note.off { font-weight: 400; opacity: 0.4; }

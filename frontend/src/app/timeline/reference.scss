@@ -15,7 +15,7 @@
 
   .link { font: inherit; font-size: 0.85rem; background: none; border: 0; padding: 0; color: var(--ink); cursor: pointer; text-decoration: underline; }
   .link:disabled { opacity: 0.5; cursor: default; }
-  .error { color: #b3261e; font-size: 0.85rem; }
+  .error { color: var(--accent-hover); font-size: 0.85rem; }
 
   .editor {
     margin-top: 0.6rem;
@@ -25,7 +25,7 @@
     textarea { font-family: 'IBM Plex Mono', 'Courier New', monospace; font-size: 0.85rem; padding: 0.5rem; border: 1px solid var(--line); border-radius: 4px; resize: vertical; }
     .row { display: flex; gap: 0.5rem; }
     input { flex: 1; font: inherit; padding: 0.3rem 0.5rem; border: 1px solid var(--line); border-radius: 4px; }
-    button { font: inherit; padding: 0.3rem 0.8rem; border: 1px solid var(--ink); border-radius: 4px; background: var(--ink); color: #fff; cursor: pointer; }
+    button { font: inherit; padding: 0.3rem 0.8rem; border: 1px solid var(--ink); border-radius: 4px; background: var(--ink); color: var(--paper); cursor: pointer; }
     button:disabled { opacity: 0.5; }
     .small { font-size: 0.78rem; margin: 0; }
   }
@@ -39,8 +39,8 @@
     .cell:last-child { border-right: none; }
     .lbl { font-family: 'IBM Plex Mono', 'Courier New', monospace; font-size: 0.65rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
     .val { font-size: 1.2rem; font-weight: 600; }
-    .val.ok { color: #2e7d32; }
-    .val.bad { color: #b3261e; }
+    .val.ok { color: var(--ok); }
+    .val.bad { color: var(--accent-hover); }
     .sub { font-size: 0.78rem; }
   }
 
@@ -48,7 +48,7 @@
   th, td { text-align: left; padding: 0.3rem 0.5rem; border-bottom: 1px solid var(--line); vertical-align: top; }
   th { font-weight: 600; color: var(--muted); font-size: 0.75rem; }
   .num { text-align: right; font-variant-numeric: tabular-nums; }
-  .bad { color: #b3261e; }
+  .bad { color: var(--accent-hover); }
   .mono { font-family: 'IBM Plex Mono', 'Courier New', monospace; font-size: 0.8rem; }
   .small { font-size: 0.78rem; }
 }

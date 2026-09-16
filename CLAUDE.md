@@ -6,8 +6,13 @@ Responda e comente em **pt-BR**. Código, identificadores e mensagens de commit 
 `dev.musicsense`, GitHub, docs. Decidido em 2026-09-15. O mascote é o Orelha, inspirado na
 cachorra Kali do dono: sentado de frente, a orelha do lado direito da imagem em pé, vitrola
 quadrada aberta ao lado, sem caixas de som (homenagem ao Nipper da HMV/RCA, em outra pose e com
-outro aparelho; nunca usar "hound", já é o SoundHound). Rascunho da marca em Claude Design
-("Marca Orelha"); fonte dos quadros no scratchpad da sessão de 2026-09-15. Não reintroduzir "riff-lab" nem
+outro aparelho; nunca usar "hound", já é o SoundHound). Marca em Claude Design ("Marca Orelha"): o
+canvas é a fonte; **v6 do mascote desde 2026-09-16** (menos infantil, olhos em amêndoa) aplicada em
+`frontend/public/brand/*.svg` e `favicon.svg`. Paleta: papel `#f6f1e8`, tinta `#1c1a17`, selo (accent)
+`#d9532b` (hover `#b8401f`), cinza quente `#8a8378`, linha `#d9d2c5`; tipografia Bricolage Grotesque
+(800 títulos, 500 texto) e IBM Plex Mono (rótulos, graus, tempos). Tokens em `frontend/src/styles.scss`
+(`--paper --surface --panel --ink --muted --line --accent --voice --bass`); links no accent, nunca azul do
+navegador; cores de dado (eixo A) ficam em `shared/music.ts`. Nunca inverter as cores do mascote. Não reintroduzir "riff-lab" nem
 "corpus" (hoje "Acervo" na UI e `collection` no código). Pasta do repositório, banco, usuário e
 volume do Postgres migraram para `orelha` em 2026-09-15.
 
