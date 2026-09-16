@@ -128,20 +128,42 @@
             [attr.y1]="rowHeight * rowOf(currentTime())" [attr.y2]="rowHeight * rowOf(currentTime()) + vocalTop + vocalLane + 8" />
     </svg>
 
-    <div class="detail card">
+    <!-- Painel do instante: acorde, tempo, compasso, baixo e voz em células rotuladas. -->
+    <div class="detail card" [class.empty]="!focus()">
       @if (focus(); as s) {
-        <strong>{{ label(s) }}</strong>
-        <span class="degree-big">{{ s.degreeLabel ?? '—' }}</span>
-        <span class="badge" [style.background]="color(s)">{{ s.keyRelation }}</span>
-        <span class="muted">{{ formatTime(s.startS) }}–{{ formatTime(s.endS) }}</span>
-        @if (currentBar() != null) { <span class="muted">compasso {{ currentBar() }}</span> }
-        @if (s.relationFromPrev) { <span>← {{ s.relationFromPrev }}</span> }
-        <span>baixo {{ noteName(s.effectiveBassPc) }}@if (s.inverted) { (invertido) }</span>
+        <div class="cell chord-cell">
+          <span class="lbl">acorde</span>
+          <span class="val"><strong>{{ label(s) }}</strong><span class="degree-big">{{ s.degreeLabel ?? '—' }}</span></span>
+          <span class="sub">
+            <span class="badge" [style.background]="color(s)">{{ s.keyRelation }}</span>
+            @if (s.relationFromPrev) { <span class="muted">← {{ s.relationFromPrev }}</span> }
+          </span>
+        </div>
+        <div class="cell">
+          <span class="lbl">tempo</span>
+          <span class="val">{{ formatTime(hovered() ? s.startS : currentTime()) }}</span>
+          <span class="sub muted">{{ formatTime(s.startS) }}–{{ formatTime(s.endS) }}</span>
+        </div>
+        <div class="cell">
+          <span class="lbl">compasso</span>
+          <span class="val">{{ currentBar() ?? '—' }}</span>
+          <span class="sub muted">{{ timeline.value()?.timeSignature ?? '' }}</span>
+        </div>
+        <div class="cell">
+          <span class="lbl">baixo</span>
+          <span class="val">{{ noteName(s.effectiveBassPc) }}</span>
+          <span class="sub muted">{{ s.inverted ? 'invertido' : (s.effectiveBassPc == null ? '' : 'fundamental') }}</span>
+        </div>
+        <div class="cell vocal-cell">
+          <span class="lbl">voz</span>
+          <span class="val">{{ currentVocalNote() ?? '—' }}</span>
+          <span class="sub muted">{{ (vocalNotes.value()?.length ?? 0) === 0 ? 'sem notas neste run' : '' }}</span>
+        </div>
       } @else {
-        <span class="muted">Passe o mouse ou dê play: o segmento atual aparece aqui.</span>
-      }
-      @if (currentVocalNote(); as v) {
-        <span class="vocal-now" title="nota da voz em execução (basic-pitch no stem de voz)">voz <b>{{ v }}</b></span>
+        <span class="muted">Passe o mouse ou dê play: o instante atual aparece aqui.</span>
+        @if (currentVocalNote(); as v) {
+          <div class="cell vocal-cell"><span class="lbl">voz</span><span class="val">{{ v }}</span></div>
+        }
       }
     </div>
 
