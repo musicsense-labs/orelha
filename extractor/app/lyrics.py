@@ -29,8 +29,12 @@ def model() -> WhisperModel:
 def transcribe_lyrics(vocals_wav: Path) -> dict:
     # condition_on_previous_text=False: sem contexto entre janelas o modelo repete menos alucinações em
     # trechos instrumentais. vad_filter=False: o VAD é de fala e derruba canto sustentado.
+    # no_speech_threshold=0.95: canto limpo já pontua ~0,8 em "não é fala" (medido no Creep, 2026-09-15);
+    # com o padrão 0,6 a ponte sob guitarra distorcida sumia. A janela só é descartada quando, além disso,
+    # o log-prob médio é ruim — intro e solo instrumentais continuam sem trecho.
     segments, info = model().transcribe(str(vocals_wav), language=WHISPER_LANGUAGE, word_timestamps=True,
-                                        vad_filter=False, condition_on_previous_text=False, beam_size=5)
+                                        vad_filter=False, condition_on_previous_text=False, beam_size=5,
+                                        no_speech_threshold=0.95)
     out = []
     for s in segments:
         words = [

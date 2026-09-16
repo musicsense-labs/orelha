@@ -124,12 +124,12 @@
         <rect x="0" [attr.y]="rowHeight * r + lyricTop" [attr.width]="width" [attr.height]="lyricLane" class="lyric-bg" />
       }
       @for (l of lyricPieces(); track l.key) {
-        <g class="lyric" [class.leak]="l.leak" (click)="seekTo(l.seg.startS)">
+        <g class="lyric" (click)="seekTo(l.seg.startS)">
           <rect [attr.x]="l.x" [attr.y]="rowHeight * l.row + lyricTop + 1" [attr.width]="l.w" [attr.height]="lyricLane - 2" rx="2" />
           @if (l.text) {
             <text [attr.x]="l.x + 3" [attr.y]="rowHeight * l.row + lyricTop + 12">{{ l.text }}</text>
           }
-          <title>{{ formatTime(l.seg.startS) }} · {{ l.seg.text }}{{ l.leak ? ' · o ASR acha que não é fala' : '' }}</title>
+          <title>{{ formatTime(l.seg.startS) }} · {{ l.seg.text }}</title>
         </g>
       }
       <!-- downbeats: início de cada compasso -->

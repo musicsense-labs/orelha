@@ -154,7 +154,7 @@ export class Timeline {
   readonly lyricPieces = computed(() => {
     const span = this.rowSpan();
     const rows = this.rows();
-    const out: { key: string; row: number; x: number; w: number; text: string; leak: boolean; seg: LyricSegment }[] = [];
+    const out: { key: string; row: number; x: number; w: number; text: string; seg: LyricSegment }[] = [];
     this.lyricSegments().forEach((s, i) => {
       const first = Math.min(rows - 1, Math.floor(s.startS / span));
       const last = Math.min(rows - 1, Math.max(first, Math.ceil(s.endS / span) - 1));
@@ -168,8 +168,7 @@ export class Timeline {
         const chars = Math.floor((w - 4) / 6);
         const text = chars < 3 ? '' : (s.text.length <= chars ? s.text : s.text.slice(0, chars - 1) + '…');
         out.push({
-          key: 'l' + i + ':' + row, row, x: ((start - row * span) / span) * this.width, w, text,
-          leak: (s.noSpeechProb ?? 0) >= 0.6, seg: s,
+          key: 'l' + i + ':' + row, row, x: ((start - row * span) / span) * this.width, w, text, seg: s,
         });
       }
     });

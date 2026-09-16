@@ -13,8 +13,9 @@ import java.util.List;
  * <ol>
  *   <li>nota que sobrepõe uma palavra com probabilidade ≥ {@code wordMinProbability}, com folga de
  *       {@code wordToleranceS} em cada ponta: {@link VocalNoteKind#LEXICAL};</li>
- *   <li>senão, nota dentro de um trecho com {@code no_speech_prob < noSpeechThreshold}:
- *       {@link VocalNoteKind#NON_LEXICAL} (o ASR ouviu fala ali, mas não alinhou palavra);</li>
+ *   <li>senão, nota dentro de um trecho com {@code no_speech_prob < noSpeechThreshold} (por padrão o limiar
+ *       é 1.0: todo trecho devolvido conta, porque canto limpo já pontua ~0,8 e o Whisper só devolve o que
+ *       aceitou como fala): {@link VocalNoteKind#NON_LEXICAL} (o ASR ouviu fala ali, mas não alinhou palavra);</li>
  *   <li>senão {@link VocalNoteKind#LIKELY_LEAK}.</li>
  * </ol>
  * É classificação, não descarte: vocalises que o ASR ignora caem em LIKELY_LEAK e a UI só as esconde por

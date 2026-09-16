@@ -125,8 +125,6 @@
   .lyric { cursor: pointer; }
   .lyric rect { fill: #e8e6f8; }
   .lyric text { font-size: 10px; fill: #333; pointer-events: none; }
-  .lyric.leak rect { fill: #f3e4e4; }
-  .lyric.leak text { fill: #9a4a4a; font-style: italic; }
   .lyric:hover rect { fill: #d4d0f0; }
   .bass-bg { stroke: #fff; stroke-width: 0.5; }
   .bass-note { fill: #b9770e; opacity: 0.9; }

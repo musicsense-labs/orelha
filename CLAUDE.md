@@ -232,8 +232,12 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
   idioma em `track_analysis`. `GET /api/tracks/{id}/lyrics` devolve trechos e palavras com o compasso em que
   começam. A classificação das notas de voz é derivada na leitura (`VocalNoteClassifier`, limiares em
   `orelha.lyrics.*`): `LEXICAL` (sob palavra com probabilidade ≥ 0,3, folga 120 ms), `NON_LEXICAL` (dentro de
-  trecho com `no_speech_prob` < 0,6 sem palavra: vocalise) ou `LIKELY_LEAK` (fora de trecho de fala: solo
-  ou teclado que o demucs deixou no stem). Sem letra no run, tudo é `LEXICAL`. É classificação, não
+  trecho devolvido, sem palavra: vocalise) ou `LIKELY_LEAK` (fora de qualquer trecho: solo ou teclado que
+  o demucs deixou no stem). **Medido no Creep (2026-09-15)**: `no_speech_prob` fica em 0,78–0,86 em canto
+  limpo e transcrito, então não serve de limiar (o do núcleo fica em 1,0 = desligado); o que separa é o
+  próprio Whisper devolver ou não o trecho, com `no_speech_threshold=0.95` no extrator para a ponte sob
+  guitarra distorcida não sumir — intro e solo continuam sem trecho. Notas de voz do Creep: 212 com texto,
+  210 vazamento (intro, solo 2:47–3:04 e a distorção dos refrões). Sem letra no run, tudo é `LEXICAL`. É classificação, não
   descarte. Motivação: o dono viu solos de guitarra no piano roll da voz; a letra sincronizada também é
   a base para forma por texto (backlog Stephenson, itens 5/15/16). Edição manual de palavras: próxima onda.
 - **Re-análise herda overrides**: ao concluir um run novo, a tonalidade MANUAL e as partes MANUAL do run
@@ -273,8 +277,7 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
   um fundo por segmento que fica laranja quando o baixo da harmonia não é a fundamental) e voz (40 px,
   piano roll de `vocal-notes`, com notas `NON_LEXICAL` translúcidas e `LIKELY_LEAK` escondidas por padrão —
   botão "mostrar vazamento (N)" na legenda), ambas na tessitura p5–p95 da faixa, e uma quarta lane de
-  16 px com os trechos da letra (texto que couber, vermelho itálico quando o ASR duvida que seja fala;
-  clique faz seek). O painel ganha a célula LETRA: o trecho atual com a palavra cantada em negrito e o
+  16 px com os trechos da letra (texto que couber; clique faz seek). O painel ganha a célula LETRA: o trecho atual com a palavra cantada em negrito e o
   compasso. **Baixo da harmonia ≠ linha de
   baixo**: o primeiro é `effectiveBassPc` (classe que mais soa sob o segmento, decide `inverted`) e vai
   na cifra como `E♭/G`; a segunda é o stem transcrito e aparece no piano roll e na célula BAIXO do
