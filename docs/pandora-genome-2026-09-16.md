@@ -14,9 +14,9 @@ Concordam em **57/60** (modo maior/menor; "mixed" fica fora). Divergências:
 
 | track | música | Pandora | Orelha |
 |---|---|---|---|
-| 27 | null | minor key tonality | MAJOR (extractor) |
-| 40 | null | minor key tonality | MAJOR (extractor) |
-| 152 | null | major key tonality | MINOR (extractor) |
+| 27 | Rain | minor key tonality | MAJOR (extractor) |
+| 40 | From Me To You | minor key tonality | MAJOR (extractor) |
+| 152 | A Day In The Life | major key tonality | MINOR (extractor) |
 
 ## Features mais frequentes nas 64 faixas
 
