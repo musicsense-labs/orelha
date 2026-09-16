@@ -222,3 +222,64 @@ export interface SectionRequest {
   cycleEndS?: number | null;
   repeats?: number | null;
 }
+
+/** Análise humana de referência (TheoryTab transcrito pelo dono). */
+export interface ReferenceSection {
+  label: string;
+  progression: string;
+}
+
+export interface Reference {
+  trackId: number;
+  source: string | null;
+  url: string | null;
+  tonicPc: number | null;
+  mode: string | null;
+  rawText: string | null;
+  sections: ReferenceSection[];
+  updatedAt: string | null;
+}
+
+export interface ComparisonKey {
+  tonicPc: number | null;
+  mode: string | null;
+  source: string | null;
+}
+
+export interface SectionMatch {
+  referenceLabel: string;
+  referenceKeys: string[];
+  ourLabel: string | null;
+  ourKeys: string[];
+  sequenceSimilarity: number;
+  vocabularyCoverage: number;
+  missingKeys: string[];
+}
+
+export interface Comparison {
+  trackId: number;
+  runId: number;
+  referenceKey: ComparisonKey | null;
+  ourKey: ComparisonKey | null;
+  tonicMatches: boolean;
+  modeMatches: boolean;
+  sequenceSimilarity: number;
+  vocabularyCoverage: number;
+  sections: SectionMatch[];
+  ourPartLabels: string[];
+}
+
+/** Trends do Hooktheory: próximo acorde provável e canções com a progressão. */
+export interface HooktheoryNode {
+  chordId: string;
+  chordHtml: string;
+  probability: number;
+  childPath: string;
+}
+
+export interface HooktheorySong {
+  artist: string;
+  song: string;
+  section: string;
+  url: string;
+}

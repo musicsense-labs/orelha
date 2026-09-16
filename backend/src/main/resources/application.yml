@@ -33,6 +33,9 @@ orelha:
   worker:
     enabled: true
     poll-ms: 5000
+  hooktheory:
+    url: https://api.hooktheory.com/v1/
+    activkey: ${ORELHA_HOOKTHEORY_ACTIVKEY:}   # token da conta do dono (POST /v1/users/auth); vazio = desligado
   harmony:
     # 0 = desligado. Medido em 2026-09-14: o chroma não separa power chord distorcido de tríade limpa
     # (intermodulação f + 1,5f = terça maior). Ver PowerChordDetector.

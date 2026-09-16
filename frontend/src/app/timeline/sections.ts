@@ -1,6 +1,6 @@
 import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { HttpClient, httpResource } from '@angular/common/http';
-import { SectionChord, SectionPart, SectionRequest, Sections as SectionsDto } from '../api/models';
+import { HooktheoryNode, HooktheorySong, SectionChord, SectionPart, SectionRequest, Sections as SectionsDto } from '../api/models';
 import { KEY_RELATION_COLORS, chordName, formatTime, relationLabel } from '../shared/music';
 
 /** Escala das caixas de acorde no resumo: um compasso de 4/4 a 120 BPM (2 s) tem 36 px. */
@@ -32,6 +32,69 @@ export class Sections {
   readonly error = signal<string | null>(null);
 
   readonly parts = computed(() => this.sections.value()?.parts ?? []);
+
+  /** Trends do Hooktheory: id da parte consultada, próximos acordes e canções com a mesma progressão. */
+  readonly trends = signal<{ partId: number; cp: string; nodes: HooktheoryNode[]; songs: HooktheorySong[]; error: string | null } | null>(null);
+  readonly trendsLoading = signal(false);
+  readonly hooktheory = httpResource<{ configured: boolean }>(() => '/api/reference/hooktheory/status');
+  readonly hooktheoryConfigured = computed(() => this.hooktheory.hasValue() && this.hooktheory.value().configured);
+
+  /**
+   * Sequência da parte nos ids do Hooktheory ("1,5,6,4"): só tríades diatônicas da escala maior
+   * (I ii iii IV V vi vii°); qualquer outro acorde torna a parte não consultável (null). Power chord e sus
+   * sobre grau diatônico contam pelo grau (I5 → 1), como o Hooktheory faz.
+   */
+  hooktheoryPath(p: SectionPart): string | null {
+    const ids: string[] = [];
+    let last: string | null = null;
+    for (const c of p.chords) {
+      const m = /^(VII|VI|IV|V|III|II|I|vii|vi|iv|v|iii|ii|i)(°|ø)?/.exec(c.degreeLabel ?? '');
+      if (!m) {
+        return null;
+      }
+      const table: Record<string, string> = { I: '1', ii: '2', iii: '3', IV: '4', V: '5', vi: '6', 'vii°': '7' };
+      const id = table[m[1] + (m[2] ?? '')];
+      if (!id) {
+        return null;
+      }
+      if (id !== last) {
+        ids.push(id);
+        last = id;
+      }
+    }
+    return ids.length ? ids.join(',') : null;
+  }
+
+  /** O que o pop faria depois desta progressão, e quem já a usou — dados do Hooktheory, sob demanda. */
+  askHooktheory(p: SectionPart): void {
+    const cp = this.hooktheoryPath(p);
+    if (!cp) {
+      return;
+    }
+    if (this.trends()?.partId === p.id) {
+      this.trends.set(null);
+      return;
+    }
+    this.trendsLoading.set(true);
+    this.http.get<HooktheoryNode[]>('/api/reference/hooktheory/trends', { params: { cp } }).subscribe({
+      next: (nodes) => {
+        this.http.get<HooktheorySong[]>('/api/reference/hooktheory/songs', { params: { cp, page: 1 } }).subscribe({
+          next: (songs) => {
+            this.trendsLoading.set(false);
+            this.trends.set({ partId: p.id, cp, nodes: nodes.slice(0, 6), songs: songs.slice(0, 8), error: null });
+          },
+          error: (e) => {
+            this.trendsLoading.set(false);
+            this.trends.set({ partId: p.id, cp, nodes: nodes.slice(0, 6), songs: [], error: e?.error?.detail ?? e?.message ?? null });
+          },
+        });
+      },
+      error: (e) => {
+        this.trendsLoading.set(false);
+        this.trends.set({ partId: p.id, cp, nodes: [], songs: [], error: e?.error?.detail ?? e?.message ?? 'falha na consulta' });
+      },
+    });
+  }
   readonly source = computed(() => this.sections.value()?.source ?? null);
 
   readonly currentPart = computed(() => {

@@ -46,7 +46,31 @@
             <button type="button" class="link" (click)="mergeWithPrevious(i)" [disabled]="saving()"
                     title="juntar com a parte anterior">⤴ juntar</button>
           }
+          @if (hooktheoryPath(p); as cp) {
+            <button type="button" class="link ht" [class.on]="trends()?.partId === p.id" (click)="askHooktheory(p)"
+                    [disabled]="trendsLoading() || !hooktheoryConfigured()"
+                    [title]="hooktheoryConfigured() ? 'Trends do Hooktheory: o que o pop faz depois desta progressão e quem já a usou (' + cp + ')' : 'defina ORELHA_HOOKTHEORY_ACTIVKEY no backend para consultar o Hooktheory'">no pop ↗</button>
+          }
         </div>
+        @if (trends(); as t) {
+          @if (t.partId === p.id) {
+            <div class="trends">
+              @if (t.error) { <span class="error">{{ t.error }}</span> }
+              @if (t.nodes.length) {
+                <span class="muted">depois de {{ t.cp.split(',').length > 1 ? 'esta progressão' : 'este acorde' }}, o pop vai para:</span>
+                @for (n of t.nodes; track n.chordId) {
+                  <span class="node" [title]="'id ' + n.chordId"><span [innerHTML]="n.chordHtml"></span> {{ (n.probability * 100).toFixed(0) }}%</span>
+                }
+              }
+              @if (t.songs.length) {
+                <span class="muted">· com esta progressão:</span>
+                @for (s of t.songs; track s.url) {
+                  <a [href]="s.url" target="_blank" rel="noopener">{{ s.artist }} – {{ s.song }} ({{ s.section }})</a>
+                }
+              }
+            </div>
+          }
+        }
         <div class="progression">
           @for (c of p.chords; track c.startS) {
             <button type="button" class="chord" [class.playing]="p.id === currentId() && c.startS === currentChordStart()"

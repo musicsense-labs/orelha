@@ -1,0 +1,54 @@
+.reference {
+  margin-top: 1rem;
+  padding: 0.8rem 1rem;
+
+  header {
+    display: flex;
+    align-items: baseline;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+    h2 { margin: 0; font-size: 1rem; }
+    .small { font-size: 0.8rem; }
+    .tools { margin-left: auto; display: inline-flex; gap: 0.8rem; font-size: 0.85rem; }
+    a { color: var(--ink); }
+  }
+
+  .link { font: inherit; font-size: 0.85rem; background: none; border: 0; padding: 0; color: var(--ink); cursor: pointer; text-decoration: underline; }
+  .link:disabled { opacity: 0.5; cursor: default; }
+  .error { color: #b3261e; font-size: 0.85rem; }
+
+  .editor {
+    margin-top: 0.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    textarea { font-family: 'IBM Plex Mono', 'Courier New', monospace; font-size: 0.85rem; padding: 0.5rem; border: 1px solid var(--line); border-radius: 4px; resize: vertical; }
+    .row { display: flex; gap: 0.5rem; }
+    input { flex: 1; font: inherit; padding: 0.3rem 0.5rem; border: 1px solid var(--line); border-radius: 4px; }
+    button { font: inherit; padding: 0.3rem 0.8rem; border: 1px solid var(--ink); border-radius: 4px; background: var(--ink); color: #fff; cursor: pointer; }
+    button:disabled { opacity: 0.5; }
+    .small { font-size: 0.78rem; margin: 0; }
+  }
+
+  .summary {
+    display: flex;
+    gap: 0;
+    margin: 0.6rem 0;
+    .cell { display: flex; flex-direction: column; gap: 0.15rem; padding: 0.3rem 1.1rem; border-right: 1px solid var(--line); }
+    .cell:first-child { padding-left: 0; }
+    .cell:last-child { border-right: none; }
+    .lbl { font-family: 'IBM Plex Mono', 'Courier New', monospace; font-size: 0.65rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
+    .val { font-size: 1.2rem; font-weight: 600; }
+    .val.ok { color: #2e7d32; }
+    .val.bad { color: #b3261e; }
+    .sub { font-size: 0.78rem; }
+  }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  th, td { text-align: left; padding: 0.3rem 0.5rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 600; color: var(--muted); font-size: 0.75rem; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .bad { color: #b3261e; }
+  .mono { font-family: 'IBM Plex Mono', 'Courier New', monospace; font-size: 0.8rem; }
+  .small { font-size: 0.78rem; }
+}

@@ -1,0 +1,79 @@
+<section class="reference card">
+  <header>
+    <h2>Referência humana</h2>
+    <span class="muted small">
+      @if (has()) {
+        TheoryTab transcrito por você{{ ref()?.updatedAt ? ' · ' + (ref()?.updatedAt | slice:0:10) : '' }}
+      } @else {
+        análise do TheoryTab (Hooktheory) colada à mão, para medir o extrator e as partes
+      }
+    </span>
+    <span class="tools">
+      <a [href]="viewUrl()" target="_blank" rel="noopener" title="a página desta música no TheoryTab (é preciso estar logado; se o link errar, use a página do artista)">abrir no TheoryTab ↗</a>
+      <a [href]="artistUrl()" target="_blank" rel="noopener" title="lista das músicas do artista no TheoryTab">artista ↗</a>
+      <button type="button" class="link" (click)="open.set(!open())">{{ open() ? 'fechar' : (has() ? 'editar' : 'colar análise') }}</button>
+      @if (has()) {
+        <button type="button" class="link" (click)="remove()" [disabled]="saving()">apagar</button>
+      }
+    </span>
+    @if (error(); as e) { <span class="error">{{ e }}</span> }
+  </header>
+
+  @if (open()) {
+    <div class="editor">
+      <textarea #text rows="8" [placeholder]="placeholder" [value]="ref()?.rawText ?? ''" spellcheck="false"></textarea>
+      <div class="row">
+        <input #url type="url" placeholder="URL da página no TheoryTab (opcional)" [value]="ref()?.url ?? ''">
+        <button type="button" (click)="save(text.value, url.value)" [disabled]="saving()">salvar e comparar</button>
+      </div>
+      <p class="muted small">
+        Primeira linha "tonalidade: G major" (ou "tom: Sol menor"); depois uma linha por seção, "Verse: I V vi IV".
+        Numerais como no TheoryTab: bVII, ♭VI, iv, V/vi, ii°, V7, IV6 — sétimas, sus e inversões são ignoradas na comparação.
+      </p>
+    </div>
+  }
+
+  @if (cmp(); as c) {
+    <div class="summary">
+      <div class="cell">
+        <span class="lbl">tonalidade</span>
+        <span class="val" [class.ok]="c.tonicMatches && c.modeMatches" [class.bad]="!c.tonicMatches">
+          {{ keyLabel(c.referenceKey) }} <span class="muted">×</span> {{ keyLabel(c.ourKey) }}
+        </span>
+        <span class="sub muted">{{ c.tonicMatches ? (c.modeMatches ? 'tônica e modo batem' : 'tônica bate, modo não') : 'tônica diferente' }}{{ c.ourKey?.source ? ' · nossa: ' + c.ourKey?.source?.toLowerCase() : '' }}</span>
+      </div>
+      <div class="cell">
+        <span class="lbl">sequência</span>
+        <span class="val">{{ percent(c.sequenceSimilarity) }}</span>
+        <span class="sub muted">1 − distância de edição / tamanho, média das seções</span>
+      </div>
+      <div class="cell">
+        <span class="lbl">vocabulário</span>
+        <span class="val">{{ percent(c.vocabularyCoverage) }}</span>
+        <span class="sub muted">acordes da referência que aparecem na nossa parte</span>
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr><th>seção (TheoryTab)</th><th>progressão</th><th>nossa parte</th><th class="num">sequência</th><th class="num">vocabulário</th><th>faltou em nós</th></tr>
+      </thead>
+      <tbody>
+        @for (s of c.sections; track $index) {
+          <tr>
+            <td>{{ s.referenceLabel }}</td>
+            <td class="mono">{{ s.referenceKeys.join(' ') }}</td>
+            <td>{{ s.ourLabel ?? '—' }} <span class="mono muted">{{ s.ourKeys.join(' ') }}</span></td>
+            <td class="num" [class.bad]="s.sequenceSimilarity < 0.5">{{ percent(s.sequenceSimilarity) }}</td>
+            <td class="num" [class.bad]="s.vocabularyCoverage < 0.5">{{ percent(s.vocabularyCoverage) }}</td>
+            <td class="mono">{{ s.missingKeys.join(' ') }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+    <p class="muted small">Chaves "semitons acima da tônica:família" (0:MAJOR = I, 10:MAJOR = ♭VII, 9:MINOR = vi); repetições consecutivas fundidas; power chord e sus contam como maior, como no derivador de partes.</p>
+  } @else if (has() && comparison.isLoading()) {
+    <p class="muted">Comparando…</p>
+  } @else if (has()) {
+    <p class="muted">Sem run canônico para comparar.</p>
+  }
+</section>
