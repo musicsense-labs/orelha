@@ -339,8 +339,10 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
 - **Backlog Stephenson** (`docs/stephenson-backlog.md`): Parte I = 17 conceitos pedidos (2026-09-15),
   Parte II = os demais 15 do livro (2026-09-16), Parte III = tabela gene do Pandora ↔ Stephenson ↔ métrica
   do Orelha e a proposta da **aba Genoma** (ficha por faixa ao estilo do musicólogo do Pandora, notas
-  0–5 MANUAL guiadas por evidência automática DERIVED; módulo Guide). Fundações F1–F3 e ondas A–F;
-  13 perguntas abertas ao dono no fim do documento. Só a letra por ASR (item 5b) está implementada.
+  0–5 MANUAL guiadas por evidência automática DERIVED; módulo Guide), Parte IV = ecossistema Hooktheory
+  (notação relativa colorida por grau, empréstimo com modo de origem, pré-refrão, API Trends como
+  população de referência, TheoryTab como verdade humana para medir o extrator). Fundações F1–F3 e
+  ondas A–F; 15 perguntas abertas ao dono no fim do documento. Só a letra por ASR (item 5b) está implementada.
 
 ## Ondas
 

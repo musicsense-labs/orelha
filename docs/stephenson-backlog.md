@@ -3,7 +3,7 @@
 Ken Stephenson, *What to Listen For in Rock: A Stylistic Analysis* (Yale, 2002). Páginas citadas
 são as do livro (no PDF do dono, página do PDF = página do livro + 19). Registrado em 2026-09-15 a
 pedido do dono; a Parte I são os 17 conceitos pedidos, a Parte II os demais que o livro traz, a Parte III
-os genes do Pandora e a aba Genoma. Só a letra por ASR (item 5b) está implementada. Cada item traz a definição do autor (parafraseada),
+os genes do Pandora e a aba Genoma, a Parte IV o ecossistema Hooktheory (Hookpad, TheoryTab, Trends). Só a letra por ASR (item 5b) está implementada. Cada item traz a definição do autor (parafraseada),
 o que o Orelha já tem, a proposta, os trade-offs e as perguntas que precisam de resposta do dono
 antes de codar (regra do projeto: não inventar teoria musical).
 
@@ -438,6 +438,8 @@ Cada onda passa pelo portão de sempre: medir em faixas do acervo que o dono con
 11. Item 19: ♭3̂ recorrente sobre tônica maior muda o modo ou vira flag "blue third"?
 12. Item 23: fração de 7ªs mostrada como aproximada ou só acima de um limiar de confiança do BTC?
 13. Genoma: começar pelos ~40 genes ou pelos de harmonia e forma; nomes do Pandora em inglês ao lado?
+14. Item 36: conta no Hooktheory para a API Trends (token de usuário)?
+15. Item 39: transcrever a análise do TheoryTab de ~20 faixas do acervo para medir o extrator?
 
 ## Parte II — os demais conceitos do livro (registrados em 2026-09-16)
 
@@ -690,3 +692,134 @@ apoiada e guiada** pela análise automática do áudio.
 - **Perguntas ao dono:** (1) começar pelos ~40 genes da tabela ou por um subconjunto de harmonia e
   forma (os que já têm evidência)? (2) manter os nomes do Pandora em inglês ao lado do rótulo em
   pt-BR, para a referência ficar rastreável?
+
+## Parte IV — o ecossistema Hooktheory (Hookpad, TheoryTab, Trends) e os pontos de ligação
+
+Registrado em 2026-09-16 a pedido do dono. Hooktheory (2011, Dave Carlton, Chris Anderson e Ryan
+Miyakawa, engenheiros-músicos de Berkeley) é o oposto complementar do Pandora: não recomenda, ensina
+e analisa. Três peças:
+
+- **Hooktheory I e II** (livros interativos, 2012 e 2014): teoria "para escrever canções", toda em
+  **notação relativa** (graus e numerais romanos, nunca nomes absolutos), com exemplos de canções
+  reais. Base conceitual: função harmônica da prática comum simplificada (tônica, subdominante/
+  pré-dominante, dominante), inversões como "baixo que caminha", **empréstimo modal** tratado como o
+  principal recurso de cor (cada acorde emprestado leva o nome do modo de origem: "iv do menor
+  paralelo", "♭VII do mixolídio"), dominantes secundárias, modos como tonalidade da canção
+  (uma canção pode "estar em Mi mixolídio"), e para a melodia a distinção **nota do acorde × nota
+  fora do acorde** com a regra pedagógica de que tempos fortes tendem à nota do acorde.
+- **Hookpad**: o editor. Acordes em numerais coloridos **por grau** (cada grau tem uma cor fixa, o
+  I é sempre a mesma cor em qualquer tonalidade), melodia em graus sobre a grade de compassos,
+  playback com bandas sintéticas, exportação MIDI e partitura, e as sugestões "Magic Chord" /
+  "Magic Bass": o próximo acorde mais provável dada a sequência atual, tirado das estatísticas do
+  banco.
+- **TheoryTab** (o "hooktab"): banco colaborativo com dezenas de milhares de trechos de canções,
+  cada um analisado por um usuário no formato do Hookpad — tonalidade e modo, andamento, compasso,
+  acordes com numerais e origem do empréstimo, melodia em graus — sincronizado com o vídeo do
+  YouTube e dividido em **seções nomeadas** (Intro, Verse, Pre-Chorus, Chorus, Bridge, Solo,
+  Outro). Cada trecho lista "outras canções com esta progressão". **Trends**: sobre o mesmo banco,
+  a probabilidade do próximo acorde dada uma sequência (cadeia de Markov de ordem baixa) e a
+  frequência das progressões comuns; exposto por uma API REST pública (`/v1/trends/nodes?cp=…`,
+  `/v1/trends/songs?cp=…`, com token de conta).
+
+**Literatura.** O Hooktheory não cita academia; a base é a pedagogia de songwriting (linha Berklee)
+somada às estatísticas do próprio banco. A ligação com a literatura vem por dois lados. (1) O
+estudo de 2012 de Carlton ("analisei os acordes de 1 300 canções") chegou, por outra via, ao que
+Stephenson descreve: I, IV, V e vi dominam; IV → I é mais comum que V → I; ♭VII em maior é corriqueiro;
+o vi "soa triste" porque quase sempre segue I ou V. (2) A academia usou o banco: o *Hooktheory Lead
+Sheet Dataset* (Yeh et al., ~11 mil trechos, 2020–21) é a referência para harmonização automática
+de melodia. O análogo acadêmico do TheoryTab é o corpus de rock de de Clercq & Temperley (2011,
+*A corpus analysis of rock harmony*, 200 canções da lista da Rolling Stone transcritas à mão em
+numerais), que confirmou estatisticamente a retrocessão e o peso do IV; Temperley (*The Musical
+Language of Rock*, 2018) é quem junta Stephenson, Everett e Moore ao corpus. Ou seja: **Stephenson
+dá as normas em prosa, de Clercq & Temperley medem, o Hooktheory operacionaliza para quem escreve,
+o Pandora usa para recomendar.**
+
+| | Pandora (MGP) | Hooktheory | Stephenson | Orelha |
+|---|---|---|---|---|
+| Propósito | recomendar | ensinar e compor | explicar o estilo | acumular e comparar |
+| Unidade | gravação inteira | seção de canção | frase, cadência, seção | run de uma gravação, segmento a segmento |
+| Fonte da análise | musicólogo pago | usuário voluntário | o autor | extrator + núcleo, corrigível pelo dono |
+| Notação | genes 0–5 | graus coloridos, melodia em graus | numerais, prosa | graus, eixo A/B, cifra, piano roll |
+| Estatística | distância entre vetores | Markov do próximo acorde | contagem informal | matrizes, entropia, JS divergence |
+| Áudio | não expõe | YouTube sincronizado | não | stems, letra, notas |
+
+### 33. Cores por grau (paleta Hooktheory) como alternativa ao eixo A
+
+- **Hooktheory:** cada grau tem cor fixa; o olho aprende que "vermelho é I" em qualquer tonalidade e
+  reconhece I–V–vi–IV pela sequência de cores.
+- **Temos:** cor pelo eixo A (diatônico, emprestado, cromático…), que responde outra pergunta.
+- **Proposta:** seletor de paleta na timeline e nas partes: "relação com a tonalidade" (atual) ×
+  "grau" (12 cores por `degree_interval`, cromáticos com a cor do grau vizinho atenuada). Barato;
+  só `shared/music.ts`. Trade-off: duas paletas para aprender × uma; o seletor fica na legenda com
+  preferência no navegador, como as linhas.
+
+### 34. Empréstimo com modo de origem
+
+- **Hooktheory:** o acorde emprestado leva o nome do modo paralelo de onde vem; é o rótulo mais
+  didático que existe para "de onde veio esse acorde".
+- **Temos:** `BORROWED` (escala paralela maior ↔ menor natural) e `CHROMATIC` (o resto), com
+  explicação genérica.
+- **Proposta:** `HarmonicNormalizer` calcula, para todo acorde não diatônico, o conjunto de **modos da
+  mesma tônica** que contêm todas as suas notas (jônio, dórico, frígio, lídio, mixolídio, eólio,
+  lócrio; mais menor harmônica e melódica): ♭VII em maior → mixolídio, dórico, eólio; ♭II → frígio;
+  II maior → lídio; ♭VI → eólio, frígio. Persistir como `source_modes` na anotação (re-anotar, sem
+  re-extrair) e mostrar no `title` e no painel: "♭VII · empréstimo do mixolídio/eólio". Não muda o
+  eixo A, só o explica. Cruza com o item 19: se a melodia usa a escala mixolídia, o "empréstimo"
+  vira diatônico do modo — a UI diz isso.
+
+### 35. Vocabulário de seções do TheoryTab: pré-refrão e outro
+
+- **Hooktheory:** Intro, Verse, Pre-Chorus, Chorus, Bridge, Solo, Instrumental, Outro. O
+  **pré-refrão** não existe em Stephenson (2002); é a seção que sobe a tensão entre verso e chorus e
+  hoje é padrão na análise de pop. Outro = coda com material do chorus, em geral com fade.
+- **Proposta:** acrescentar `PRE_CHORUS` e `OUTRO` ao `SectionRole` do item 26. Sugestão automática
+  de pré-refrão: parte curta (4–8 compassos) entre uma parte "verso" e uma "chorus", que aparece
+  sempre no mesmo lugar e cuja harmonia difere das duas — a definição operacional que o TheoryTab
+  usa na prática.
+
+### 36. Baseline externo: Trends do Hooktheory para a raridade (item 28)
+
+- **Hooktheory:** a API devolve, para uma sequência de graus, a probabilidade de cada próximo acorde
+  no repertório pop inteiro do banco.
+- **Proposta:** a métrica "evento raro" do item 28 ganha um segundo denominador: além de "raro neste
+  artista/década do acervo", "raro no pop (Hooktheory)". Implementação: cliente `RestClient` no
+  pacote `extraction`-like (`reference/hooktheory`), cache local em tabela `reference_transition(
+  context, next_degree, probability, fetched_at)`, chamada só sob demanda pelo perfil, nunca no
+  pipeline. O acorde vai em graus e qualidade (I, ii, V/vi), que é o formato deles.
+- **Trade-offs:** dependência externa e termos de uso (uso pessoal, token de conta do dono, cache
+  para não martelar a API) × ter uma população de referência que o acervo do dono, por definição
+  enviesado para o que ele gosta, nunca dará. Sem a API, alternativa offline: as tabelas publicadas
+  por de Clercq & Temperley (2011) como referência estática.
+- **Pergunta ao dono:** você tem conta no Hooktheory? A API Trends exige token de usuário.
+
+### 37. Melodia em graus sobre o acorde (leitura Hookpad do piano roll)
+
+- **Hooktheory:** a melodia é escrita em graus, colorida, e o olho vê na hora se a nota é do acorde.
+- **Temos:** piano roll da voz por altura absoluta; célula VOZ com o nome da nota.
+- **Proposta:** modo de exibição alternativo do piano roll da voz e do baixo: **grau** (1̂…7̂ com
+  alterações) em vez de altura, e contorno quando a nota não pertence ao acorde vigente (é o item 9
+  aplicado à tela). A célula VOZ passa a mostrar "F♯4 · 7̂ · fora do acorde (Cm)". Depende só do que
+  já existe (`vocal_note`, acorde vigente, tonalidade preferida).
+
+### 38. "Magic Chord" do artista (módulo Practice)
+
+- **Hooktheory:** sugere o próximo acorde pela estatística do banco inteiro.
+- **Proposta:** o Orelha pode sugerir "o que **este artista** faria depois deste acorde": a linha da
+  matriz de transição do artista (Onda 3) ordenada, com exemplos do acervo (faixa e instante) para
+  cada opção. É a mesma query do perfil, exposta como ferramenta de composição/prática, e cruza com o
+  item 36 (comparar a escolha do artista com a do pop). Barato; vale como primeira feature do
+  Practice além do mixer.
+
+### 39. TheoryTab como verdade humana para validar a extração
+
+- **Hooktheory:** para milhares de canções há uma análise humana por seção (tonalidade, modo,
+  acordes em graus, seções nomeadas). É o que falta ao Orelha: uma referência independente do BTC e
+  do madmom.
+- **Proposta:** para faixas do acervo que existem no TheoryTab, comparar (a) tonalidade e modo, (b)
+  sequência de graus por seção, (c) fronteiras de seção, e medir acerto do extrator e do
+  `SectionDeriver` por artista e estilo. Sem API de dados do TheoryTab, o caminho é entrada manual
+  do dono (a análise deles fica visível no site) ou o dataset acadêmico HLSD para calibração
+  offline, respeitando licença. Trade-off: trabalho manual por faixa × a única forma de saber a taxa
+  de erro real do BTC no repertório do dono (hoje só há "bate com o ouvido" em cinco faixas).
+- **Pergunta ao dono:** vale escolher 20 faixas do acervo que estão no TheoryTab e transcrever a
+  análise deles numa tabela `reference_analysis` para medir o extrator?
