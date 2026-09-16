@@ -27,9 +27,19 @@ menu; nada de serviço ou repositório por módulo antes de um módulo ter ciclo
 |---|---|---|---|
 | Harmony | O que acontece harmonicamente e como artistas se comparam | `harmony`, `collection`, timeline, perfil, comparação | tonalidade `DERIVED`, modo por I7/IV7, linha de baixo sob acorde |
 | Stems | Que instrumento faz o quê | extrator (demucs), player multi-stem | — |
-| Practice | Como tocar junto | mixer, volumes, metrônomo | versão violão e voz, andamento, loop |
+| Practice | Como tocar junto | mixer, volumes, balanço L/R, metrônomo, letra sincronizada | versão violão e voz, andamento, loop; **Orelha no bolso** (Android, ver abaixo) |
 | Production | Como o som foi construído | `timbre_summary` por álbum e stem | análise de produção (estudo em andamento) |
 | Guide | O que é ouvir e entender isso | — | guia cultural e nerd na entrada; referência: Music Genome Project |
+
+**Orelha no bolso (Android, futuro — registrado em 2026-09-16).** O celular é o módulo Practice: player
+multi-stem com balanço e metrônomo, acorde/compasso/letra em execução, partes; as telas analíticas ficam
+na mesa. Plano em duas fases: (1) timeline responsiva + Capacitor sobre o Angular atual, plugin de áudio em
+segundo plano (tela apagada, controles na tela de bloqueio), backend alcançado por Tailscale, cache local
+dos stems (~20 MB/faixa em Opus); (2) só se o WebView não segurar os quatro `<audio>` sincronizados:
+player nativo Kotlin como plugin do mesmo app — MediaCodec decodifica os stems e um único AudioTrack
+mistura com ganho e pan por stem e o metrônomo na mesma mistura (sincronia por amostra). Descartado:
+quatro ExoPlayers (não sincronizam) e Flutter/React Native (o áudio exigiria plugin nativo do mesmo
+jeito). Pré-requisito em qualquer fase: token de acesso na API antes de expô-la fora da rede local.
 
 ## Contexto
 
