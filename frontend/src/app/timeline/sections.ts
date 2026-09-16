@@ -1,7 +1,7 @@
 import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { HttpClient, httpResource } from '@angular/common/http';
 import { SectionChord, SectionPart, SectionRequest, Sections as SectionsDto } from '../api/models';
-import { KEY_RELATION_COLORS, chordName, formatTime } from '../shared/music';
+import { KEY_RELATION_COLORS, chordName, formatTime, relationLabel } from '../shared/music';
 
 /** Escala das caixas de acorde no resumo: um compasso de 4/4 a 120 BPM (2 s) tem 36 px. */
 const PX_PER_SECOND = 18;
@@ -256,4 +256,5 @@ export class Sections {
   }
 
   protected readonly formatTime = formatTime;
+  protected readonly relationLabel = relationLabel;
 }

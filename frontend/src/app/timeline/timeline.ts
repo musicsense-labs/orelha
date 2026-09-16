@@ -7,7 +7,7 @@ import { Beat, Note, Segment, Timeline as TimelineDto, Track } from '../api/mode
 import { Metronome } from '../shared/metronome';
 import { Sections } from './sections';
 import {
-  KEY_RELATION_COLORS, KEY_RELATION_ORDER, chordName, formatTime, keyName, noteName, percent,
+  KEY_RELATION_COLORS, KEY_RELATION_ORDER, chordName, formatTime, keyName, noteName, percent, relationHint, relationLabel,
 } from '../shared/music';
 
 /**
@@ -410,6 +410,8 @@ export class Timeline {
   }
 
   protected readonly formatTime = formatTime;
+  protected readonly relationLabel = relationLabel;
+  protected readonly relationHint = relationHint;
   protected readonly Math = Math;
   protected readonly noteName = noteName;
   protected readonly percent = percent;

@@ -276,8 +276,10 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
 - Dev: `npx ng serve` usa `proxy.conf.json` (→ :8080). Se o 8080 estiver ocupado, rode
   `.\backend\run.ps1 -Port 8081` e `npx ng serve --proxy-config proxy.local.json` (arquivo local,
   ignorado pelo git).
-- Só apresentação em TypeScript (`shared/music.ts`: nomes de nota, cifra, cores); a teoria fica
-  no backend.
+- Só apresentação em TypeScript (`shared/music.ts`: nomes de nota, cifra, cores, e os textos das
+  relações — `KEY_RELATION_TEXT`/`CHORD_RELATION_TEXT` dão nome curto em pt-BR e explicação com
+  exemplo para cada código dos eixos A e B: "sensível (L)", "mediante cromático", "quinta abaixo
+  (V → I)"…; o código em inglês nunca aparece cru na tela, só no `title`); a teoria fica no backend.
 - **Player multi-stem** (timeline): a mixagem é o `<audio>` mestre (relógio); cada stem é um
   `<audio>` escondido que segue play/pause/seek e é corrigido se derivar > 150 ms. **Mix e stems
   são mutuamente exclusivos** (ligar o mix silencia os stems; ligar um stem silencia o mix);

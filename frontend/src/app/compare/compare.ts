@@ -4,7 +4,7 @@ import { RouterLink } from '@angular/router';
 import { Artist, Comparison } from '../api/models';
 import { DegreeBars } from '../shared/degree-bars';
 import { Heatmap } from '../shared/heatmap';
-import { KEY_RELATION_ORDER, percent } from '../shared/music';
+import { KEY_RELATION_ORDER, percent, relationHint, relationLabel } from '../shared/music';
 
 /** Dois artistas lado a lado: distâncias, matrizes e distribuições. */
 @Component({
@@ -42,4 +42,6 @@ export class Compare {
   }
 
   protected readonly percent = percent;
+  protected readonly relationLabel = relationLabel;
+  protected readonly relationHint = relationHint;
 }

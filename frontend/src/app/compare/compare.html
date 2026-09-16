@@ -60,7 +60,7 @@
         <thead><tr><th></th><th class="num">{{ c.a.name }}</th><th class="num">{{ c.b.name }}</th></tr></thead>
         <tbody>
           @for (r of keyRelationRows(); track r.relation) {
-            <tr><td>{{ r.relation }}</td><td class="num">{{ percent(r.a) }}</td><td class="num">{{ percent(r.b) }}</td></tr>
+            <tr><td [title]="relationHint(r.relation)">{{ relationLabel(r.relation) }}</td><td class="num">{{ percent(r.a) }}</td><td class="num">{{ percent(r.b) }}</td></tr>
           }
         </tbody>
       </table>

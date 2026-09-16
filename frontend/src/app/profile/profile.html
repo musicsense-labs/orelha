@@ -23,7 +23,7 @@
           <thead><tr><th>relação com a tonalidade</th><th class="num">segmentos</th><th class="num">duração</th></tr></thead>
           <tbody>
             @for (r of keyRelationRows(); track r.relation) {
-              <tr><td>{{ r.relation }}</td><td class="num">{{ percent(r.bySegment) }}</td><td class="num">{{ percent(r.byDuration) }}</td></tr>
+              <tr><td [title]="relationHint(r.relation)">{{ relationLabel(r.relation) }}</td><td class="num">{{ percent(r.bySegment) }}</td><td class="num">{{ percent(r.byDuration) }}</td></tr>
             }
           </tbody>
         </table>
@@ -35,7 +35,7 @@
           <thead><tr><th>relação</th><th class="num">transições</th><th class="num">duração</th></tr></thead>
           <tbody>
             @for (r of relationRows(); track r.relation) {
-              <tr><td>{{ r.relation }}</td><td class="num">{{ percent(r.bySegment) }}</td><td class="num">{{ percent(r.byDuration) }}</td></tr>
+              <tr><td [title]="relationHint(r.relation)">{{ relationLabel(r.relation) }}</td><td class="num">{{ percent(r.bySegment) }}</td><td class="num">{{ percent(r.byDuration) }}</td></tr>
             }
           </tbody>
         </table>

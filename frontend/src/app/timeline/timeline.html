@@ -64,7 +64,7 @@
   } @else {
     <div class="legend">
       @for (l of legend; track l.relation) {
-        <span><i [style.background]="l.color"></i>{{ l.relation }}</span>
+        <span [title]="relationHint(l.relation)"><i [style.background]="l.color"></i>{{ relationLabel(l.relation) }}</span>
       }
       <span class="rows-picker" title="quebra a timeline em linhas: útil em faixas longas ou com muita troca de acorde">
         linhas
@@ -135,8 +135,8 @@
           <span class="lbl">acorde</span>
           <span class="val"><strong>{{ labelWithBass(s) }}</strong><span class="degree-big">{{ s.degreeLabel ?? '—' }}</span></span>
           <span class="sub">
-            <span class="badge" [style.background]="color(s)">{{ s.keyRelation }}</span>
-            @if (s.relationFromPrev) { <span class="muted">← {{ s.relationFromPrev }}</span> }
+            <span class="badge" [style.background]="color(s)" [title]="relationHint(s.keyRelation)">{{ relationLabel(s.keyRelation) }}</span>
+            @if (s.relationFromPrev) { <span class="muted" [title]="relationHint(s.relationFromPrev)">← {{ relationLabel(s.relationFromPrev) }}</span> }
             @if (s.inverted) { <span class="muted">baixo {{ noteName(s.effectiveBassPc) }}</span> }
           </span>
         </div>
