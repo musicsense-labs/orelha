@@ -3,7 +3,8 @@
 FROM python:3.10-slim
 
 ENV PIP_NO_CACHE_DIR=1 PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
-    CHORDMINI_DIR=/opt/chordmini FEATURES_DIR=/data/features STEMS_DIR=/data/stems WORK_DIR=/tmp/orelha-extractor
+    CHORDMINI_DIR=/opt/chordmini FEATURES_DIR=/data/features STEMS_DIR=/data/stems WORK_DIR=/tmp/orelha-extractor \
+    HF_HOME=/opt/hf WHISPER_MODEL=small
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends build-essential git ffmpeg libsndfile1 \
@@ -30,8 +31,9 @@ RUN pip install --no-build-isolation "git+https://github.com/CPJKU/madmom.git@${
 COPY requirements.txt /opt/extractor/requirements.txt
 RUN pip install -r /opt/extractor/requirements.txt
 
-# 5. Baixa os pesos do demucs no build para o container subir pronto.
-RUN python -c "from demucs.pretrained import get_model; get_model('htdemucs')"
+# 5. Baixa os pesos do demucs e do Whisper no build para o container subir pronto (e offline).
+RUN python -c "from demucs.pretrained import get_model; get_model('htdemucs')" \
+    && python -c "from faster_whisper import WhisperModel; WhisperModel('${WHISPER_MODEL}', device='cpu', compute_type='int8')"
 
 COPY app /opt/extractor/app
 WORKDIR /opt/extractor

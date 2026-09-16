@@ -11,6 +11,7 @@ from .beats import track_beats
 from .chords import recognize_chords
 from .chroma import chroma_low_per_segment, chroma_per_segment
 from .key import estimate_key
+from .lyrics import transcribe_lyrics
 from .stems import STEM_FORMAT, codec_label, persist_stems, separate_stems
 from .timbre import timbre_summaries
 
@@ -44,6 +45,8 @@ def analyze(audio_path: Path, audio_sha256: str, work_dir: Path) -> dict:
     bass_notes = transcribe_bass(stems["bass"])
     log.info("vocals")
     vocal_notes = transcribe_vocals(stems["vocals"])
+    log.info("lyrics")
+    lyrics = transcribe_lyrics(stems["vocals"])
     log.info("stems: encoding as %s", STEM_FORMAT)
     persisted = persist_stems(stems, STEMS_DIR / audio_sha256)      # o que a UI toca
     log.info("timbre")
@@ -61,6 +64,7 @@ def analyze(audio_path: Path, audio_sha256: str, work_dir: Path) -> dict:
         "chords": chords,
         "bass_notes": bass_notes,
         "vocal_notes": vocal_notes,
+        "lyrics": lyrics,
         "timbre": timbre,
         "features_path": str(features_path),
         "stems": {name: str(path) for name, path in sorted(persisted.items())},

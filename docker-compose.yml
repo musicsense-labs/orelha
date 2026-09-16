@@ -24,6 +24,8 @@ services:
     container_name: orelha-extractor
     environment:
       STEM_FORMAT: opus          # opus | aac | flac | wav (stems persistidos para o player)
+      WHISPER_MODEL: small       # letra por ASR no stem de voz; o modelo é baixado no build da imagem
+      # WHISPER_LANGUAGE: en     # vazio = detectar por faixa
     ports:
       - "8000:8000"
     volumes:

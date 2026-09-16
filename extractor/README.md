@@ -10,6 +10,7 @@ teoria musical** — rótulos Harte, tempos, vetores. O Spring Boot interpreta.
 | Tonalidade (24) | madmom CNNKeyRecognition | BSD |
 | Stems | demucs `htdemucs` | MIT |
 | Baixo e voz → MIDI | basic-pitch (stems de baixo e de voz) | Apache-2.0 |
+| Letra (ASR, palavras com tempo) | faster-whisper `small` sobre o stem de voz | MIT (modelo Whisper: MIT) |
 | Chroma por segmento, descritores por stem, LUFS | librosa, pyloudnorm | ISC / MIT |
 
 ## API
@@ -29,12 +30,21 @@ teoria musical** — rótulos Harte, tempos, vetores. O Spring Boot interpreta.
               "chroma": [0.9, 0.1, "..."], "chroma_low": [0.8, 0.05, "..."]}],
   "bass_notes": [{"start_s": 0.0, "end_s": 0.5, "midi": 45, "velocity": 90}],
   "vocal_notes": [{"start_s": 1.2, "end_s": 1.7, "midi": 64, "velocity": 80}],
+  "lyrics": {"language": "en", "language_probability": 0.98,
+             "segments": [{"start_s": 1.1, "end_s": 3.4, "text": "let it be", "no_speech_prob": 0.02,
+                           "words": [{"start_s": 1.1, "end_s": 1.4, "text": "let", "probability": 0.93}]}]},
   "timbre": [{"stem_model": "htdemucs", "stem": "bass", "centroid_mean": 412.5, "centroid_std": 88.1,
               "flatness_mean": 0.02, "rolloff_p95": 1800.0, "rms_mean": 0.12}],
   "features_path": "/data/features/<sha256>.parquet",
   "stems": {"bass": "/data/stems/<sha256>/bass.ogg", "drums": "...", "other": "...", "vocals": "..."}
 }
 ```
+
+`lyrics` é o ASR (faster-whisper, modelo `WHISPER_MODEL`, idioma detectado ou fixado por
+`WHISPER_LANGUAGE`) sobre o stem de voz: trechos com `no_speech_prob` (o quanto o modelo acha que o
+trecho **não** é fala — alto em solo de guitarra que vazou para o stem) e palavras com tempo e
+confiança. Trechos que o modelo descarta como não-fala não aparecem. O que fazer com isso (voz
+cantada × vazamento, repetição de linhas, forma) é decisão do núcleo.
 
 `chroma` é a mixagem inteira; `chroma_low` é o stem de guitarra (`other`) restrito a C2–F4 — a
 evidência para decidir power chord sem o 5º harmônico da distorção.
