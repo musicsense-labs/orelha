@@ -55,7 +55,7 @@ primeiro, cada uma como onda própria.
 - **Risco:** basic-pitch em voz com reverb/harmonias produz notas fantasmas; o limiar precisa ser
   medido, não escolhido.
 
-### F3. Atividade por stem e por compasso (`stem_activity`, extrator 0.6.0)
+### F3. Atividade por stem e por compasso (`stem_activity`, extrator 0.7.0)
 
 - **Livro:** entradas e saídas de instrumentos delineiam seções (cap. 6, pp. 124–126); textura =
   número de partes ativas e sua relação rítmica (glossário, p. 242).
@@ -142,7 +142,10 @@ primeiro, cada uma como onda própria.
 - **Livro (pp. 136–137; glossário p. 239):** refrão = uma ou duas linhas de **texto** recorrentes
   ao **fim de cada verso**; *chorus* = seção separada com texto fixo de várias linhas; verso =
   seção que volta com texto diferente. As definições são textuais, não harmônicas.
-- **Temos:** partes rotuladas A, B, C por assinatura harmônica; notas de voz; **nenhuma letra**.
+- **Temos (revisado em 2026-09-15):** partes rotuladas A, B, C por assinatura harmônica; notas de voz; e,
+  desde o extrator 0.6.0, **letra por ASR** (`lyric_segment`/`lyric_word`, faster-whisper sobre o stem
+  de voz) com palavra e compasso. A decisão da pergunta 3 foi tomada: letra entra, só transcrita do
+  áudio do acervo, boa para repetição e alinhamento, não para leitura.
 - **Proposta em dois níveis.** (a) Sem letra: candidato a refrão = última frase vocal de cada
   ocorrência de uma parte repetida, quando a sequência de pitch classes e o ritmo (quantizado em
   semicolcheias) coincidem entre as ocorrências com distância de edição ≤ 20 %, enquanto as frases
@@ -419,7 +422,7 @@ Cada onda passa pelo portão de sempre: medir em faixas do acervo que o dono con
 
 1. F1: unidade hipermétrica quando o ciclo tem 2 ou 6 compassos.
 2. Item 1: frases instrumentais ficam fora do modelo de frase?
-3. Item 5: trazer letra via ASR no extrator (só transcrição do áudio do acervo)?
+3. ~~Item 5: trazer letra via ASR no extrator?~~ Decidido em 2026-09-15: sim, extrator 0.6.0.
 4. Item 6: harmonia inicial vence o perfil de fundamentais quando discordam?
 5. Item 8: cadência "harmonicamente dirigida" como categoria própria?
 6. Item 9: 7ª maior na voz sobre tríade maior sem 7ª rotulada é harmônica?

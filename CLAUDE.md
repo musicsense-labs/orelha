@@ -226,6 +226,16 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
 - **Voz → MIDI (0.5.0, 2026-09-15)**: basic-pitch também no stem de voz (80–1100 Hz), `vocal_notes` no
   JSON, tabela `vocal_note` (V8), `GET /api/tracks/{id}/vocal-notes` do run canônico. Runs anteriores
   não têm voz; o dono escolheu re-analisar o acervo inteiro em vez de um backfill só da voz.
+- **Letra por ASR (0.6.0, 2026-09-15)**: faster-whisper `small` (int8, CPU, pesos baixados no build da imagem,
+  `WHISPER_MODEL`/`WHISPER_LANGUAGE` no compose) sobre o stem de voz devolve `lyrics` — trechos com
+  `no_speech_prob` e palavras com tempo e confiança. Persistido bruto em `lyric_segment`/`lyric_word` (V9),
+  idioma em `track_analysis`. `GET /api/tracks/{id}/lyrics` devolve trechos e palavras com o compasso em que
+  começam. A classificação das notas de voz é derivada na leitura (`VocalNoteClassifier`, limiares em
+  `orelha.lyrics.*`): `LEXICAL` (sob palavra com probabilidade ≥ 0,3, folga 120 ms), `NON_LEXICAL` (dentro de
+  trecho com `no_speech_prob` < 0,6 sem palavra: vocalise) ou `LIKELY_LEAK` (fora de trecho de fala: solo
+  ou teclado que o demucs deixou no stem). Sem letra no run, tudo é `LEXICAL`. É classificação, não
+  descarte. Motivação: o dono viu solos de guitarra no piano roll da voz; a letra sincronizada também é
+  a base para forma por texto (backlog Stephenson, itens 5/15/16). Edição manual de palavras: próxima onda.
 - **Re-análise herda overrides**: ao concluir um run novo, a tonalidade MANUAL e as partes MANUAL do run
   canônico anterior são copiadas para ele (a tonalidade re-anota). O canônico continua sendo escolha do
   dono (`PUT /canonical-run`).
@@ -261,7 +271,11 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
   playback (`GET /api/tracks/{id}/audio`, com `Range` para seek). Clicar num segmento faz seek.
   Três lanes: acordes (44 px), baixo (36 px: piano roll de `bass-notes`, o stem nota a nota, sobre
   um fundo por segmento que fica laranja quando o baixo da harmonia não é a fundamental) e voz (40 px,
-  piano roll de `vocal-notes`), ambas na tessitura p5–p95 da faixa. **Baixo da harmonia ≠ linha de
+  piano roll de `vocal-notes`, com notas `NON_LEXICAL` translúcidas e `LIKELY_LEAK` escondidas por padrão —
+  botão "mostrar vazamento (N)" na legenda), ambas na tessitura p5–p95 da faixa, e uma quarta lane de
+  16 px com os trechos da letra (texto que couber, vermelho itálico quando o ASR duvida que seja fala;
+  clique faz seek). O painel ganha a célula LETRA: o trecho atual com a palavra cantada em negrito e o
+  compasso. **Baixo da harmonia ≠ linha de
   baixo**: o primeiro é `effectiveBassPc` (classe que mais soa sob o segmento, decide `inverted`) e vai
   na cifra como `E♭/G`; a segunda é o stem transcrito e aparece no piano roll e na célula BAIXO do
   painel. No painel, baixo e voz mostram a nota em execução em negrito e, quando ela termina, a
