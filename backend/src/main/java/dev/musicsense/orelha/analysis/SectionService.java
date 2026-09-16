@@ -101,19 +101,24 @@ public class SectionService {
         return found.stream().map(s -> SectionsResponse.Part.of(s, progression(s, timeline))).toList();
     }
 
-    /** Acordes anotados que caem na primeira repetição do ciclo, sem repetição consecutiva. */
+    /**
+     * Acordes anotados que caem na primeira repetição do ciclo, recortados nela e com repetições consecutivas
+     * fundidas (o acorde fundido dura do primeiro ao último segmento) — a UI desenha cada um proporcional ao tempo.
+     */
     private static List<SectionsResponse.Chord> progression(Section s, List<HarmonicAnnotation> timeline) {
         List<SectionsResponse.Chord> out = new ArrayList<>();
-        SectionsResponse.Chord last = null;
         for (HarmonicAnnotation a : timeline) {
             ChordSegment seg = a.getSegment();
             if (seg.getEndS().compareTo(s.getStartS()) <= 0 || seg.getStartS().compareTo(s.getCycleEndS()) >= 0) {
                 continue;
             }
-            SectionsResponse.Chord chord = SectionsResponse.Chord.of(a);
-            if (last == null || !last.sameChord(chord)) {
+            SectionsResponse.Chord chord = SectionsResponse.Chord.of(a)
+                    .clipped(s.getStartS().max(seg.getStartS()), s.getCycleEndS().min(seg.getEndS()));
+            SectionsResponse.Chord last = out.isEmpty() ? null : out.get(out.size() - 1);
+            if (last != null && last.sameChord(chord)) {
+                out.set(out.size() - 1, last.clipped(last.startS(), chord.endS()));
+            } else {
                 out.add(chord);
-                last = chord;
             }
         }
         return out;

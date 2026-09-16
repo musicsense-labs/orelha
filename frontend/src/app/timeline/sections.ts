@@ -3,6 +3,9 @@ import { HttpClient, httpResource } from '@angular/common/http';
 import { SectionChord, SectionPart, SectionRequest, Sections as SectionsDto } from '../api/models';
 import { KEY_RELATION_COLORS, chordName, formatTime } from '../shared/music';
 
+/** Escala das caixas de acorde no resumo: um compasso de 4/4 a 120 BPM (2 s) tem 36 px. */
+const PX_PER_SECOND = 18;
+
 /**
  * Resumo harmônico por parte (A, B, C… ou os nomes que o dono der): a progressão de um ciclo com
  * cada cifra na cor do eixo A, e "×N" quando o ciclo se repete. Edições (renomear, juntar com a
@@ -73,6 +76,11 @@ export class Sections {
     }
     return found;
   });
+
+  /** Largura da caixa proporcional à duração do acorde (mesma escala em todas as partes), com um mínimo legível. */
+  widthOf(c: SectionChord): number {
+    return Math.max(26, (c.endS - c.startS) * PX_PER_SECOND);
+  }
 
   chord(c: SectionChord): string {
     return chordName(c.rootPc, c.quality, c.bassPc);

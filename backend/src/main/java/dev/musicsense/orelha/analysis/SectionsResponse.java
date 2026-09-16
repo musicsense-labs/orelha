@@ -26,6 +26,10 @@ public record SectionsResponse(Long trackId, Long runId, SectionSource source, L
                     a.getDegreeLabel(), a.getFunctionClass());
         }
 
+        Chord clipped(BigDecimal start, BigDecimal end) {
+            return new Chord(start, end, rootPc, quality, bassPc, degreeLabel, keyRelation);
+        }
+
         boolean sameChord(Chord other) {
             return Objects.equals(rootPc, other.rootPc) && quality == other.quality && Objects.equals(bassPc, other.bassPc);
         }

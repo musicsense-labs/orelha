@@ -50,7 +50,7 @@
         <div class="progression">
           @for (c of p.chords; track c.startS) {
             <button type="button" class="chord" [class.playing]="p.id === currentId() && c.startS === currentChordStart()"
-                    [style.background]="color(c)" (click)="seek.emit(c.startS)"
+                    [style.background]="color(c)" [style.width.px]="widthOf(c)" (click)="seek.emit(c.startS)"
                     [title]="(c.degreeLabel ?? '—') + ' · ' + (c.keyRelation ?? '—') + ' · ' + formatTime(c.startS)">
               {{ chord(c) }}
             </button>

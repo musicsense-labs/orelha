@@ -84,7 +84,12 @@
     font: inherit;
     font-size: 0.85rem;
     font-weight: 600;
-    padding: 0.1rem 0.45rem;
+    padding: 0.1rem 0.2rem;
+    box-sizing: border-box;
+    overflow: hidden;
+    text-overflow: clip;
+    white-space: nowrap;
+    text-align: center;
     border: none;
     border-radius: 4px;
     color: #fff;
