@@ -121,10 +121,15 @@ class OrelhaExtractorAdapterTest {
             assertThat(n.endS()).isGreaterThan(n.startS());
         });
         assertThat(result.vocalNotes()).isSortedAccordingTo(java.util.Comparator.comparing(NoteEvent::startS));
-        // Letra: sem canto no WAV sintético o ASR não devolve trecho algum (e o idioma detectado é lixo, sem
-        // confiança); o contrato é a forma — objeto presente, lista vazia, nunca null.
+        // Letra: sem canto no WAV sintético o ASR alucina no máximo um trecho de uma palavra em que não acredita
+        // ("You", probabilidade 0,06) e o idioma detectado é lixo, sem confiança. O contrato é a forma; o núcleo
+        // descarta trechos sem palavra plausível (VocalNoteClassifier).
         assertThat(result.lyrics()).isNotNull();
-        assertThat(result.lyrics().segments()).isEmpty();
+        assertThat(result.lyrics().segments()).hasSizeLessThanOrEqualTo(1);
+        assertThat(result.lyrics().segments()).allSatisfy(s -> {
+            assertThat(s.endS()).isGreaterThan(s.startS());
+            assertThat(s.words()).allSatisfy(w -> assertThat(w.probability()).isLessThan(0.3f));
+        });
         assertThat(result.lyrics().languageConfidence()).isLessThan(0.5f);
         assertThat(result.bassNotes().get(0).midi()).isEqualTo(45);               // A1 sob Am
         assertThat(result.bassNotes().get(0).velocity()).isBetween(1, 127);

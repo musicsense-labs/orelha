@@ -18,6 +18,8 @@ import java.util.List;
  *       aceitou como fala): {@link VocalNoteKind#NON_LEXICAL} (o ASR ouviu fala ali, mas não alinhou palavra);</li>
  *   <li>senão {@link VocalNoteKind#LIKELY_LEAK}.</li>
  * </ol>
+ * Trecho sem nenhuma palavra com probabilidade ≥ {@code wordMinProbability} é alucinação (um "You" a 0,06
+ * no fim de um solo, "Oh" a 0,01 sob guitarra) e não conta como fala.
  * É classificação, não descarte: vocalises que o ASR ignora caem em LIKELY_LEAK e a UI só as esconde por
  * padrão. Sem letra alguma (run anterior ao 0.6.0), toda nota é LEXICAL — não há evidência contra.
  */
@@ -53,7 +55,7 @@ public final class VocalNoteClassifier {
         double end = note.getEndS().doubleValue();
         boolean inSpeech = false;
         for (LyricSegment s : segments) {
-            if (!overlaps(start, end, s.getStartS().doubleValue(), s.getEndS().doubleValue(), 0)) {
+            if (!credible(s) || !overlaps(start, end, s.getStartS().doubleValue(), s.getEndS().doubleValue(), 0)) {
                 continue;
             }
             for (LyricWord w : s.getWords()) {
@@ -67,6 +69,11 @@ public final class VocalNoteClassifier {
             }
         }
         return inSpeech ? VocalNoteKind.NON_LEXICAL : VocalNoteKind.LIKELY_LEAK;
+    }
+
+    /** Ao menos uma palavra em que o ASR acredita; senão o trecho é alucinação sobre ruído. */
+    private boolean credible(LyricSegment s) {
+        return s.getWords().stream().anyMatch(w -> w.getProbability() == null || w.getProbability() >= wordMinProbability);
     }
 
     private static boolean overlaps(double aStart, double aEnd, double bStart, double bEnd, double tolerance) {

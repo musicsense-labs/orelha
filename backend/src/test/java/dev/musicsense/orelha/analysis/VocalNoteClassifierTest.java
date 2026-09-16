@@ -43,13 +43,14 @@ class VocalNoteClassifierTest {
 
     @Test
     void lowProbabilityWordsDoNotCount() {
-        LyricSegment seg = segment(0, 4, 0.1f, new double[]{1.0, 1.5, 0.1});
+        // O trecho é crível pela segunda palavra; a nota sob a palavra de 0,1 fica sem texto.
+        LyricSegment seg = segment(0, 4, 0.1f, new double[]{1.0, 1.5, 0.1}, new double[]{3.0, 3.5});
         assertThat(classifier.kindOf(note(1.1, 1.4), List.of(seg))).isEqualTo(VocalNoteKind.NON_LEXICAL);
     }
 
     @Test
     void noteInsideASpeechSegmentWithoutWordIsNonLexical() {
-        LyricSegment seg = segment(0, 4, 0.2f);
+        LyricSegment seg = segment(0, 4, 0.2f, new double[]{0.5, 0.8});
         assertThat(classifier.kindOf(note(2, 3), List.of(seg))).isEqualTo(VocalNoteKind.NON_LEXICAL);
     }
 
@@ -58,6 +59,13 @@ class VocalNoteClassifierTest {
         LyricSegment noSpeech = segment(0, 4, 0.9f);
         assertThat(classifier.kindOf(note(2, 3), List.of(noSpeech))).isEqualTo(VocalNoteKind.LIKELY_LEAK);
         assertThat(classifier.kindOf(note(10, 11), List.of(noSpeech))).isEqualTo(VocalNoteKind.LIKELY_LEAK);
+    }
+
+    @Test
+    void segmentWhoseWordsAreAllImplausibleIsAHallucinationAndDoesNotCount() {
+        LyricSegment seg = segment(0, 4, 0.8f, new double[]{1.0, 1.5, 0.06});
+        assertThat(classifier.kindOf(note(1.1, 1.4), List.of(seg))).isEqualTo(VocalNoteKind.LIKELY_LEAK);
+        assertThat(classifier.kindOf(note(2.0, 3.0), List.of(seg))).isEqualTo(VocalNoteKind.LIKELY_LEAK);
     }
 
     @Test

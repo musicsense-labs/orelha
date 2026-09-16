@@ -236,8 +236,12 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
   o demucs deixou no stem). **Medido no Creep (2026-09-15)**: `no_speech_prob` fica em 0,78–0,86 em canto
   limpo e transcrito, então não serve de limiar (o do núcleo fica em 1,0 = desligado); o que separa é o
   próprio Whisper devolver ou não o trecho, com `no_speech_threshold=0.95` no extrator para a ponte sob
-  guitarra distorcida não sumir — intro e solo continuam sem trecho. Notas de voz do Creep: 212 com texto,
-  210 vazamento (intro, solo 2:47–3:04 e a distorção dos refrões). Sem letra no run, tudo é `LEXICAL`. É classificação, não
+  guitarra distorcida não sumir — intro e solo continuam sem trecho. Trecho cujas palavras têm todas
+  probabilidade < 0,3 é alucinação ("You" a 0,06 no WAV sintético, "Oh" a 0,01 sob guitarra) e o
+  classificador o ignora. Notas de voz do Creep: 212 com texto, 210 vazamento (intro, solo 2:47–3:04 e a
+  distorção dos refrões). A ponte cantada sob distorção (2:22–2:47) sai numa execução e some noutra: o
+  Whisper não é determinístico ali; quando some, as notas dela viram vazamento — é o caso do botão
+  "mostrar vazamento" e da edição manual (próxima onda). Sem letra no run, tudo é `LEXICAL`. É classificação, não
   descarte. Motivação: o dono viu solos de guitarra no piano roll da voz; a letra sincronizada também é
   a base para forma por texto (backlog Stephenson, itens 5/15/16). Edição manual de palavras: próxima onda.
 - **Re-análise herda overrides**: ao concluir um run novo, a tonalidade MANUAL e as partes MANUAL do run
