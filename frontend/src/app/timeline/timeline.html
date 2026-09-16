@@ -89,24 +89,24 @@
               <text [attr.x]="p.x + p.w / 2" y="34" text-anchor="middle" class="degree">{{ p.s.degreeLabel ?? '' }}</text>
             }
           </g>
-          <!-- lane 2: baixo efetivo (stem), estreita: só a nota -->
-          <g class="segment" (click)="seek(p.s)" (mouseenter)="hovered.set(p.s)">
-            <rect [attr.x]="p.x" [attr.y]="bassTop" [attr.width]="p.w" [attr.height]="bassLane"
-                  [attr.fill]="p.s.effectiveBassPc == null ? '#eee' : (p.s.effectiveBassPc === p.s.rootPc ? '#cfd8dc' : '#ffcc80')"
-                  stroke="#fff" stroke-width="0.5" />
-            @if (p.w >= 22) {
-              <text [attr.x]="p.x + p.w / 2" [attr.y]="bassTop + 15" text-anchor="middle" class="bass">
-                {{ noteName(p.s.effectiveBassPc) }}
-              </text>
-            }
-          </g>
+          <!-- lane 2 (fundo): o baixo da harmonia por segmento, tênue — laranja quando não é a fundamental -->
+          <rect class="bass-bg" [attr.x]="p.x" [attr.y]="bassTop" [attr.width]="p.w" [attr.height]="bassLane"
+                [attr.fill]="p.s.effectiveBassPc == null ? '#f2f2f2' : (p.s.effectiveBassPc === p.s.rootPc ? '#eceff1' : '#ffe0b2')"
+                (click)="seek(p.s)" (mouseenter)="hovered.set(p.s)" />
         </g>
+      }
+      <!-- lane 2: linha de baixo nota a nota (piano roll do stem de baixo) -->
+      @for (n of bassRoll(); track n.key) {
+        <rect class="bass-note" [attr.x]="n.x" [attr.y]="rowHeight * n.row + n.y" [attr.width]="n.w" [attr.height]="n.h"
+              (click)="seekTo(n.x / width * rowSpan() + n.row * rowSpan())">
+          <title>{{ noteName(n.midi % 12) }}{{ Math.floor(n.midi / 12) - 1 }}</title>
+        </rect>
       }
       <!-- lane 3: voz (piano roll das notas do stem de voz; vazia em runs anteriores ao extrator 0.5.0) -->
       @for (r of rowIndexes(); track r) {
         <rect x="0" [attr.y]="rowHeight * r + vocalTop" [attr.width]="width" [attr.height]="vocalLane" class="vocal-bg" />
       }
-      @for (n of vocalPieces(); track n.key) {
+      @for (n of vocalRoll(); track n.key) {
         <rect class="vocal" [attr.x]="n.x" [attr.y]="rowHeight * n.row + n.y" [attr.width]="n.w" [attr.height]="n.h"
               (click)="seekTo(n.x / width * rowSpan() + n.row * rowSpan())">
           <title>{{ noteName(n.midi % 12) }}{{ Math.floor(n.midi / 12) - 1 }}</title>
@@ -133,10 +133,11 @@
       @if (focus(); as s) {
         <div class="cell chord-cell">
           <span class="lbl">acorde</span>
-          <span class="val"><strong>{{ label(s) }}</strong><span class="degree-big">{{ s.degreeLabel ?? '—' }}</span></span>
+          <span class="val"><strong>{{ labelWithBass(s) }}</strong><span class="degree-big">{{ s.degreeLabel ?? '—' }}</span></span>
           <span class="sub">
             <span class="badge" [style.background]="color(s)">{{ s.keyRelation }}</span>
             @if (s.relationFromPrev) { <span class="muted">← {{ s.relationFromPrev }}</span> }
+            @if (s.inverted) { <span class="muted">baixo {{ noteName(s.effectiveBassPc) }}</span> }
           </span>
         </div>
         <div class="cell">
@@ -149,20 +150,23 @@
           <span class="val">{{ currentBar() ?? '—' }}</span>
           <span class="sub muted">{{ timeline.value()?.timeSignature ?? '' }}</span>
         </div>
-        <div class="cell">
+        <div class="cell bass-cell">
           <span class="lbl">baixo</span>
-          <span class="val">{{ noteName(s.effectiveBassPc) }}</span>
-          <span class="sub muted">{{ s.inverted ? 'invertido' : (s.effectiveBassPc == null ? '' : 'fundamental') }}</span>
+          <span class="val note" [class.off]="bassNow()?.state === 'off'">{{ bassNow()?.name ?? '—' }}</span>
+          <span class="sub muted">{{ bassNoteList().length === 0 ? 'sem notas neste run' : 'linha do stem' }}</span>
         </div>
         <div class="cell vocal-cell">
           <span class="lbl">voz</span>
-          <span class="val">{{ currentVocalNote() ?? '—' }}</span>
-          <span class="sub muted">{{ (vocalNotes.value()?.length ?? 0) === 0 ? 'sem notas neste run' : '' }}</span>
+          <span class="val note" [class.off]="vocalNow()?.state === 'off'">{{ vocalNow()?.name ?? '—' }}</span>
+          <span class="sub muted">{{ vocalNoteList().length === 0 ? 'sem notas neste run' : 'melodia do stem' }}</span>
         </div>
       } @else {
         <span class="muted">Passe o mouse ou dê play: o instante atual aparece aqui.</span>
-        @if (currentVocalNote(); as v) {
-          <div class="cell vocal-cell"><span class="lbl">voz</span><span class="val">{{ v }}</span></div>
+        @if (bassNow(); as b) {
+          <div class="cell bass-cell"><span class="lbl">baixo</span><span class="val note" [class.off]="b.state === 'off'">{{ b.name }}</span></div>
+        }
+        @if (vocalNow(); as v) {
+          <div class="cell vocal-cell"><span class="lbl">voz</span><span class="val note" [class.off]="v.state === 'off'">{{ v.name }}</span></div>
         }
       }
     </div>

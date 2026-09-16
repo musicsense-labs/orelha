@@ -259,8 +259,13 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
   distribuições; **timeline em SVG de template Angular** dirigida por signals, sem D3: cada segmento
   é um `<rect>` num `@for`, o playhead é um `computed` sobre `currentTime`, e `<audio>` nativo faz o
   playback (`GET /api/tracks/{id}/audio`, com `Range` para seek). Clicar num segmento faz seek.
-  Três lanes: acordes (44 px), baixo efetivo (22 px, só a nota) e voz (40 px, piano roll das notas
-  de `vocal-notes` na tessitura p5–p95 da faixa; vazia em runs sem voz). A timeline quebra em 1–4
+  Três lanes: acordes (44 px), baixo (36 px: piano roll de `bass-notes`, o stem nota a nota, sobre
+  um fundo por segmento que fica laranja quando o baixo da harmonia não é a fundamental) e voz (40 px,
+  piano roll de `vocal-notes`), ambas na tessitura p5–p95 da faixa. **Baixo da harmonia ≠ linha de
+  baixo**: o primeiro é `effectiveBassPc` (classe que mais soa sob o segmento, decide `inverted`) e vai
+  na cifra como `E♭/G`; a segunda é o stem transcrito e aparece no piano roll e na célula BAIXO do
+  painel. No painel, baixo e voz mostram a nota em execução em negrito e, quando ela termina, a
+  última nota fica leve (opacidade 0,4) até a próxima começar — para o nome não piscar. A timeline quebra em 1–4
   **linhas** (seletor na legenda, preferência em `localStorage`): cada linha cobre `duration/N`
   segundos com as mesmas lanes; segmentos e notas que cruzam a borda são recortados em pedaços,
   downbeats, eixo de tempo e playhead caem na linha do seu instante.

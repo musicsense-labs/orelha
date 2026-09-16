@@ -42,6 +42,10 @@ export class Timeline {
   readonly stems = httpResource<string[]>(() => `/api/tracks/${this.id()}/stems`);
   readonly beats = httpResource<Beat[]>(() => `/api/tracks/${this.id()}/beats`);
   readonly vocalNotes = httpResource<Note[]>(() => `/api/tracks/${this.id()}/vocal-notes`);
+  readonly bassNotes = httpResource<Note[]>(() => `/api/tracks/${this.id()}/bass-notes`);
+  /** Listas seguras: um recurso em erro (404 num backend antigo, rede) vale como "sem notas", não como falha da tela. */
+  readonly bassNoteList = computed(() => (this.bassNotes.hasValue() ? this.bassNotes.value() : []));
+  readonly vocalNoteList = computed(() => (this.vocalNotes.hasValue() ? this.vocalNotes.value() : []));
 
   private readonly audio = viewChild<ElementRef<HTMLAudioElement>>('audio');
   private readonly stemAudios = viewChildren<ElementRef<HTMLAudioElement>>('stemAudio');
@@ -58,9 +62,9 @@ export class Timeline {
 
   /** Largura lógica do SVG; o viewBox escala para a largura real. */
   readonly width = 1200;
-  /** Lanes: acordes (a mais alta), baixo (estreita: só a nota) e voz (piano roll). */
+  /** Lanes: acordes (a mais alta), baixo e voz (piano rolls das notas dos stems). */
   readonly laneHeight = 44;
-  readonly bassLane = 22;
+  readonly bassLane = 36;
   readonly vocalLane = 40;
   readonly bassTop = this.laneHeight + 2;
   readonly vocalTop = this.bassTop + this.bassLane + 2;
@@ -129,29 +133,41 @@ export class Timeline {
     return out;
   });
 
-  /** Tessitura da voz nesta faixa (p5–p95 das notas), para o piano roll ocupar a lane inteira. */
-  readonly vocalRange = computed(() => {
-    const midis = (this.vocalNotes.value() ?? []).map((n) => n.midi).sort((a, b) => a - b);
+  /** Piano roll da linha de baixo (stem), na lane do baixo. */
+  readonly bassRoll = computed(() => this.roll(this.bassNoteList(), this.bassTop, this.bassLane, 'b'));
+  /** Piano roll da voz, na lane da voz. */
+  readonly vocalRoll = computed(() => this.roll(this.vocalNoteList(), this.vocalTop, this.vocalLane, 'v'));
+
+  /**
+   * Nota do baixo (stem) no instante: em execução ("on") ou a última que soou ("off"), até a próxima
+   * começar — a UI mostra a primeira em negrito e a segunda leve, para o nome não piscar.
+   */
+  readonly bassNow = computed(() => this.noteAt(this.bassNoteList(), this.currentTime()));
+  readonly vocalNow = computed(() => this.noteAt(this.vocalNoteList(), this.currentTime()));
+
+  /** Tessitura (p5–p95) das notas, para o piano roll ocupar a lane inteira; ao menos uma oitava. */
+  private static range(notes: Note[]): { low: number; high: number } {
+    const midis = notes.map((n) => n.midi).sort((a, b) => a - b);
     if (midis.length === 0) {
       return { low: 48, high: 72 };
     }
     const low = midis[Math.floor(midis.length * 0.05)];
     const high = midis[Math.min(midis.length - 1, Math.floor(midis.length * 0.95))];
     return high - low < 12 ? { low: low - 6, high: low + 6 } : { low, high };
-  });
+  }
 
-  /** Notas da voz recortadas por linha, já com a geometria do piano roll. */
-  readonly vocalPieces = computed(() => {
+  /** Notas recortadas por linha, com a geometria do piano roll dentro de uma lane. */
+  private roll(notes: Note[], top: number, lane: number, prefix: string) {
     const span = this.rowSpan();
     const rows = this.rows();
-    const { low, high } = this.vocalRange();
-    const step = this.vocalLane / (high - low + 1);
+    const { low, high } = Timeline.range(notes);
+    const step = lane / (high - low + 1);
     const out: { key: string; row: number; x: number; w: number; y: number; h: number; midi: number }[] = [];
-    (this.vocalNotes.value() ?? []).forEach((n, i) => {
+    notes.forEach((n, i) => {
       const first = Math.min(rows - 1, Math.floor(n.startS / span));
       const last = Math.min(rows - 1, Math.max(first, Math.ceil(n.endS / span) - 1));
       const clamped = Math.min(high, Math.max(low, n.midi));
-      const y = this.vocalTop + (high - clamped) * step;
+      const y = top + (high - clamped) * step;
       for (let row = first; row <= last; row++) {
         const start = Math.max(n.startS, row * span);
         const end = Math.min(n.endS, (row + 1) * span);
@@ -159,7 +175,7 @@ export class Timeline {
           continue;
         }
         out.push({
-          key: i + ':' + row, row, midi: n.midi,
+          key: prefix + i + ':' + row, row, midi: n.midi,
           x: ((start - row * span) / span) * this.width,
           w: Math.max(((end - start) / span) * this.width, 1),
           y, h: Math.max(step, 2),
@@ -167,22 +183,27 @@ export class Timeline {
       }
     });
     return out;
-  });
+  }
 
-  /** Nota da voz em execução (a mais forte, se várias se sobrepõem), com oitava: "E4". */
-  readonly currentVocalNote = computed(() => {
-    const t = this.currentTime();
-    let best: Note | null = null;
-    for (const n of this.vocalNotes.value() ?? []) {
+  /** A nota que soa em t (a mais forte, se várias) ou, sem nenhuma, a última que terminou antes de t. */
+  private noteAt(notes: Note[], t: number): { name: string; state: 'on' | 'off' } | null {
+    let sounding: Note | null = null;
+    let last: Note | null = null;
+    for (const n of notes) {
       if (n.startS > t) {
         break;
       }
-      if (t < n.endS && (best == null || (n.velocity ?? 0) > (best.velocity ?? 0))) {
-        best = n;
+      if (t < n.endS) {
+        if (sounding == null || (n.velocity ?? 0) > (sounding.velocity ?? 0)) {
+          sounding = n;
+        }
+      } else if (last == null || n.endS > last.endS) {
+        last = n;
       }
     }
-    return best ? noteName(best.midi % 12) + (Math.floor(best.midi / 12) - 1) : null;
-  });
+    const n = sounding ?? last;
+    return n ? { name: noteName(n.midi % 12) + (Math.floor(n.midi / 12) - 1), state: sounding ? 'on' : 'off' } : null;
+  }
 
   /** Marcas de tempo a cada 30 s, cada uma na sua linha. */
   readonly ticks = computed(() => {
@@ -256,6 +277,12 @@ export class Timeline {
 
   label(s: Segment): string {
     return chordName(s.rootPc, s.quality, s.bassPc);
+  }
+
+  /** Cifra com o baixo da harmonia na notação acorde/baixo, quando o baixo efetivo não é a fundamental. */
+  labelWithBass(s: Segment): string {
+    const slash = s.effectiveBassPc != null && s.effectiveBassPc !== s.rootPc ? s.effectiveBassPc : null;
+    return chordName(s.rootPc, s.quality, slash);
   }
 
 

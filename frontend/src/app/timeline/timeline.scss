@@ -105,6 +105,9 @@
   .vocal-bg { fill: #f7f5f0; }
   .vocal { fill: #5b6ee1; opacity: 0.85; }
   .vocal:hover { fill: #2e3fb8; }
+  .bass-bg { stroke: #fff; stroke-width: 0.5; }
+  .bass-note { fill: #b9770e; opacity: 0.9; }
+  .bass-note:hover { fill: #8a5606; }
   .tick { font-size: 10px; fill: #666; }
   .segment:hover rect { filter: brightness(1.12); }
   .segment.active rect { stroke: #111; stroke-width: 1.5; }
@@ -133,6 +136,10 @@
   .cell:last-child { border-right: none; }
   .chord-cell { min-width: 12rem; }
   .vocal-cell .val { color: #2e3fb8; }
+  .bass-cell .val { color: #8a5606; }
+  /* nota em execução em negrito; depois que termina fica leve até a próxima chegar (não pisca) */
+  .val.note { font-weight: 700; transition: opacity 0.25s, font-weight 0.25s; }
+  .val.note.off { font-weight: 400; opacity: 0.4; }
 
   .lbl {
     font-family: 'IBM Plex Mono', 'Courier New', monospace;

@@ -2,6 +2,7 @@ package dev.musicsense.orelha.catalog;
 
 import dev.musicsense.orelha.analysis.AnalysisRun;
 import dev.musicsense.orelha.analysis.AnalysisRunRepository;
+import dev.musicsense.orelha.analysis.BassNoteRepository;
 import dev.musicsense.orelha.analysis.BeatRepository;
 import dev.musicsense.orelha.analysis.VocalNoteRepository;
 import dev.musicsense.orelha.common.NotFoundException;
@@ -46,9 +47,11 @@ public class TrackController {
     private final BeatRepository beats;
     private final AudioLibrary library;
     private final VocalNoteRepository vocalNotes;
+    private final BassNoteRepository bassNotes;
 
     TrackController(TrackRepository tracks, TrackService service, DataPaths dataPaths, AnalysisRunRepository runs,
-                    ImportService importer, BeatRepository beats, AudioLibrary library, VocalNoteRepository vocalNotes) {
+                    ImportService importer, BeatRepository beats, AudioLibrary library, VocalNoteRepository vocalNotes,
+                    BassNoteRepository bassNotes) {
         this.tracks = tracks;
         this.service = service;
         this.dataPaths = dataPaths;
@@ -57,6 +60,7 @@ public class TrackController {
         this.beats = beats;
         this.library = library;
         this.vocalNotes = vocalNotes;
+        this.bassNotes = bassNotes;
     }
 
     private TrackResponse response(Track track) {
@@ -160,6 +164,19 @@ public class TrackController {
 
     /** Beats e downbeats do run canônico: a grade do metrônomo e das barras da timeline. */
     public record NoteResponse(BigDecimal startS, BigDecimal endS, int midi, Integer velocity) {
+    }
+
+    /** Linha de baixo nota a nota (basic-pitch no stem de baixo) do run canônico. */
+    @GetMapping("/{id}/bass-notes")
+    @Transactional(readOnly = true)
+    List<NoteResponse> bassNotes(@PathVariable Long id) {
+        AnalysisRun run = find(id).getCanonicalRun();
+        if (run == null) {
+            return List.of();
+        }
+        return bassNotes.findByRunIdOrderByStartS(run.getId()).stream()
+                .map(n -> new NoteResponse(n.getStartS(), n.getEndS(), n.getMidiPitch(), n.getVelocity()))
+                .toList();
     }
 
     /** Notas da voz (basic-pitch no stem de voz) do run canônico; vazio em runs anteriores ao extrator 0.5.0. */

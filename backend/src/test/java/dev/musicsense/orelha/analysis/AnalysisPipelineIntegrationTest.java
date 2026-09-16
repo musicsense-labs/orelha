@@ -181,6 +181,14 @@ class AnalysisPipelineIntegrationTest {
         assertThat(timeline.segments().get(0).endS()).isEqualByComparingTo("2.000");   // Am fundido
         assertThat(timeline.key().source()).isEqualTo(KeySource.EXTRACTOR);
 
+        // Linha de baixo nota a nota do run canônico.
+        ResponseEntity<List<dev.musicsense.orelha.catalog.TrackController.NoteResponse>> bassLine = rest.exchange(
+                "/api/tracks/" + track.id() + "/bass-notes", org.springframework.http.HttpMethod.GET, null,
+                new org.springframework.core.ParameterizedTypeReference<>() {
+                });
+        assertThat(bassLine.getBody()).extracting(dev.musicsense.orelha.catalog.TrackController.NoteResponse::midi)
+                .containsExactly(45, 41, 43, 45);
+
         // Notas da voz do run canônico (extrator ≥ 0.5.0).
         ResponseEntity<List<dev.musicsense.orelha.catalog.TrackController.NoteResponse>> vocals = rest.exchange(
                 "/api/tracks/" + track.id() + "/vocal-notes", org.springframework.http.HttpMethod.GET, null,
