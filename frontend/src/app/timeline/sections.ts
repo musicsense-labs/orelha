@@ -77,9 +77,13 @@ export class Sections {
     return found;
   });
 
-  /** Largura da caixa proporcional à duração do acorde (mesma escala em todas as partes), com um mínimo legível. */
+  /**
+   * Largura da caixa proporcional à duração do acorde (mesma escala em todas as partes), nunca menor que a
+   * cifra inteira: um Cmaj7 curto fica mais largo do que o tempo pede, mas legível.
+   */
   widthOf(c: SectionChord): number {
-    return Math.max(26, (c.endS - c.startS) * PX_PER_SECOND);
+    const label = this.chord(c);
+    return Math.max(label.length * 8 + 12, (c.endS - c.startS) * PX_PER_SECOND);
   }
 
   chord(c: SectionChord): string {
