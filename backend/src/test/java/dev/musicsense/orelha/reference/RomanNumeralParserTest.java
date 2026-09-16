@@ -1,6 +1,7 @@
 package dev.musicsense.orelha.reference;
 
 import dev.musicsense.orelha.reference.RomanNumeralParser.Degree;
+import dev.musicsense.orelha.harmony.KeyMode;
 import dev.musicsense.orelha.reference.RomanNumeralParser.Family;
 import org.junit.jupiter.api.Test;
 
@@ -34,6 +35,26 @@ class RomanNumeralParserTest {
         assertThat(RomanNumeralParser.parse("I - V - vi - IV, then ??? | ii→V")).extracting(Degree::key)
                 .containsExactly("0:MAJOR", "7:MAJOR", "9:MINOR", "5:MAJOR", "2:MINOR", "7:MAJOR");
         assertThat(RomanNumeralParser.parse(null)).isEmpty();
+    }
+
+    @Test
+    void degreesFollowTheDeclaredMode() {
+        // TheoryTab em Fá menor: III e VI são Lá♭ e Ré♭ (3 e 8), não Lá e Ré.
+        assertThat(RomanNumeralParser.parse("i iv III VI", KeyMode.MINOR)).extracting(Degree::key)
+                .containsExactly("0:MINOR", "5:MINOR", "3:MAJOR", "8:MAJOR");
+        assertThat(RomanNumeralParser.parse("i IV v III", KeyMode.DORIAN)).extracting(Degree::key)
+                .containsExactly("0:MINOR", "5:MAJOR", "7:MINOR", "3:MAJOR");
+        assertThat(RomanNumeralParser.parse("ii VII V I", KeyMode.MIXOLYDIAN)).extracting(Degree::key)
+                .containsExactly("2:MINOR", "10:MAJOR", "7:MAJOR", "0:MAJOR");
+        // #vii em menor = sensível (11); V/x continua sendo a 5ª justa acima do alvo, em qualquer modo.
+        assertThat(RomanNumeralParser.parse("#vii V/iv", KeyMode.MINOR)).extracting(Degree::key)
+                .containsExactly("11:MINOR", "0:MAJOR");
+    }
+
+    @Test
+    void powerChordsReduceToMajor() {
+        assertThat(RomanNumeralParser.parse("i(no3) iv(no3) I5", KeyMode.MINOR)).extracting(Degree::key)
+                .containsExactly("0:MAJOR", "5:MAJOR", "0:MAJOR");
     }
 
     @Test

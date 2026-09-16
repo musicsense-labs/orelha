@@ -77,7 +77,7 @@ public class ReferenceService {
         }
         List<SectionMatch> matches = new ArrayList<>();
         for (ReferenceAnalysis.Section s : ref.getSections()) {
-            List<Degree> degrees = RomanNumeralParser.parse(s.progression());
+            List<Degree> degrees = RomanNumeralParser.parse(s.progression(), ref.getMode());
             matches.add(ReferenceComparer.match(s.label(), ReferenceComparer.keysOf(degrees), ours));
         }
         double similarity = matches.stream().mapToDouble(SectionMatch::sequenceSimilarity).average().orElse(0);

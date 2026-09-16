@@ -347,8 +347,13 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
   (`RomanNumeralParser`: acidentes, caixa, °/+, V/x; 7ª/sus/inversão ignoradas) e cada acorde nosso a
   "semitons acima da tônica:família" e mede por seção da referência a parte nossa mais parecida: similaridade
   de sequência (1 − edição/tamanho, repetições consecutivas fundidas) e cobertura de vocabulário, mais
-  tônica/modo. Objetivo: taxa de erro real do BTC e do `SectionDeriver` em ~20 faixas (pendente: o dono
-  escolhe as faixas; navegador do app não acessa o TheoryTab logado).
+  tônica/modo. **Medido em 24 faixas em 2026-09-16** (`docs/reference-theorytab-2026-09-16.md`; sincronização
+  por `docs/theorytab-sync.mjs` sobre `docs/theorytab-tracks.tsv` — as páginas de música do TheoryTab são
+  públicas, só as listas por artista pedem login): tônica bate em 23/24 (Lucy: Ré maior × Lá mixolídio),
+  vocabulário médio 93 %, sequência média 43 %. Conclusão: os acordes do BTC estão bons; o gargalo é o
+  `SectionDeriver` não fechar ciclos (partes longas), mais diminutos e acordes de passagem que o BTC perde.
+  Os numerais do TheoryTab são **relativos à escala do modo declarado** (III em Fá menor = Lá♭); o
+  `RomanNumeralParser` recebe o modo e faz essa leitura; "(no3)" reduz a maior como do nosso lado.
 - **Trends do Hooktheory sob demanda**: `orelha.hooktheory.activkey` (env `ORELHA_HOOKTHEORY_ACTIVKEY`,
   token da conta do dono via `POST /v1/users/auth`; **segredos ficam num `.env` na raiz**, ignorado pelo
   git, que `backend/run.ps1` carrega antes do Maven — modelo em `.env.example`; sem token os endpoints respondem 409 e o botão fica
