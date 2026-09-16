@@ -103,14 +103,18 @@ export class Sections {
     this.save(this.parts().map((p) => (p.id === part.id ? { ...p, label: trimmed } : p)));
   }
 
-  /** Junta a parte com a anterior: o ciclo e o "×N" da anterior ficam; o fim passa a ser o desta. */
+  /**
+   * Junta a parte com a anterior. A parte resultante não tem ciclo: mostra todos os acordes das duas,
+   * do início ao fim — se mantivesse o "×N" da anterior, os acordes da parte absorvida sumiriam do resumo.
+   */
   mergeWithPrevious(index: number): void {
     const parts = this.parts();
     if (index <= 0) {
       return;
     }
     const previous = parts[index - 1];
-    const merged = { ...previous, endS: parts[index].endS };
+    const endS = parts[index].endS;
+    const merged = { ...previous, endS, cycleEndS: endS, repeats: 1 };
     this.save([...parts.slice(0, index - 1), merged, ...parts.slice(index + 1)]);
   }
 
