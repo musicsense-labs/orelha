@@ -307,7 +307,10 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
 
 ## Decisões pendentes
 
-- Nenhuma no momento.
+- **Backlog Stephenson** (`docs/stephenson-backlog.md`, 2026-09-15): 17 conceitos de *What to Listen
+  For in Rock* mapeados para o Orelha, com fundações F1–F3 (grade hipermétrica, frases vocais,
+  atividade por stem) e ordem sugerida em ondas A–F. Cada onda começa pelas perguntas abertas do
+  documento; nenhum item está implementado.
 
 ## Ondas
 
