@@ -3,10 +3,12 @@ import {
 } from '@angular/core';
 import { HttpClient, httpResource } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
-import { Beat, LyricSegment, Note, Segment, Timeline as TimelineDto, Track } from '../api/models';
+import { Album, Artist, Beat, LyricSegment, Note, Segment, Timeline as TimelineDto, Track } from '../api/models';
 import { Lyrics } from '../api/models';
 import { Metronome } from '../shared/metronome';
+import { StemPanner } from '../shared/panner';
 import { Sections } from './sections';
+import { ReferencePanel } from './reference';
 import {
   KEY_RELATION_COLORS, KEY_RELATION_ORDER, chordName, formatTime, keyName, noteName, percent, relationHint, relationLabel,
 } from '../shared/music';
@@ -31,7 +33,7 @@ function readRows(): number {
 
 @Component({
   selector: 'app-timeline',
-  imports: [RouterLink, Sections],
+  imports: [RouterLink, Sections, ReferencePanel],
   templateUrl: './timeline.html',
   styleUrl: './timeline.scss',
 })
@@ -39,6 +41,14 @@ export class Timeline {
   readonly id = input.required<string>();
 
   readonly track = httpResource<Track>(() => `/api/tracks/${this.id()}`);
+  readonly album = httpResource<Album>(() => {
+    const t = this.track.hasValue() ? this.track.value() : null;
+    return t ? `/api/albums/${t.albumId}` : undefined;
+  });
+  readonly artist = httpResource<Artist>(() => {
+    const a = this.album.hasValue() ? this.album.value() : null;
+    return a ? `/api/artists/${a.artistId}` : undefined;
+  });
   readonly timeline = httpResource<TimelineDto>(() => `/api/tracks/${this.id()}/timeline`);
   readonly stems = httpResource<string[]>(() => `/api/tracks/${this.id()}/stems`);
   readonly beats = httpResource<Beat[]>(() => `/api/tracks/${this.id()}/beats`);
@@ -72,6 +82,8 @@ export class Timeline {
   readonly audible = signal<ReadonlySet<string>>(new Set(['mix']));
   /** Volume por canal (0–1), inclusive 'mix' e 'metronome'. */
   readonly volumes = signal<Record<string, number>>({ mix: 1, drums: 1, bass: 1, other: 1, vocals: 1, metronome: 0.8 });
+  /** Balanço L/R por canal (-1 esquerda … +1 direita), inclusive 'mix' e 'metronome'. */
+  readonly pans = signal<Record<string, number>>({ mix: 0, drums: 0, bass: 0, other: 0, vocals: 0, metronome: 0 });
   readonly metronomeOn = signal(false);
 
   /** Largura lógica do SVG; o viewBox escala para a largura real. */
@@ -343,6 +355,7 @@ export class Timeline {
   readonly legend = KEY_RELATION_ORDER.map((r) => ({ relation: r, color: KEY_RELATION_COLORS[r] }));
 
   private readonly metronome = new Metronome();
+  private readonly panner = new StemPanner();
   private frame = 0;
 
   constructor() {
@@ -356,6 +369,7 @@ export class Timeline {
     inject(DestroyRef).onDestroy(() => {
       cancelAnimationFrame(this.frame);
       this.metronome.dispose();
+      this.panner.dispose();
     });
     // Mudo e volume seguem os signals; o mestre continua tocando mesmo mudo para manter o relógio.
     effect(() => {
@@ -373,6 +387,19 @@ export class Timeline {
         el.volume = volumes[name] ?? 1;
       }
       this.metronome.setVolume(volumes['metronome'] ?? 0.8);
+    });
+    // Balanço: mix e stems pelo grafo Web Audio (o elemento continua fonte e relógio); metrônomo no dele.
+    effect(() => {
+      const pans = this.pans();
+      const master = this.audio()?.nativeElement;
+      if (master) {
+        this.panner.setPan(master, pans['mix'] ?? 0);
+      }
+      for (const ref of this.stemAudios()) {
+        const el = ref.nativeElement;
+        this.panner.setPan(el, pans[el.dataset['stem'] ?? ''] ?? 0);
+      }
+      this.metronome.setPan(pans['metronome'] ?? 0);
     });
     effect(() => {
       this.metronome.setBeats(this.beats.value() ?? []);
@@ -449,6 +476,19 @@ export class Timeline {
     return this.volumes()[name] ?? 1;
   }
 
+  setPan(name: string, value: number): void {
+    this.pans.update((p) => ({ ...p, [name]: Math.min(1, Math.max(-1, value)) }));
+  }
+
+  pan(name: string): number {
+    return this.pans()[name] ?? 0;
+  }
+
+  panLabel(name: string): string {
+    const v = this.pan(name);
+    return v === 0 ? 'centro' : `${Math.round(Math.abs(v) * 100)}% ${v < 0 ? 'esquerda' : 'direita'}`;
+  }
+
   toggleMetronome(): void {
     this.metronomeOn.update((on) => !on);
     const el = this.audio()?.nativeElement;
@@ -475,6 +515,7 @@ export class Timeline {
 
   onPlay(): void {
     this.playing.set(true);
+    this.panner.resume();
     for (const ref of this.stemAudios()) {
       void ref.nativeElement.play().catch(() => undefined);
     }

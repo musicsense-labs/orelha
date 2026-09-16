@@ -28,6 +28,8 @@
         <div class="channel">
           <button type="button" [class.on]="isAudible('mix')" (click)="toggle('mix')" title="a mixagem original; liga-la silencia os stems">mix</button>
           <input type="range" min="0" max="1" step="0.01" [value]="volume('mix')" (input)="setVolume('mix', +$any($event.target).value)" title="volume do mix">
+          <input type="range" class="pan" min="-1" max="1" step="0.05" [value]="pan('mix')" (input)="setPan('mix', +$any($event.target).value)"
+                 (dblclick)="setPan('mix', 0)" [title]="'balanço do mix: ' + panLabel('mix') + ' (duplo clique: centro)'">
         </div>
         @for (name of stems.value() ?? []; track name) {
           <div class="channel">
@@ -37,6 +39,8 @@
             </button>
             <input type="range" min="0" max="1" step="0.01" [value]="volume(name)" (input)="setVolume(name, +$any($event.target).value)"
                    [title]="'volume: ' + (stemLabels[name] ?? name)">
+            <input type="range" class="pan" min="-1" max="1" step="0.05" [value]="pan(name)" (input)="setPan(name, +$any($event.target).value)"
+                   (dblclick)="setPan(name, 0)" [title]="'balanço: ' + (stemLabels[name] ?? name) + ' · ' + panLabel(name) + ' (duplo clique: centro)'">
           </div>
           <audio #stemAudio [attr.data-stem]="name" preload="auto" muted
                  [src]="'/api/tracks/' + t.id + '/stems/' + name"></audio>
@@ -52,6 +56,8 @@
             metrônomo
           </button>
           <input type="range" min="0" max="1" step="0.01" [value]="volume('metronome')" (input)="setVolume('metronome', +$any($event.target).value)" title="volume do metrônomo">
+          <input type="range" class="pan" min="-1" max="1" step="0.05" [value]="pan('metronome')" (input)="setPan('metronome', +$any($event.target).value)"
+                 (dblclick)="setPan('metronome', 0)" [title]="'balanço do metrônomo: ' + panLabel('metronome') + ' (duplo clique: centro)'">
         </div>
       </div>
     </div>
@@ -224,5 +230,6 @@
 
     <app-sections [trackId]="id()" [currentTime]="currentTime()" [downbeats]="downbeatTimes()" [duration]="duration()"
                   (seek)="seekTo($event)" />
+    <app-reference [trackId]="id()" [title]="t.title" [artist]="artist.hasValue() ? artist.value().name : ''" />
   }
 }

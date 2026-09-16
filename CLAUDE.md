@@ -312,8 +312,12 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
 - **Player multi-stem** (timeline): a mixagem é o `<audio>` mestre (relógio); cada stem é um
   `<audio>` escondido que segue play/pause/seek e é corrigido se derivar > 150 ms. **Mix e stems
   são mutuamente exclusivos** (ligar o mix silencia os stems; ligar um stem silencia o mix);
-  stems se combinam entre si; duplo clique = solo; cada canal tem volume (`audio.volume`). Sem
-  Web Audio para os stems (decodificar 4 × 50 MB não vale a sincronia por amostra num uso local).
+  stems se combinam entre si; duplo clique = solo; cada canal tem volume (`audio.volume`) e **balanço L/R**
+  (2026-09-16: `shared/panner.ts` liga cada `<audio>` a um `StereoPannerNode` via `MediaElementSource` —
+  o elemento continua fonte e relógio, nada é decodificado em memória; o grafo só é criado quando o
+  balanço sai do centro; duplo clique no slider volta ao centro; o metrônomo tem panner no próprio
+  grafo). Sem `AudioBufferSource` para os stems (decodificar 4 × 50 MB não vale a sincronia por amostra
+  num uso local).
 - **Metrônomo** (`shared/metronome.ts`): Web Audio, cliques sintetizados sobre os beats do run
   (`GET /api/tracks/{id}/beats`, downbeat acentuado a 1400 Hz, beat a 950 Hz), agendados 250 ms à
   frente do relógio do mestre a cada frame; `reset` em seek/pause. Independente do mix/stems: toca
@@ -333,6 +337,23 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
 - **Nomes de arquivo com `..`** ("N.I.B..mp3"): o guarda de path traversal do staging descarta
   segmentos `..`, nunca substitui a sequência dentro de um nome (bug corrigido em 2026-09-15:
   virava `N.I.B..b_mp3` e o ChordMini não reconhecia a extensão).
+
+## Referência humana (2026-09-16)
+
+- **TheoryTab colado à mão**: o Hooktheory não tem API para a análise por música (só Trends), então o
+  dono abre a página (links "abrir no TheoryTab"/"artista" na timeline, exigem login) e cola tonalidade +
+  seções em numerais no painel "Referência humana". `PUT /api/tracks/{id}/reference {text, url}` grava
+  em `reference_analysis` (V11, texto bruto + seções JSON); `GET …/reference/compare` reduz cada numeral
+  (`RomanNumeralParser`: acidentes, caixa, °/+, V/x; 7ª/sus/inversão ignoradas) e cada acorde nosso a
+  "semitons acima da tônica:família" e mede por seção da referência a parte nossa mais parecida: similaridade
+  de sequência (1 − edição/tamanho, repetições consecutivas fundidas) e cobertura de vocabulário, mais
+  tônica/modo. Objetivo: taxa de erro real do BTC e do `SectionDeriver` em ~20 faixas (pendente: o dono
+  escolhe as faixas; navegador do app não acessa o TheoryTab logado).
+- **Trends do Hooktheory sob demanda**: `orelha.hooktheory.activkey` (env `ORELHA_HOOKTHEORY_ACTIVKEY`,
+  token da conta do dono via `POST /v1/users/auth`; sem token os endpoints respondem 409 e o botão fica
+  desabilitado). `GET /api/reference/hooktheory/trends?cp=1,5,6` e `/songs?cp=` com cache de 1 dia
+  (limite deles: 10 pedidos/10 s). Na UI, botão "no pop ↗" em cada parte cuja progressão é só de
+  tríades diatônicas da escala maior (ids 1–7 do Hooktheory).
 
 ## Decisões pendentes
 

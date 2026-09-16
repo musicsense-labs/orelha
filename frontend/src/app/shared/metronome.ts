@@ -15,10 +15,12 @@ const BEAT_HZ = 950;
 export class Metronome {
   private ctx: AudioContext | null = null;
   private gain: GainNode | null = null;
+  private panner: StereoPannerNode | null = null;
   private beats: BeatLike[] = [];
   private nextIndex = 0;
   private lastMasterTime = -1;
   private volumeValue = 0.8;
+  private panValue = 0;
   private scheduled: OscillatorNode[] = [];
 
   setBeats(beats: BeatLike[]): void {
@@ -30,6 +32,14 @@ export class Metronome {
     this.volumeValue = v;
     if (this.gain && this.ctx) {
       this.gain.gain.setValueAtTime(v, this.ctx.currentTime);
+    }
+  }
+
+  /** Balanço L/R do clique: -1 esquerda, 0 centro, +1 direita. */
+  setPan(v: number): void {
+    this.panValue = Math.min(1, Math.max(-1, v));
+    if (this.panner && this.ctx) {
+      this.panner.pan.setTargetAtTime(this.panValue, this.ctx.currentTime, 0.01);
     }
   }
 
@@ -91,7 +101,9 @@ export class Metronome {
       this.ctx = new AudioContext();
       this.gain = this.ctx.createGain();
       this.gain.gain.value = this.volumeValue;
-      this.gain.connect(this.ctx.destination);
+      this.panner = this.ctx.createStereoPanner();
+      this.panner.pan.value = this.panValue;
+      this.gain.connect(this.panner).connect(this.ctx.destination);
     }
     return this.ctx;
   }
@@ -101,5 +113,6 @@ export class Metronome {
     void this.ctx?.close();
     this.ctx = null;
     this.gain = null;
+    this.panner = null;
   }
 }

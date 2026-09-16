@@ -43,6 +43,12 @@
 
   .channel { display: flex; align-items: center; gap: 0.3rem; }
   .channel input[type="range"] { width: 70px; accent-color: var(--ink); }
+  /* balanço L/R: mais curto, com marca central; centro = sem grafo Web Audio ligado */
+  .channel input[type="range"].pan {
+    width: 46px;
+    accent-color: var(--muted);
+    background: linear-gradient(to right, transparent 49%, var(--line) 49%, var(--line) 51%, transparent 51%);
+  }
   .channel.metronome { margin-left: 0.6rem; padding-left: 0.6rem; border-left: 1px solid var(--line); }
   .channel.metronome button.on { background: var(--accent); border-color: var(--accent); }
 
