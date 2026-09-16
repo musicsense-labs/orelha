@@ -336,10 +336,11 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
 
 ## Decisões pendentes
 
-- **Backlog Stephenson** (`docs/stephenson-backlog.md`, 2026-09-15): 17 conceitos de *What to Listen
-  For in Rock* mapeados para o Orelha, com fundações F1–F3 (grade hipermétrica, frases vocais,
-  atividade por stem) e ordem sugerida em ondas A–F. Cada onda começa pelas perguntas abertas do
-  documento; nenhum item está implementado.
+- **Backlog Stephenson** (`docs/stephenson-backlog.md`): Parte I = 17 conceitos pedidos (2026-09-15),
+  Parte II = os demais 15 do livro (2026-09-16), Parte III = tabela gene do Pandora ↔ Stephenson ↔ métrica
+  do Orelha e a proposta da **aba Genoma** (ficha por faixa ao estilo do musicólogo do Pandora, notas
+  0–5 MANUAL guiadas por evidência automática DERIVED; módulo Guide). Fundações F1–F3 e ondas A–F;
+  13 perguntas abertas ao dono no fim do documento. Só a letra por ASR (item 5b) está implementada.
 
 ## Ondas
 
