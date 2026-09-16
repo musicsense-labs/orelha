@@ -350,7 +350,8 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
   tônica/modo. Objetivo: taxa de erro real do BTC e do `SectionDeriver` em ~20 faixas (pendente: o dono
   escolhe as faixas; navegador do app não acessa o TheoryTab logado).
 - **Trends do Hooktheory sob demanda**: `orelha.hooktheory.activkey` (env `ORELHA_HOOKTHEORY_ACTIVKEY`,
-  token da conta do dono via `POST /v1/users/auth`; sem token os endpoints respondem 409 e o botão fica
+  token da conta do dono via `POST /v1/users/auth`; **segredos ficam num `.env` na raiz**, ignorado pelo
+  git, que `backend/run.ps1` carrega antes do Maven — modelo em `.env.example`; sem token os endpoints respondem 409 e o botão fica
   desabilitado). `GET /api/reference/hooktheory/trends?cp=1,5,6` e `/songs?cp=` com cache de 1 dia
   (limite deles: 10 pedidos/10 s). Na UI, botão "no pop ↗" em cada parte cuja progressão é só de
   tríades diatônicas da escala maior (ids 1–7 do Hooktheory).
