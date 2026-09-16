@@ -8,5 +8,7 @@ import java.util.List;
 public interface LyricSegmentRepository extends JpaRepository<LyricSegment, Long> {
 
     @EntityGraph(attributePaths = "words")
-    List<LyricSegment> findByRunIdOrderByStartS(long runId);
+    List<LyricSegment> findByRunIdAndSourceOrderByStartS(long runId, LyricSource source);
+
+    void deleteByRunIdAndSource(long runId, LyricSource source);
 }

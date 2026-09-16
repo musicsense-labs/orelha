@@ -39,9 +39,12 @@ public class AnalysisPipeline {
     private final SectionService sections;
     private final SectionRepository sectionRepository;
     private final KeySegmentRepository keys;
+    private final LyricsService lyrics;
 
     AnalysisPipeline(AnalysisRunRepository runs, EntityManager em, PowerChordDetector powerChords, AudioLibrary library,
-                     SectionService sections, SectionRepository sectionRepository, KeySegmentRepository keys) {
+                     SectionService sections, SectionRepository sectionRepository, KeySegmentRepository keys,
+                     LyricsService lyrics) {
+        this.lyrics = lyrics;
         this.runs = runs;
         this.em = em;
         this.powerChords = powerChords;
@@ -86,7 +89,8 @@ public class AnalysisPipeline {
         bassNotes.forEach(n -> em.persist(new BassNote(run, n.startS(), n.endS(), n.midi(), n.velocity())));
         result.vocalNotes().forEach(n -> em.persist(new VocalNote(run, n.startS(), n.endS(), n.midi(), n.velocity())));
         result.lyrics().segments().forEach(s -> {
-            LyricSegment segment = new LyricSegment(run, s.startS(), s.endS(), s.text(), s.noSpeechProb());
+            LyricSegment segment = new LyricSegment(run, LyricSource.EXTRACTOR, s.startS(), s.endS(), s.text(),
+                    s.noSpeechProb());
             s.words().forEach(w -> segment.addWord(w.startS(), w.endS(), w.text(), w.probability()));
             em.persist(segment);
         });
@@ -123,8 +127,8 @@ public class AnalysisPipeline {
     }
 
     /**
-     * O que o dono corrigiu no run canônico anterior (tonalidade MANUAL, partes MANUAL) vale para a
-     * re-análise: é copiado para o run novo, senão reprocessar apagaria o trabalho dele.
+     * O que o dono corrigiu no run canônico anterior (tonalidade MANUAL, partes MANUAL, letra MANUAL) vale
+     * para a re-análise: é copiado para o run novo, senão reprocessar apagaria o trabalho dele.
      */
     private void inheritManualOverrides(AnalysisRun run, AnalysisRun previous, List<ChordSegment> segments,
                                         List<NoteEvent> bassNotes) {
@@ -147,6 +151,7 @@ public class AnalysisPipeline {
                             s.getRepeats()))
                     .toList());
         }
+        lyrics.inheritManual(previous, run);
     }
 
     /**

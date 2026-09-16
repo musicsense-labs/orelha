@@ -159,8 +159,41 @@
   .vocal-cell .val { color: #2e3fb8; }
   .lyric-cell { min-width: 14rem; max-width: 28rem; }
   .lyric-cell .val.line { font-size: 0.95rem; font-weight: 400; display: inline; line-height: 1.35; }
-  .lyric-cell b { font-weight: 400; color: var(--muted); transition: color 0.15s, font-weight 0.15s; }
-  .lyric-cell b.on { font-weight: 700; color: #2e3fb8; }
+  .lyric-cell .word {
+    font: inherit;
+    background: none;
+    border: 0;
+    padding: 0 0.1rem;
+    margin: 0;
+    cursor: text;
+    color: var(--muted);
+    border-radius: 3px;
+    transition: color 0.15s, font-weight 0.15s;
+  }
+  .lyric-cell .word.on { font-weight: 700; color: #2e3fb8; }
+  .lyric-cell .word:hover { background: #eef0fb; color: var(--ink); }
+  .lyric-cell .word-edit {
+    font: inherit;
+    font-size: 0.95rem;
+    padding: 0 0.2rem;
+    border: 1px solid #2e3fb8;
+    border-radius: 3px;
+    min-width: 4ch;
+  }
+  .lyric-cell .tiny {
+    font: inherit;
+    font-size: 0.65rem;
+    letter-spacing: 0;
+    text-transform: none;
+    margin-left: 0.5rem;
+    background: none;
+    border: 0;
+    padding: 0;
+    color: #2e3fb8;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  .lyric-cell .error { color: #b3261e; }
   .bass-cell .val { color: #8a5606; }
   /* nota em execução em negrito; depois que termina fica leve até a próxima chegar (não pisca) */
   .val.note { font-weight: 700; transition: opacity 0.25s, font-weight 0.25s; }

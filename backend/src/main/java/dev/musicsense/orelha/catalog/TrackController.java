@@ -3,20 +3,13 @@ package dev.musicsense.orelha.catalog;
 import dev.musicsense.orelha.analysis.AnalysisRun;
 import dev.musicsense.orelha.analysis.AnalysisRunRepository;
 import dev.musicsense.orelha.analysis.BassNoteRepository;
-import dev.musicsense.orelha.analysis.Beat;
 import dev.musicsense.orelha.analysis.BeatRepository;
-import dev.musicsense.orelha.analysis.LyricSegment;
-import dev.musicsense.orelha.analysis.LyricSegmentRepository;
-import dev.musicsense.orelha.analysis.LyricsProperties;
-import dev.musicsense.orelha.analysis.LyricsResponse;
-import dev.musicsense.orelha.analysis.TrackAnalysisRepository;
-import dev.musicsense.orelha.analysis.VocalNoteClassifier;
+import dev.musicsense.orelha.analysis.LyricsService;
 import dev.musicsense.orelha.analysis.VocalNoteKind;
 import dev.musicsense.orelha.analysis.VocalNoteRepository;
 import dev.musicsense.orelha.common.NotFoundException;
 import dev.musicsense.orelha.extraction.DataPaths;
 import jakarta.validation.Valid;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -45,7 +38,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
-@EnableConfigurationProperties(LyricsProperties.class)
 @RequestMapping("/api/tracks")
 public class TrackController {
 
@@ -58,17 +50,12 @@ public class TrackController {
     private final AudioLibrary library;
     private final VocalNoteRepository vocalNotes;
     private final BassNoteRepository bassNotes;
-    private final LyricSegmentRepository lyrics;
-    private final TrackAnalysisRepository analyses;
-    private final VocalNoteClassifier vocalClassifier;
+    private final LyricsService lyrics;
 
     TrackController(TrackRepository tracks, TrackService service, DataPaths dataPaths, AnalysisRunRepository runs,
                     ImportService importer, BeatRepository beats, AudioLibrary library, VocalNoteRepository vocalNotes,
-                    BassNoteRepository bassNotes, LyricSegmentRepository lyrics, TrackAnalysisRepository analyses,
-                    LyricsProperties lyricsProperties) {
+                    BassNoteRepository bassNotes, LyricsService lyrics) {
         this.lyrics = lyrics;
-        this.analyses = analyses;
-        this.vocalClassifier = lyricsProperties.classifier();
         this.tracks = tracks;
         this.service = service;
         this.dataPaths = dataPaths;
@@ -208,43 +195,9 @@ public class TrackController {
         if (run == null) {
             return List.of();
         }
-        return vocalClassifier.classify(vocalNotes.findByRunIdOrderByStartS(run.getId()),
-                        lyrics.findByRunIdOrderByStartS(run.getId())).stream()
+        return lyrics.classifiedVocalNotes(run).stream()
                 .map(n -> new NoteResponse(n.startS(), n.endS(), n.midi(), n.velocity(), n.kind()))
                 .toList();
-    }
-
-    /** Letra por ASR do run canônico, com o compasso de cada trecho e palavra; vazia antes do extrator 0.6.0. */
-    @GetMapping("/{id}/lyrics")
-    @Transactional(readOnly = true)
-    LyricsResponse lyrics(@PathVariable Long id) {
-        AnalysisRun run = find(id).getCanonicalRun();
-        if (run == null) {
-            return new LyricsResponse(null, null, null, List.of());
-        }
-        List<Beat> grid = beats.findByRunIdOrderByBeatNo(run.getId());
-        List<LyricsResponse.Segment> segments = lyrics.findByRunIdOrderByStartS(run.getId()).stream()
-                .map(s -> new LyricsResponse.Segment(s.getStartS(), s.getEndS(), s.getText(), s.getNoSpeechProb(),
-                        barAt(grid, s.getStartS()), s.getWords().stream()
-                        .map(w -> new LyricsResponse.Word(w.getStartS(), w.getEndS(), w.getText(), w.getProbability(),
-                                barAt(grid, w.getStartS())))
-                        .toList()))
-                .toList();
-        return analyses.findByRunId(run.getId())
-                .map(a -> new LyricsResponse(run.getId(), a.getLyricsLanguage(), a.getLyricsLanguageConfidence(), segments))
-                .orElseGet(() -> new LyricsResponse(run.getId(), null, null, segments));
-    }
-
-    /** Compasso do último beat que não vem depois do instante; null antes do primeiro beat ou sem grade. */
-    static Integer barAt(List<Beat> grid, BigDecimal time) {
-        Integer bar = null;
-        for (Beat b : grid) {
-            if (b.getTimeS().compareTo(time) > 0) {
-                break;
-            }
-            bar = b.getBarNo();
-        }
-        return bar;
     }
 
     @GetMapping("/{id}/beats")

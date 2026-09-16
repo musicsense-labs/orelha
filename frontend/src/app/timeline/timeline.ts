@@ -1,7 +1,7 @@
 import {
   Component, DestroyRef, ElementRef, computed, effect, inject, input, signal, viewChild, viewChildren,
 } from '@angular/core';
-import { httpResource } from '@angular/common/http';
+import { HttpClient, httpResource } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 import { Beat, LyricSegment, Note, Segment, Timeline as TimelineDto, Track } from '../api/models';
 import { Lyrics } from '../api/models';
@@ -48,6 +48,12 @@ export class Timeline {
   readonly bassNoteList = computed(() => (this.bassNotes.hasValue() ? this.bassNotes.value() : []));
   readonly vocalNoteList = computed(() => (this.vocalNotes.hasValue() ? this.vocalNotes.value() : []));
   readonly lyrics = httpResource<Lyrics>(() => `/api/tracks/${this.id()}/lyrics`);
+  private readonly http = inject(HttpClient);
+  /** Palavra da linha atual em edição (índice do trecho e da palavra); a edição pausa o áudio. */
+  readonly editingWord = signal<{ seg: number; word: number } | null>(null);
+  readonly savingLyrics = signal(false);
+  readonly lyricsError = signal<string | null>(null);
+  private readonly wordInput = viewChild<ElementRef<HTMLInputElement>>('wordInput');
   readonly lyricSegments = computed(() => (this.lyrics.hasValue() ? this.lyrics.value().segments : []));
   /** Notas que o ASR sugere serem outro instrumento no stem de voz ficam escondidas, salvo pedido. */
   readonly showLeak = signal(false);
@@ -175,16 +181,83 @@ export class Timeline {
     return out;
   });
 
-  /** Trecho da letra no instante e as palavras dele, com a que está sendo cantada marcada. */
+  /**
+   * Trecho da letra no instante e as palavras dele, com a que está sendo cantada marcada — pelo ataque da nota
+   * de voz alinhada, quando há (o ASR marca a consoante; a nota, a vogal).
+   */
   readonly currentLine = computed(() => {
     const t = this.currentTime();
-    const seg = this.lyricSegments().find((s) => s.startS <= t && t < s.endS) ?? null;
-    if (!seg) {
+    const segments = this.lyricSegments();
+    const index = segments.findIndex((s) => s.startS <= t && t < s.endS);
+    if (index < 0) {
       return null;
     }
-    const words = seg.words.map((w) => ({ text: w.text, on: w.startS <= t && t < w.endS + 0.12 }));
-    return { seg, words };
+    const seg = segments[index];
+    const words = seg.words.map((w) => ({ text: w.text, on: (w.noteStartS ?? w.startS) <= t && t < w.endS + 0.12 }));
+    return { index, seg, words };
   });
+
+  /** Abre a correção de uma palavra da linha atual; pausa para a linha não mudar debaixo do cursor. */
+  startEditWord(seg: number, word: number): void {
+    this.audio()?.nativeElement.pause();
+    this.editingWord.set({ seg, word });
+  }
+
+  /** Grava a palavra corrigida: vazia remove; com espaços divide o tempo dela entre as novas palavras. */
+  commitWord(seg: number, word: number, raw: string): void {
+    if (!this.editingWord()) {
+      return;   // o blur depois do Enter/Escape
+    }
+    this.editingWord.set(null);
+    const segments = this.lyricSegments();
+    const target = segments[seg]?.words[word];
+    if (!target) {
+      return;
+    }
+    const parts = raw.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 1 && parts[0] === target.text) {
+      return;
+    }
+    const span = (target.endS - target.startS) / Math.max(parts.length, 1);
+    const replacement = parts.map((text, i) => ({
+      startS: target.startS + i * span, endS: target.startS + (i + 1) * span, text,
+    }));
+    const edited = segments
+      .map((s, i) => {
+        if (i !== seg) {
+          return s;
+        }
+        const words = [...s.words.slice(0, word), ...replacement, ...s.words.slice(word + 1)];
+        return { ...s, words, text: words.map((w) => w.text).join(' ') };
+      })
+      .filter((s) => s.words.length > 0);
+    this.saveLyrics(edited);
+  }
+
+  /** Descarta a correção: volta à transcrição do extrator. */
+  revertLyrics(): void {
+    this.saveLyrics([]);
+  }
+
+  private saveLyrics(segments: { startS: number; endS: number; text: string; words: { startS: number; endS: number; text: string }[] }[]): void {
+    const body = segments.map((s) => ({
+      startS: s.startS, endS: s.endS, text: s.text,
+      words: s.words.map((w) => ({ startS: w.startS, endS: w.endS, text: w.text })),
+    }));
+    this.savingLyrics.set(true);
+    this.lyricsError.set(null);
+    this.http.put(`/api/tracks/${this.id()}/lyrics`, body).subscribe({
+      next: () => {
+        this.savingLyrics.set(false);
+        this.lyrics.reload();
+        this.vocalNotes.reload();   // a classificação das notas segue a letra
+      },
+      error: (e) => {
+        this.savingLyrics.set(false);
+        this.lyricsError.set(e?.error?.detail ?? e?.message ?? 'falha ao salvar');
+      },
+    });
+  }
 
   /**
    * Nota do baixo (stem) no instante: em execução ("on") ou a última que soou ("off"), até a próxima
@@ -273,6 +346,13 @@ export class Timeline {
   private frame = 0;
 
   constructor() {
+    effect(() => {
+      const el = this.wordInput()?.nativeElement;
+      if (this.editingWord() && el) {
+        el.focus();
+        el.select();
+      }
+    });
     inject(DestroyRef).onDestroy(() => {
       cancelAnimationFrame(this.frame);
       this.metronome.dispose();

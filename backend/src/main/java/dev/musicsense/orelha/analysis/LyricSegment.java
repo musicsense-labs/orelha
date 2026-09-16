@@ -3,6 +3,8 @@ package dev.musicsense.orelha.analysis;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -20,6 +22,7 @@ import java.util.List;
 /**
  * Trecho da letra transcrito por ASR do stem de voz (extrator ≥ 0.6.0). {@code noSpeechProb} é a
  * probabilidade que o modelo dá a "isto não é fala": alta num solo de guitarra que vazou para o stem.
+ * Trechos MANUAL são a correção do dono e a leitura os prefere.
  */
 @Entity
 @Table(name = "lyric_segment")
@@ -32,6 +35,10 @@ public class LyricSegment {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "analysis_run_id", nullable = false)
     private AnalysisRun run;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private LyricSource source;
 
     @Column(name = "start_s", nullable = false, precision = 9, scale = 3)
     private BigDecimal startS;
@@ -52,8 +59,10 @@ public class LyricSegment {
     protected LyricSegment() {
     }
 
-    public LyricSegment(AnalysisRun run, BigDecimal startS, BigDecimal endS, String text, Float noSpeechProb) {
+    public LyricSegment(AnalysisRun run, LyricSource source, BigDecimal startS, BigDecimal endS, String text,
+                        Float noSpeechProb) {
         this.run = run;
+        this.source = source;
         this.startS = startS;
         this.endS = endS;
         this.text = text;
@@ -72,6 +81,10 @@ public class LyricSegment {
 
     public AnalysisRun getRun() {
         return run;
+    }
+
+    public LyricSource getSource() {
+        return source;
     }
 
     public BigDecimal getStartS() {

@@ -205,12 +205,40 @@ class AnalysisPipelineIntegrationTest {
 
         // Letra do run canônico, com o compasso de cada palavra pela grade de beats.
         LyricsResponse lyrics = rest.getForObject("/api/tracks/" + track.id() + "/lyrics", LyricsResponse.class);
+        assertThat(lyrics.source()).isEqualTo(LyricSource.EXTRACTOR);
         assertThat(lyrics.language()).isEqualTo("en");
         assertThat(lyrics.segments()).hasSize(1);
         assertThat(lyrics.segments().get(0).text()).isEqualTo("let it");
         assertThat(lyrics.segments().get(0).words()).extracting(LyricsResponse.Word::text).containsExactly("let", "it");
+        // "let" começa em 0,4 s e a nota E4 em 0,5 s: dentro da folga de 120 ms, o ataque da nota é o instante da palavra.
+        assertThat(lyrics.segments().get(0).words().get(0).noteStartS()).isEqualByComparingTo("0.500");
+        assertThat(lyrics.segments().get(0).words().get(0).midi()).isEqualTo(64);
+        assertThat(lyrics.segments().get(0).words().get(1).noteStartS()).isNull();   // "it" a 1,6 s: nenhuma nota perto
         assertThat(lyrics.segments().get(0).words().get(0).barNo()).isEqualTo(1);
         assertThat(lyrics.segments().get(0).words().get(1).barNo()).isEqualTo(1);   // 1,6 s: ainda no compasso 1 (2,0 s abre o 2)
+
+        // Correção do dono: a lista inteira vira MANUAL, a classificação das notas segue a letra corrigida, e a
+        // lista vazia volta à transcrição.
+        ResponseEntity<LyricsResponse> corrected = rest.exchange("/api/tracks/" + track.id() + "/lyrics",
+                org.springframework.http.HttpMethod.PUT,
+                new org.springframework.http.HttpEntity<>(List.of(new LyricsController.SegmentRequest(bd(0.4), bd(4.0), null,
+                        List.of(new LyricsController.WordRequest(bd(0.4), bd(1.4), "let"),
+                                new LyricsController.WordRequest(bd(2.4), bd(3.6), "be"))))),
+                LyricsResponse.class);
+        assertThat(corrected.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(corrected.getBody().source()).isEqualTo(LyricSource.MANUAL);
+        assertThat(corrected.getBody().segments().get(0).text()).isEqualTo("let be");
+        assertThat(corrected.getBody().segments().get(0).words().get(1).probability()).isNull();
+        vocals = rest.exchange("/api/tracks/" + track.id() + "/vocal-notes", org.springframework.http.HttpMethod.GET, null,
+                new org.springframework.core.ParameterizedTypeReference<>() {
+                });
+        assertThat(vocals.getBody()).extracting(dev.musicsense.orelha.catalog.TrackController.NoteResponse::kind)
+                .containsExactly(VocalNoteKind.LEXICAL, VocalNoteKind.LEXICAL, VocalNoteKind.LIKELY_LEAK);   // F4 agora sob "be"
+        ResponseEntity<LyricsResponse> revertedLyrics = rest.exchange("/api/tracks/" + track.id() + "/lyrics",
+                org.springframework.http.HttpMethod.PUT, new org.springframework.http.HttpEntity<>(List.of()),
+                LyricsResponse.class);
+        assertThat(revertedLyrics.getBody().source()).isEqualTo(LyricSource.EXTRACTOR);
+        assertThat(revertedLyrics.getBody().segments().get(0).text()).isEqualTo("let it");
 
         // Beats do run canônico, com compasso contado a partir do primeiro downbeat.
         ResponseEntity<List<dev.musicsense.orelha.catalog.TrackController.BeatResponse>> beats = rest.exchange(
@@ -295,11 +323,15 @@ class AnalysisPipelineIntegrationTest {
         assertThat(reverted.getBody().source()).isEqualTo(SectionSource.DERIVED);
         assertThat(reverted.getBody().parts()).extracting(SectionsResponse.Part::label).containsExactly("A");
 
-        // Re-análise herda o que o dono corrigiu no run canônico: tonalidade MANUAL (C maior) e partes MANUAL.
+        // Re-análise herda o que o dono corrigiu no run canônico: tonalidade MANUAL (C maior), partes MANUAL e letra MANUAL.
         rest.exchange("/api/tracks/" + track.id() + "/sections", org.springframework.http.HttpMethod.PUT,
                 new org.springframework.http.HttpEntity<>(List.of(
                         new SectionController.SectionRequest(new BigDecimal("0.000"), new BigDecimal("8.000"), "tudo", null, null))),
                 SectionsResponse.class);
+        rest.exchange("/api/tracks/" + track.id() + "/lyrics", org.springframework.http.HttpMethod.PUT,
+                new org.springframework.http.HttpEntity<>(List.of(new LyricsController.SegmentRequest(bd(0.4), bd(4.0), "let it be",
+                        List.of(new LyricsController.WordRequest(bd(0.4), bd(1.4), "let"))))),
+                LyricsResponse.class);
         long reanalysis = ((Number) rest.postForEntity("/api/tracks/" + track.id() + "/analyze", null, Map.class)
                 .getBody().get("runId")).longValue();
         worker.pollOnce();
@@ -313,6 +345,10 @@ class AnalysisPipelineIntegrationTest {
                 SectionsResponse.class);
         assertThat(inheritedParts.source()).isEqualTo(SectionSource.MANUAL);
         assertThat(inheritedParts.parts()).extracting(SectionsResponse.Part::label).containsExactly("tudo");
+        LyricsResponse inheritedLyrics = rest.getForObject("/api/tracks/" + track.id() + "/lyrics?runId=" + reanalysis,
+                LyricsResponse.class);
+        assertThat(inheritedLyrics.source()).isEqualTo(LyricSource.MANUAL);
+        assertThat(inheritedLyrics.segments().get(0).text()).isEqualTo("let it be");
     }
 
     @Test

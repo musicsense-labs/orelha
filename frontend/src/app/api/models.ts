@@ -156,8 +156,12 @@ export interface LyricWord {
   startS: number;
   endS: number;
   text: string;
+  /** Confiança do ASR; null em palavra corrigida pelo dono. */
   probability: number | null;
   barNo: number | null;
+  /** Ataque da nota de voz que coincide com a palavra (dentro da folga), e a altura dela; null sem nota perto. */
+  noteStartS: number | null;
+  midi: number | null;
 }
 
 export interface LyricSegment {
@@ -170,8 +174,11 @@ export interface LyricSegment {
   words: LyricWord[];
 }
 
+export type LyricSource = 'EXTRACTOR' | 'MANUAL';
+
 export interface Lyrics {
   runId: number | null;
+  source: LyricSource | null;
   language: string | null;
   languageConfidence: number | null;
   segments: LyricSegment[];

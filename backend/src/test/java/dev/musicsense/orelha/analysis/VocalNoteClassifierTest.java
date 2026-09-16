@@ -20,7 +20,7 @@ class VocalNoteClassifierTest {
     }
 
     private static LyricSegment segment(double start, double end, float noSpeech, double[]... words) {
-        LyricSegment segment = new LyricSegment(null, s(start), s(end), "x", noSpeech);
+        LyricSegment segment = new LyricSegment(null, LyricSource.EXTRACTOR, s(start), s(end), "x", noSpeech);
         for (double[] w : words) {
             segment.addWord(s(w[0]), s(w[1]), "w", w.length > 2 ? (float) w[2] : 0.9f);
         }

@@ -243,7 +243,15 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
   Whisper não é determinístico ali; quando some, as notas dela viram vazamento — é o caso do botão
   "mostrar vazamento" e da edição manual (próxima onda). Sem letra no run, tudo é `LEXICAL`. É classificação, não
   descarte. Motivação: o dono viu solos de guitarra no piano roll da voz; a letra sincronizada também é
-  a base para forma por texto (backlog Stephenson, itens 5/15/16). Edição manual de palavras: próxima onda.
+  a base para forma por texto (backlog Stephenson, itens 5/15/16). **Correção manual (V10, 2026-09-16)**: `PUT /api/tracks/{id}/lyrics` com a lista inteira de
+  trechos e palavras grava `lyric_segment.source = MANUAL` (palavras sem probabilidade = o dono afirmou);
+  leitura prefere MANUAL; lista vazia volta à transcrição; a re-análise herda a letra MANUAL como herda
+  tonalidade e partes. Na UI, clicar numa palavra da célula LETRA pausa e abre a edição: vazio apaga,
+  espaços dividem o tempo da palavra entre as novas; "voltar à transcrição" desfaz tudo. **Alinhamento**
+  (`LyricAligner`): cada palavra recebe `noteStartS`/`midi` da nota de voz cujo ataque cai na folga de
+  120 ms (o ASR marca a consoante, o basic-pitch a vogal); o compasso da palavra e o negrito na UI usam esse
+  instante. Endpoints de letra vivem em `LyricsController`; `LyricsService` é o único lugar que decide a
+  fonte preferida e classifica as notas de voz.
 - **Re-análise herda overrides**: ao concluir um run novo, a tonalidade MANUAL e as partes MANUAL do run
   canônico anterior são copiadas para ele (a tonalidade re-anota). O canônico continua sendo escolha do
   dono (`PUT /canonical-run`).

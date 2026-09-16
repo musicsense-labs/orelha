@@ -181,10 +181,31 @@
           <span class="sub muted">{{ vocalNoteList().length === 0 ? 'sem notas neste run' : 'melodia do stem' }}</span>
         </div>
         <div class="cell lyric-cell">
-          <span class="lbl">letra</span>
+          <span class="lbl">letra
+            @if (lyrics.value()?.source === 'MANUAL') {
+              <button type="button" class="tiny" (click)="revertLyrics()" [disabled]="savingLyrics()"
+                      title="descarta a correção e volta ao que o ASR transcreveu">corrigida · voltar à transcrição</button>
+            }
+          </span>
           @if (currentLine(); as line) {
-            <span class="val line">@for (w of line.words; track $index) {<b [class.on]="w.on">{{ w.text }}</b> }</span>
-            <span class="sub muted">compasso {{ line.seg.barNo ?? '—' }}{{ lyrics.value()?.language ? ' · ' + lyrics.value()?.language : '' }}</span>
+            <span class="val line">
+              @for (w of line.words; track $index) {
+                @if (editingWord()?.seg === line.index && editingWord()?.word === $index) {
+                  <input #wordInput class="word-edit" type="text" [value]="w.text" [style.width.ch]="w.text.length + 4"
+                         (keydown.enter)="commitWord(line.index, $index, wordInput.value)"
+                         (keydown.escape)="editingWord.set(null)"
+                         (blur)="commitWord(line.index, $index, wordInput.value)">
+                } @else {
+                  <button type="button" class="word" [class.on]="w.on" [disabled]="savingLyrics()"
+                          (click)="startEditWord(line.index, $index)"
+                          title="clique para corrigir: vazio apaga, espaços dividem em mais palavras">{{ w.text }}</button>
+                }
+              }
+            </span>
+            <span class="sub muted">
+              compasso {{ line.seg.barNo ?? '—' }}{{ lyrics.value()?.language ? ' · ' + lyrics.value()?.language : '' }}
+              @if (lyricsError(); as e) { <span class="error">{{ e }}</span> }
+            </span>
           } @else {
             <span class="val line muted">—</span>
             <span class="sub muted">{{ lyricSegments().length === 0 ? 'sem letra neste run' : '' }}</span>
