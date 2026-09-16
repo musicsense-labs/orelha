@@ -11,6 +11,11 @@ spring:
       ddl-auto: validate
   flyway:
     locations: classpath:db/migration
+  web:
+    resources:
+      # O Angular compilado (npx ng build em frontend/) é servido pelo backend na mesma origem da API,
+      # para o túnel de hospedagem apontar para uma porta só. Ausente = só a API, como sempre.
+      static-locations: classpath:/static/, file:../frontend/dist/frontend/browser/
   servlet:
     multipart:
       max-file-size: 300MB

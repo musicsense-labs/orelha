@@ -41,6 +41,13 @@ mistura com ganho e pan por stem e o metrônomo na mesma mistura (sincronia por 
 quatro ExoPlayers (não sincronizam) e Flutter/React Native (o áudio exigiria plugin nativo do mesmo
 jeito). Pré-requisito em qualquer fase: token de acesso na API antes de expô-la fora da rede local.
 
+**Hospedagem (decidido em 2026-09-16).** Cloudflare Tunnel + Access a partir do PC do dono: o extrator
+não cabe em plano gratuito, o resto é leve. O backend serve o Angular compilado na mesma origem
+(`spring.web.resources.static-locations` → `frontend/dist/frontend/browser`, `SpaForwardController` faz
+o fallback das rotas), então o túnel aponta para `localhost:8081` só. Roteiro, Access (login por e-mail,
+obrigatório antes de divulgar) e limites (100 MB por upload no plano Free) em `deploy/README.md`. Plano B
+com o PC desligado: Oracle Cloud Always Free para banco, backend e stems, extrator em casa.
+
 ## Contexto
 
 Plataforma de análise harmônica e tímbrica de música gravada. O objetivo não é

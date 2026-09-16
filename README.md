@@ -19,3 +19,6 @@ cd frontend && npx ng serve              # http://localhost:4200, proxy /api →
 ```
 
 Requer JDK 21 (`JAVA_HOME` apontando para ele), Node 24 e Docker.
+
+Para usar de qualquer navegador (Cloudflare Tunnel + Access, gratuito): `npx ng build` em `frontend/` e o
+backend serve a SPA na mesma porta; roteiro em [deploy/README.md](deploy/README.md).
