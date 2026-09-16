@@ -140,11 +140,41 @@ export interface PedalPassage {
 }
 
 /** Nota MIDI transcrita de um stem (voz). */
+/** Nota do stem de voz à luz da letra: com texto, sem texto (vocalise) ou provável vazamento de outro instrumento. */
+export type VocalNoteKind = 'LEXICAL' | 'NON_LEXICAL' | 'LIKELY_LEAK';
+
 export interface Note {
   startS: number;
   endS: number;
   midi: number;
   velocity: number | null;
+  /** Só nas notas de voz; null no baixo. */
+  kind?: VocalNoteKind | null;
+}
+
+export interface LyricWord {
+  startS: number;
+  endS: number;
+  text: string;
+  probability: number | null;
+  barNo: number | null;
+}
+
+export interface LyricSegment {
+  startS: number;
+  endS: number;
+  text: string;
+  /** Probabilidade que o ASR dá a "não é fala" neste trecho. */
+  noSpeechProb: number | null;
+  barNo: number | null;
+  words: LyricWord[];
+}
+
+export interface Lyrics {
+  runId: number | null;
+  language: string | null;
+  languageConfidence: number | null;
+  segments: LyricSegment[];
 }
 
 export type SectionSource = 'DERIVED' | 'EXTRACTOR' | 'MANUAL';

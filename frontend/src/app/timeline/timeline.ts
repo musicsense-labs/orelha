@@ -3,7 +3,8 @@ import {
 } from '@angular/core';
 import { httpResource } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
-import { Beat, Note, Segment, Timeline as TimelineDto, Track } from '../api/models';
+import { Beat, LyricSegment, Note, Segment, Timeline as TimelineDto, Track } from '../api/models';
+import { Lyrics } from '../api/models';
 import { Metronome } from '../shared/metronome';
 import { Sections } from './sections';
 import {
@@ -46,6 +47,13 @@ export class Timeline {
   /** Listas seguras: um recurso em erro (404 num backend antigo, rede) vale como "sem notas", não como falha da tela. */
   readonly bassNoteList = computed(() => (this.bassNotes.hasValue() ? this.bassNotes.value() : []));
   readonly vocalNoteList = computed(() => (this.vocalNotes.hasValue() ? this.vocalNotes.value() : []));
+  readonly lyrics = httpResource<Lyrics>(() => `/api/tracks/${this.id()}/lyrics`);
+  readonly lyricSegments = computed(() => (this.lyrics.hasValue() ? this.lyrics.value().segments : []));
+  /** Notas que o ASR sugere serem outro instrumento no stem de voz ficam escondidas, salvo pedido. */
+  readonly showLeak = signal(false);
+  readonly leakCount = computed(() => this.vocalNoteList().filter((n) => n.kind === 'LIKELY_LEAK').length);
+  readonly vocalShown = computed(() =>
+    this.showLeak() ? this.vocalNoteList() : this.vocalNoteList().filter((n) => n.kind !== 'LIKELY_LEAK'));
 
   private readonly audio = viewChild<ElementRef<HTMLAudioElement>>('audio');
   private readonly stemAudios = viewChildren<ElementRef<HTMLAudioElement>>('stemAudio');
@@ -68,8 +76,12 @@ export class Timeline {
   readonly vocalLane = 40;
   readonly bassTop = this.laneHeight + 2;
   readonly vocalTop = this.bassTop + this.bassLane + 2;
-  /** Altura de uma linha da timeline: as três lanes + eixo de tempo. */
-  readonly rowHeight = this.vocalTop + this.vocalLane + 30;
+  /** Lane da letra: trechos transcritos pelo ASR, sob a voz. */
+  readonly lyricLane = 16;
+  readonly lyricTop = this.vocalTop + this.vocalLane + 2;
+  readonly lanesBottom = this.lyricTop + this.lyricLane;
+  /** Altura de uma linha da timeline: as quatro lanes + eixo de tempo. */
+  readonly rowHeight = this.lanesBottom + 30;
   /** Em quantas linhas a timeline quebra (preferência do visitante, guardada no navegador). */
   readonly rows = signal(readRows());
 
@@ -136,14 +148,51 @@ export class Timeline {
   /** Piano roll da linha de baixo (stem), na lane do baixo. */
   readonly bassRoll = computed(() => this.roll(this.bassNoteList(), this.bassTop, this.bassLane, 'b'));
   /** Piano roll da voz, na lane da voz. */
-  readonly vocalRoll = computed(() => this.roll(this.vocalNoteList(), this.vocalTop, this.vocalLane, 'v'));
+  readonly vocalRoll = computed(() => this.roll(this.vocalShown(), this.vocalTop, this.vocalLane, 'v'));
+
+  /** Trechos da letra recortados por linha, com o texto que cabe na largura (≈ 6 px por caractere). */
+  readonly lyricPieces = computed(() => {
+    const span = this.rowSpan();
+    const rows = this.rows();
+    const out: { key: string; row: number; x: number; w: number; text: string; leak: boolean; seg: LyricSegment }[] = [];
+    this.lyricSegments().forEach((s, i) => {
+      const first = Math.min(rows - 1, Math.floor(s.startS / span));
+      const last = Math.min(rows - 1, Math.max(first, Math.ceil(s.endS / span) - 1));
+      for (let row = first; row <= last; row++) {
+        const start = Math.max(s.startS, row * span);
+        const end = Math.min(s.endS, (row + 1) * span);
+        if (end <= start) {
+          continue;
+        }
+        const w = Math.max(((end - start) / span) * this.width, 1);
+        const chars = Math.floor((w - 4) / 6);
+        const text = chars < 3 ? '' : (s.text.length <= chars ? s.text : s.text.slice(0, chars - 1) + '…');
+        out.push({
+          key: 'l' + i + ':' + row, row, x: ((start - row * span) / span) * this.width, w, text,
+          leak: (s.noSpeechProb ?? 0) >= 0.6, seg: s,
+        });
+      }
+    });
+    return out;
+  });
+
+  /** Trecho da letra no instante e as palavras dele, com a que está sendo cantada marcada. */
+  readonly currentLine = computed(() => {
+    const t = this.currentTime();
+    const seg = this.lyricSegments().find((s) => s.startS <= t && t < s.endS) ?? null;
+    if (!seg) {
+      return null;
+    }
+    const words = seg.words.map((w) => ({ text: w.text, on: w.startS <= t && t < w.endS + 0.12 }));
+    return { seg, words };
+  });
 
   /**
    * Nota do baixo (stem) no instante: em execução ("on") ou a última que soou ("off"), até a próxima
    * começar — a UI mostra a primeira em negrito e a segunda leve, para o nome não piscar.
    */
   readonly bassNow = computed(() => this.noteAt(this.bassNoteList(), this.currentTime()));
-  readonly vocalNow = computed(() => this.noteAt(this.vocalNoteList(), this.currentTime()));
+  readonly vocalNow = computed(() => this.noteAt(this.vocalShown(), this.currentTime()));
 
   /** Tessitura (p5–p95) das notas, para o piano roll ocupar a lane inteira; ao menos uma oitava. */
   private static range(notes: Note[]): { low: number; high: number } {
@@ -162,7 +211,7 @@ export class Timeline {
     const rows = this.rows();
     const { low, high } = Timeline.range(notes);
     const step = lane / (high - low + 1);
-    const out: { key: string; row: number; x: number; w: number; y: number; h: number; midi: number }[] = [];
+    const out: { key: string; row: number; x: number; w: number; y: number; h: number; midi: number; kind: string | null }[] = [];
     notes.forEach((n, i) => {
       const first = Math.min(rows - 1, Math.floor(n.startS / span));
       const last = Math.min(rows - 1, Math.max(first, Math.ceil(n.endS / span) - 1));
@@ -175,7 +224,7 @@ export class Timeline {
           continue;
         }
         out.push({
-          key: prefix + i + ':' + row, row, midi: n.midi,
+          key: prefix + i + ':' + row, row, midi: n.midi, kind: n.kind ?? null,
           x: ((start - row * span) / span) * this.width,
           w: Math.max(((end - start) / span) * this.width, 1),
           y, h: Math.max(step, 2),

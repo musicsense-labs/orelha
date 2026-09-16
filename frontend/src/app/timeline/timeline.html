@@ -66,6 +66,12 @@
       @for (l of legend; track l.relation) {
         <span [title]="relationHint(l.relation)"><i [style.background]="l.color"></i>{{ relationLabel(l.relation) }}</span>
       }
+      @if (leakCount() > 0) {
+        <button type="button" class="leak-toggle" [class.on]="showLeak()" (click)="showLeak.set(!showLeak())"
+                title="notas do stem de voz que o ASR sugere serem outro instrumento (solo, teclado): escondidas por padrão">
+          {{ showLeak() ? 'esconder' : 'mostrar' }} vazamento ({{ leakCount() }})
+        </button>
+      }
       <span class="rows-picker" title="quebra a timeline em linhas: útil em faixas longas ou com muita troca de acorde">
         linhas
         @for (n of [1, 2, 3, 4]; track n) {
@@ -107,25 +113,39 @@
         <rect x="0" [attr.y]="rowHeight * r + vocalTop" [attr.width]="width" [attr.height]="vocalLane" class="vocal-bg" />
       }
       @for (n of vocalRoll(); track n.key) {
-        <rect class="vocal" [attr.x]="n.x" [attr.y]="rowHeight * n.row + n.y" [attr.width]="n.w" [attr.height]="n.h"
+        <rect class="vocal" [class.non-lexical]="n.kind === 'NON_LEXICAL'" [class.leak]="n.kind === 'LIKELY_LEAK'"
+              [attr.x]="n.x" [attr.y]="rowHeight * n.row + n.y" [attr.width]="n.w" [attr.height]="n.h"
               (click)="seekTo(n.x / width * rowSpan() + n.row * rowSpan())">
-          <title>{{ noteName(n.midi % 12) }}{{ Math.floor(n.midi / 12) - 1 }}</title>
+          <title>{{ noteName(n.midi % 12) }}{{ Math.floor(n.midi / 12) - 1 }}{{ n.kind === 'NON_LEXICAL' ? ' · sem texto' : n.kind === 'LIKELY_LEAK' ? ' · provável vazamento' : '' }}</title>
         </rect>
+      }
+      <!-- lane 4: letra (trechos do ASR sobre o stem de voz; vazia em runs anteriores ao extrator 0.6.0) -->
+      @for (r of rowIndexes(); track r) {
+        <rect x="0" [attr.y]="rowHeight * r + lyricTop" [attr.width]="width" [attr.height]="lyricLane" class="lyric-bg" />
+      }
+      @for (l of lyricPieces(); track l.key) {
+        <g class="lyric" [class.leak]="l.leak" (click)="seekTo(l.seg.startS)">
+          <rect [attr.x]="l.x" [attr.y]="rowHeight * l.row + lyricTop + 1" [attr.width]="l.w" [attr.height]="lyricLane - 2" rx="2" />
+          @if (l.text) {
+            <text [attr.x]="l.x + 3" [attr.y]="rowHeight * l.row + lyricTop + 12">{{ l.text }}</text>
+          }
+          <title>{{ formatTime(l.seg.startS) }} · {{ l.seg.text }}{{ l.leak ? ' · o ASR acha que não é fala' : '' }}</title>
+        </g>
       }
       <!-- downbeats: início de cada compasso -->
       @for (b of downbeats(); track b.beatNo) {
         <line class="downbeat" [attr.x1]="xIn(b.timeS)" [attr.x2]="xIn(b.timeS)"
-              [attr.y1]="rowHeight * rowOf(b.timeS)" [attr.y2]="rowHeight * rowOf(b.timeS) + vocalTop + vocalLane" />
+              [attr.y1]="rowHeight * rowOf(b.timeS)" [attr.y2]="rowHeight * rowOf(b.timeS) + lanesBottom" />
       }
       <!-- eixo de tempo, por linha -->
       @for (t of ticks(); track t.seconds) {
-        <line [attr.x1]="t.x" [attr.x2]="t.x" [attr.y1]="rowHeight * t.row + vocalTop + vocalLane"
-              [attr.y2]="rowHeight * t.row + vocalTop + vocalLane + 6" stroke="#888" />
-        <text [attr.x]="t.x" [attr.y]="rowHeight * t.row + vocalTop + vocalLane + 20" class="tick">{{ formatTime(t.seconds) }}</text>
+        <line [attr.x1]="t.x" [attr.x2]="t.x" [attr.y1]="rowHeight * t.row + lanesBottom"
+              [attr.y2]="rowHeight * t.row + lanesBottom + 6" stroke="#888" />
+        <text [attr.x]="t.x" [attr.y]="rowHeight * t.row + lanesBottom + 20" class="tick">{{ formatTime(t.seconds) }}</text>
       }
       <!-- playhead -->
       <line class="playhead" [attr.x1]="playheadX()" [attr.x2]="playheadX()"
-            [attr.y1]="rowHeight * rowOf(currentTime())" [attr.y2]="rowHeight * rowOf(currentTime()) + vocalTop + vocalLane + 8" />
+            [attr.y1]="rowHeight * rowOf(currentTime())" [attr.y2]="rowHeight * rowOf(currentTime()) + lanesBottom + 8" />
     </svg>
 
     <!-- Painel do instante: acorde, tempo, compasso, baixo e voz em células rotuladas. -->
@@ -159,6 +179,16 @@
           <span class="lbl">voz</span>
           <span class="val note" [class.off]="vocalNow()?.state === 'off'">{{ vocalNow()?.name ?? '—' }}</span>
           <span class="sub muted">{{ vocalNoteList().length === 0 ? 'sem notas neste run' : 'melodia do stem' }}</span>
+        </div>
+        <div class="cell lyric-cell">
+          <span class="lbl">letra</span>
+          @if (currentLine(); as line) {
+            <span class="val line">@for (w of line.words; track $index) {<b [class.on]="w.on">{{ w.text }}</b> }</span>
+            <span class="sub muted">compasso {{ line.seg.barNo ?? '—' }}{{ lyrics.value()?.language ? ' · ' + lyrics.value()?.language : '' }}</span>
+          } @else {
+            <span class="val line muted">—</span>
+            <span class="sub muted">{{ lyricSegments().length === 0 ? 'sem letra neste run' : '' }}</span>
+          }
         </div>
       } @else {
         <span class="muted">Passe o mouse ou dê play: o instante atual aparece aqui.</span>
