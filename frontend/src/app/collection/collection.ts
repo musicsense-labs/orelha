@@ -88,7 +88,7 @@ export class Collection {
   async reanalyse(track: Track): Promise<void> {
     this.reanalysing.update((s) => new Set([...s, track.id]));
     try {
-      await firstValueFrom(this.http.post<{ runId: number }>(`/api/tracks//analyze`, null));
+      await firstValueFrom(this.http.post<{ runId: number }>(`/api/tracks/${track.id}/analyze`, null));
       this.tick.update((n) => n + 1);
     } catch (e: unknown) {
       this.formError.set((e as { error?: { detail?: string } })?.error?.detail ?? String(e));
