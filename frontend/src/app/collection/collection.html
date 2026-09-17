@@ -1,6 +1,10 @@
 <div class="page-head">
   <h1>Acervo</h1>
   <label class="filter">
+    <svg class="lens" viewBox="0 0 20 20" width="16" height="16" aria-hidden="true">
+      <circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/>
+      <line x1="12.6" y1="12.6" x2="17.5" y2="17.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+    </svg>
     <input type="search" [value]="query()" (input)="query.set($any($event.target).value)" (keydown.escape)="query.set('')"
            placeholder="filtrar por artista, álbum ou faixa" aria-label="filtrar faixas do acervo" autocomplete="off" />
     @if (query()) { <small class="muted">{{ shownTracks() }} de {{ totalTracks() }}</small> }

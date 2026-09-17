@@ -55,8 +55,10 @@ button.primary:disabled { opacity: 0.45; cursor: not-allowed; }
 .badge.fail { background: #f8d7da; color: #7a1c24; }
 .upload label.inline { flex-direction: row; align-items: center; gap: 0.4rem; }
 .page-head span { display: flex; gap: 0.5rem; }
-.page-head label.filter { display: flex; align-items: center; gap: 0.6rem; flex: 1 1 16rem; min-width: 0; }
-.page-head label.filter input { font: inherit; font-size: 0.9rem; padding: 0.35rem 0.7rem; flex: 1; min-width: 0; max-width: 24rem; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+.page-head label.filter { position: relative; display: flex; align-items: center; gap: 0.6rem; flex: 1 1 16rem; min-width: 0; }
+.page-head label.filter svg.lens { position: absolute; left: 0.7rem; top: 50%; margin-top: -8px; color: var(--muted); pointer-events: none; }
+.page-head label.filter:focus-within svg.lens { color: var(--accent); }
+.page-head label.filter input { font: inherit; font-size: 0.9rem; padding: 0.35rem 0.7rem 0.35rem 2.1rem; flex: 1; min-width: 0; max-width: 24rem; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
 .page-head label.filter input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(217, 83, 43, 0.25); }
 .page-head label.filter small { font-family: var(--font-mono); font-size: 0.72rem; white-space: nowrap; }
 @media (max-width: 700px) { .page-head label.filter { order: 3; flex-basis: 100%; } .page-head label.filter input { max-width: none; } }
