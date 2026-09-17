@@ -476,8 +476,18 @@ export class Timeline {
     return this.volumes()[name] ?? 1;
   }
 
-  setPan(name: string, value: number): void {
-    this.pans.update((p) => ({ ...p, [name]: Math.min(1, Math.max(-1, value)) }));
+  /**
+   * Perto do centro (±0,15) o balanço gruda em 0: achar o meio no slider de 46 px é difícil a olho. Vindo do
+   * próprio slider, o valor grudado é reescrito nele — o binding [value] não reescreve quando o sinal já era 0.
+   */
+  setPan(name: string, value: number | HTMLInputElement): void {
+    const el = typeof value === 'number' ? null : value;
+    const raw = typeof value === 'number' ? value : +value.value;
+    const snapped = Math.min(1, Math.max(-1, Math.abs(raw) < 0.15 ? 0 : raw));
+    this.pans.update((p) => ({ ...p, [name]: snapped }));
+    if (el) {
+      el.value = String(snapped);
+    }
   }
 
   pan(name: string): number {

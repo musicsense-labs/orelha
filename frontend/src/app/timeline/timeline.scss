@@ -43,12 +43,16 @@
 
   .channel { display: flex; align-items: center; gap: 0.3rem; }
   .channel input[type="range"] { width: 70px; accent-color: var(--ink); }
-  /* balanço L/R: mais curto, com marca central; centro = sem grafo Web Audio ligado */
-  .channel input[type="range"].pan {
-    width: 46px;
-    accent-color: var(--muted);
-    background: linear-gradient(to right, transparent 49%, var(--line) 49%, var(--line) 51%, transparent 51%);
+  /* balanço L/R: mais curto; o centro (= sem grafo Web Audio ligado) é uma marca que passa por cima e por
+     baixo do cursor, e vira accent quando o valor é exatamente 0 — o setPan já puxa para 0 quando chega perto */
+  .pan-wrap { position: relative; display: inline-flex; align-items: center; isolation: isolate; }
+  .pan-wrap::before {
+    content: ''; position: absolute; z-index: -1; left: 50%; top: -3px; bottom: -3px; width: 2px; margin-left: -1px;
+    background: var(--line); border-radius: 1px; pointer-events: none;
   }
+  .pan-wrap.centered::before { background: var(--accent); }
+  .pan-wrap.centered input[type="range"].pan { accent-color: var(--ink); }
+  .channel input[type="range"].pan { width: 46px; accent-color: var(--muted); }
   .channel.metronome { margin-left: 0.6rem; padding-left: 0.6rem; border-left: 1px solid var(--line); }
   .channel.metronome button.on { background: var(--accent); border-color: var(--accent); }
 
