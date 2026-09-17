@@ -148,10 +148,11 @@
 
 /* Grade de colunas fixas: acorde | tempo | compasso | baixo | voz | letra. Larguras e alturas não dependem do
    conteúdo (cifra longa, badge, nota em negrito ou leve, linha da letra), para o painel não se mexer enquanto a
-   música toca; o que não couber é cortado com reticências. A letra fica com a sobra e altura para duas linhas. */
+   música toca; o que não couber é cortado com reticências. A letra tem largura fixa e altura para duas linhas. */
 .detail {
   display: grid;
-  grid-template-columns: 14rem 6.5rem 6.5rem 6rem 6rem minmax(16rem, 1fr);
+  grid-template-columns: 14rem 6.5rem 6.5rem 6rem 6rem 28rem;   /* letra na largura de antes, com duas linhas */
+  justify-content: start;
   align-items: stretch;
   padding: 0.4rem 0.6rem;
 
