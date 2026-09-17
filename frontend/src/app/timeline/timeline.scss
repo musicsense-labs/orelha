@@ -146,15 +146,14 @@
   .downbeat { stroke: rgba(0, 0, 0, 0.28); stroke-width: 0.6; pointer-events: none; }
 }
 
+/* Grade de colunas fixas: acorde | tempo | compasso | baixo | voz | letra. Larguras e alturas não dependem do
+   conteúdo (cifra longa, badge, nota em negrito ou leve, linha da letra), para o painel não se mexer enquanto a
+   música toca; o que não couber é cortado com reticências. A letra fica com a sobra e altura para duas linhas. */
 .detail {
-  display: flex;
-  gap: 0;
+  display: grid;
+  grid-template-columns: 14rem 6.5rem 6.5rem 6rem 6rem minmax(16rem, 1fr);
   align-items: stretch;
-  flex-wrap: wrap;
-  min-height: 3.6rem;
   padding: 0.4rem 0.6rem;
-
-  &.empty { align-items: center; gap: 1rem; padding: 0.9rem 1rem; }
 
   .cell {
     display: flex;
@@ -162,19 +161,25 @@
     gap: 0.15rem;
     padding: 0.3rem 1.1rem;
     border-right: 1px solid var(--line);
-    min-width: 5.5rem;
+    min-width: 0;
+    overflow: hidden;
   }
   .cell:last-child { border-right: none; }
-  .chord-cell { min-width: 12rem; }
+  .cell .val, .cell .sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cell .val { height: 1.65rem; }
+  .cell .sub { height: 1.05rem; }
   .vocal-cell .val { color: var(--voice-strong); }
-  .lyric-cell { min-width: 14rem; max-width: 28rem; }
-  .lyric-cell .val.line { font-size: 0.95rem; font-weight: 400; display: inline; line-height: 1.35; }
+  .lyric-cell .val.line {
+    font-size: 0.95rem; font-weight: 400; line-height: 1.3;
+    height: 2.6rem;                                   /* duas linhas reservadas, mesmo com uma ou nenhuma */
+    white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  }
   .lyric-cell .word {
     font: inherit;
     background: none;
     border: 0;
     padding: 0 0.1rem;
-    margin: 0;
+    margin: 0 0.3rem 0 0;   /* os botões vêm colados (o template não preserva espaços) */
     cursor: text;
     color: var(--muted);
     border-radius: 3px;
@@ -219,4 +224,14 @@
   .val { font-size: 1.35rem; font-weight: 600; line-height: 1.2; font-variant-numeric: tabular-nums; display: inline-flex; align-items: baseline; gap: 0.5rem; }
   .sub { font-size: 0.8rem; min-height: 1rem; display: inline-flex; align-items: center; gap: 0.5rem; }
   .degree-big { font-size: 1.1rem; font-weight: 500; color: var(--muted); }
+}
+@media (max-width: 1100px) {
+  .detail { grid-template-columns: minmax(12rem, 1fr) 6rem 6rem 5.5rem 5.5rem; }
+  .detail .vocal-cell { border-right: none; }
+  .detail .lyric-cell { grid-column: 1 / -1; border-top: 1px solid var(--line); margin-top: 0.3rem; padding-top: 0.5rem; }
+}
+@media (max-width: 700px) {
+  .detail { grid-template-columns: 1fr 1fr 1fr; }
+  .detail .chord-cell { grid-column: 1 / -1; border-right: none; }
+  .detail .cell:nth-child(4) { border-right: none; }
 }

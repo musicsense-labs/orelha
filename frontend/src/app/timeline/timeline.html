@@ -160,78 +160,80 @@
             [attr.y1]="rowHeight * rowOf(currentTime())" [attr.y2]="rowHeight * rowOf(currentTime()) + lanesBottom + 8" />
     </svg>
 
-    <!-- Painel do instante: acorde, tempo, compasso, baixo e voz em células rotuladas. -->
-    <div class="detail card" [class.empty]="!focus()">
-      @if (focus(); as s) {
-        <div class="cell chord-cell">
-          <span class="lbl">acorde</span>
-          <span class="val"><strong>{{ labelWithBass(s) }}</strong><span class="degree-big">{{ s.degreeLabel ?? '—' }}</span></span>
-          <span class="sub">
+    <!-- Painel do instante: acorde, tempo, compasso, baixo, voz e letra em células de largura fixa — a grade não
+         se mexe quando o conteúdo muda; sem segmento sob o cursor/playhead as células mostram "—". -->
+    @let s = focus();
+    <div class="detail card">
+      <div class="cell chord-cell">
+        <span class="lbl">acorde</span>
+        <span class="val">
+          @if (s) {
+            <strong>{{ labelWithBass(s) }}</strong><span class="degree-big">{{ s.degreeLabel ?? '—' }}</span>
+          } @else {
+            <span class="muted">—</span>
+          }
+        </span>
+        <span class="sub">
+          @if (s) {
             <span class="badge" [style.background]="color(s)" [title]="relationHint(s.keyRelation)">{{ relationLabel(s.keyRelation) }}</span>
             @if (s.relationFromPrev) { <span class="muted" [title]="relationHint(s.relationFromPrev)">← {{ relationLabel(s.relationFromPrev) }}</span> }
             @if (s.inverted) { <span class="muted">baixo {{ noteName(s.effectiveBassPc) }}</span> }
-          </span>
-        </div>
-        <div class="cell">
-          <span class="lbl">tempo</span>
-          <span class="val">{{ formatTime(hovered() ? s.startS : currentTime()) }}</span>
-          <span class="sub muted">{{ formatTime(s.startS) }}–{{ formatTime(s.endS) }}</span>
-        </div>
-        <div class="cell">
-          <span class="lbl">compasso</span>
-          <span class="val">{{ currentBar() ?? '—' }}</span>
-          <span class="sub muted">{{ timeline.value()?.timeSignature ?? '' }}</span>
-        </div>
-        <div class="cell bass-cell">
-          <span class="lbl">baixo</span>
-          <span class="val note" [class.off]="bassNow()?.state === 'off'">{{ bassNow()?.name ?? '—' }}</span>
-          <span class="sub muted">{{ bassNoteList().length === 0 ? 'sem notas neste run' : 'linha do stem' }}</span>
-        </div>
-        <div class="cell vocal-cell">
-          <span class="lbl">voz</span>
-          <span class="val note" [class.off]="vocalNow()?.state === 'off'">{{ vocalNow()?.name ?? '—' }}</span>
-          <span class="sub muted">{{ vocalNoteList().length === 0 ? 'sem notas neste run' : 'melodia do stem' }}</span>
-        </div>
-        <div class="cell lyric-cell">
-          <span class="lbl">letra
-            @if (lyrics.value()?.source === 'MANUAL') {
-              <button type="button" class="tiny" (click)="revertLyrics()" [disabled]="savingLyrics()"
-                      title="descarta a correção e volta ao que o ASR transcreveu">corrigida · voltar à transcrição</button>
+          } @else {
+            <span class="muted">passe o mouse ou dê play</span>
+          }
+        </span>
+      </div>
+      <div class="cell">
+        <span class="lbl">tempo</span>
+        <span class="val">{{ formatTime(s && hovered() ? s.startS : currentTime()) }}</span>
+        <span class="sub muted">{{ s ? formatTime(s.startS) + '–' + formatTime(s.endS) : '' }}</span>
+      </div>
+      <div class="cell">
+        <span class="lbl">compasso</span>
+        <span class="val">{{ currentBar() ?? '—' }}</span>
+        <span class="sub muted">{{ timeline.value()?.timeSignature ?? '' }}</span>
+      </div>
+      <div class="cell bass-cell">
+        <span class="lbl">baixo</span>
+        <span class="val note" [class.off]="bassNow()?.state === 'off'">{{ bassNow()?.name ?? '—' }}</span>
+        <span class="sub muted">{{ bassNoteList().length === 0 ? 'sem notas neste run' : 'linha do stem' }}</span>
+      </div>
+      <div class="cell vocal-cell">
+        <span class="lbl">voz</span>
+        <span class="val note" [class.off]="vocalNow()?.state === 'off'">{{ vocalNow()?.name ?? '—' }}</span>
+        <span class="sub muted">{{ vocalNoteList().length === 0 ? 'sem notas neste run' : 'melodia do stem' }}</span>
+      </div>
+      <div class="cell lyric-cell">
+        <span class="lbl">letra
+          @if (lyrics.value()?.source === 'MANUAL') {
+            <button type="button" class="tiny" (click)="revertLyrics()" [disabled]="savingLyrics()"
+                    title="descarta a correção e volta ao que o ASR transcreveu">corrigida · voltar à transcrição</button>
+          }
+        </span>
+        @if (currentLine(); as line) {
+          <span class="val line">
+            @for (w of line.words; track $index) {
+              @if (editingWord()?.seg === line.index && editingWord()?.word === $index) {
+                <input #wordInput class="word-edit" type="text" [value]="w.text" [style.width.ch]="w.text.length + 4"
+                       (keydown.enter)="commitWord(line.index, $index, wordInput.value)"
+                       (keydown.escape)="editingWord.set(null)"
+                       (blur)="commitWord(line.index, $index, wordInput.value)">
+              } @else {
+                <button type="button" class="word" [class.on]="w.on" [disabled]="savingLyrics()"
+                        (click)="startEditWord(line.index, $index)"
+                        title="clique para corrigir: vazio apaga, espaços dividem em mais palavras">{{ w.text }}</button>
+              }
             }
           </span>
-          @if (currentLine(); as line) {
-            <span class="val line">
-              @for (w of line.words; track $index) {
-                @if (editingWord()?.seg === line.index && editingWord()?.word === $index) {
-                  <input #wordInput class="word-edit" type="text" [value]="w.text" [style.width.ch]="w.text.length + 4"
-                         (keydown.enter)="commitWord(line.index, $index, wordInput.value)"
-                         (keydown.escape)="editingWord.set(null)"
-                         (blur)="commitWord(line.index, $index, wordInput.value)">
-                } @else {
-                  <button type="button" class="word" [class.on]="w.on" [disabled]="savingLyrics()"
-                          (click)="startEditWord(line.index, $index)"
-                          title="clique para corrigir: vazio apaga, espaços dividem em mais palavras">{{ w.text }}</button>
-                }
-              }
-            </span>
-            <span class="sub muted">
-              compasso {{ line.seg.barNo ?? '—' }}{{ lyrics.value()?.language ? ' · ' + lyrics.value()?.language : '' }}
-              @if (lyricsError(); as e) { <span class="error">{{ e }}</span> }
-            </span>
-          } @else {
-            <span class="val line muted">—</span>
-            <span class="sub muted">{{ lyricSegments().length === 0 ? 'sem letra neste run' : '' }}</span>
-          }
-        </div>
-      } @else {
-        <span class="muted">Passe o mouse ou dê play: o instante atual aparece aqui.</span>
-        @if (bassNow(); as b) {
-          <div class="cell bass-cell"><span class="lbl">baixo</span><span class="val note" [class.off]="b.state === 'off'">{{ b.name }}</span></div>
+          <span class="sub muted">
+            compasso {{ line.seg.barNo ?? '—' }}{{ lyrics.value()?.language ? ' · ' + lyrics.value()?.language : '' }}
+            @if (lyricsError(); as e) { <span class="error">{{ e }}</span> }
+          </span>
+        } @else {
+          <span class="val line muted">—</span>
+          <span class="sub muted">{{ lyricSegments().length === 0 ? 'sem letra neste run' : '' }}</span>
         }
-        @if (vocalNow(); as v) {
-          <div class="cell vocal-cell"><span class="lbl">voz</span><span class="val note" [class.off]="v.state === 'off'">{{ v.name }}</span></div>
-        }
-      }
+      </div>
     </div>
 
     <app-sections [trackId]="id()" [currentTime]="currentTime()" [downbeats]="downbeatTimes()" [duration]="duration()"
