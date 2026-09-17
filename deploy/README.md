@@ -38,6 +38,13 @@ Always Free (ARM, 24 GB) para banco, backend e stems, com o extrator em casa.
    e `docker compose up -d` na raiz para Postgres e extrator (o Docker Desktop precisa iniciar com o
    Windows).
 
+## Estado (2026-09-17)
+
+Feito: domínio, túnel `78152cec-…` como serviço do Windows, Zero Trust Free ativado, aplicação "Orelha"
+com a política "usuarios" (dfcsantos@gmail.com). Acesso anônimo a qualquer caminho responde 302 para
+`broken-hill-eda2.cloudflareaccess.com`. Pendente: tarefa agendada para `run.ps1 -Port 8081` e
+`docker compose up -d` no logon.
+
 ## Rotina
 
 - Frontend: depois de mudar código Angular, `cd frontend && npx ng build` (produção). O backend lê a

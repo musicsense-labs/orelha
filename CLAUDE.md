@@ -44,8 +44,11 @@ jeito). Pré-requisito em qualquer fase: token de acesso na API antes de expô-l
 **Hospedagem (decidido em 2026-09-16).** Cloudflare Tunnel + Access a partir do PC do dono: o extrator
 não cabe em plano gratuito, o resto é leve. O backend serve o Angular compilado na mesma origem
 (`spring.web.resources.static-locations` → `frontend/dist/frontend/browser`, `SpaForwardController` faz
-o fallback das rotas), então o túnel aponta para `localhost:8081` só. Roteiro, Access (login por e-mail,
-obrigatório antes de divulgar) e limites (100 MB por upload no plano Free) em `deploy/README.md`. Plano B
+o fallback das rotas), então o túnel aponta para `localhost:8081` só. **No ar desde 2026-09-17 em `https://orelha.app`**: domínio no Cloudflare Registrar, túnel `orelha`
+(id em `%USERPROFILE%\.cloudflared\config.yml`, serviço do Windows), Zero Trust Free com a aplicação
+"Orelha" e a política "usuarios" (Allow por e-mail, One-time PIN; equipe `broken-hill-eda2`). Liberar
+alguém = adicionar o e-mail na política. Roteiro e limites (100 MB por upload no plano Free) em
+`deploy/README.md`; pendente: backend e `docker compose` subirem com o Windows (tarefa agendada). Plano B
 com o PC desligado: Oracle Cloud Always Free para banco, backend e stems, extrator em casa.
 
 ## Contexto
