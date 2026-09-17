@@ -8,6 +8,12 @@
   </a>
   <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">acervo</a>
   <a routerLink="/compare" routerLinkActive="active">comparar</a>
+  @if (access.admin()) {
+    <a routerLink="/admin" routerLinkActive="active">administrador</a>
+  }
+  <span class="who" [title]="access.remote() ? 'logado pelo Cloudflare Access' : 'acesso local, sem login'">
+    {{ access.email() ?? (access.value() ? 'local' : '') }}
+  </span>
 </nav>
 <main>
   <router-outlet />

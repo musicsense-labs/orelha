@@ -372,6 +372,39 @@ class AnalysisPipelineIntegrationTest {
     }
 
     @Test
+    void auditRecordsEntriesAndActionsAndOnlyTheAdminReadsThem() {
+        // Local (sem cabeçalhos do túnel) = administrador: vê a auditoria e aparece nela como "local".
+        assertThat(rest.getForObject("/api/access", dev.musicsense.orelha.common.AccessController.AccessInfo.class).admin()).isTrue();
+        org.springframework.http.HttpHeaders remote = new org.springframework.http.HttpHeaders();
+        remote.set(dev.musicsense.orelha.common.RemoteAccess.EMAIL_HEADER, "amigo@example.com");
+        remote.set(dev.musicsense.orelha.common.RemoteAccess.ORIGIN_IP_HEADER, "203.0.113.9");
+        ResponseEntity<dev.musicsense.orelha.common.AccessController.AccessInfo> asFriend = rest.exchange("/api/access",
+                org.springframework.http.HttpMethod.GET, new org.springframework.http.HttpEntity<>(remote),
+                dev.musicsense.orelha.common.AccessController.AccessInfo.class);
+        assertThat(asFriend.getBody().admin()).isFalse();
+        assertThat(asFriend.getBody().email()).isEqualTo("amigo@example.com");
+        assertThat(rest.exchange("/api/admin/audit", org.springframework.http.HttpMethod.GET,
+                new org.springframework.http.HttpEntity<>(remote), String.class).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+
+        ResponseEntity<List<dev.musicsense.orelha.audit.AdminController.EventView>> events = rest.exchange(
+                "/api/admin/audit?actor=amigo@example.com", org.springframework.http.HttpMethod.GET, null,
+                new org.springframework.core.ParameterizedTypeReference<>() {
+                });
+        assertThat(events.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(events.getBody()).isNotEmpty();
+        assertThat(events.getBody().get(0).kind()).isEqualTo(dev.musicsense.orelha.audit.AuditEvent.Kind.ENTER);
+        assertThat(events.getBody().get(0).ip()).isEqualTo("203.0.113.9");
+        assertThat(events.getBody().get(0).remote()).isTrue();
+
+        ResponseEntity<List<dev.musicsense.orelha.audit.AuditEventRepository.ActorSummary>> users = rest.exchange(
+                "/api/admin/audit/users", org.springframework.http.HttpMethod.GET, null,
+                new org.springframework.core.ParameterizedTypeReference<>() {
+                });
+        assertThat(users.getBody()).extracting(dev.musicsense.orelha.audit.AuditEventRepository.ActorSummary::actor)
+                .contains("amigo@example.com", "local");
+    }
+
+    @Test
     void reanalysisCreatesASecondRunWithoutTouchingTheCanonicalOne() throws IOException {
         Path audio = tempDir.resolve("stub2.wav");
         Files.writeString(audio, "stub2");

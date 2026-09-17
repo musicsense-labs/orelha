@@ -1,0 +1,15 @@
+.page-head { align-items: baseline; gap: 1rem; }
+.page-head .small { margin-left: 0; }
+
+.card h2 { display: flex; align-items: baseline; gap: 0.6rem; }
+.card h2 small { font-size: 0.8rem; font-weight: 400; }
+
+/* vence o estilo global de botão (button:not(.primary):not(.mini)) */
+table button.link, h2 button.link { font: inherit; background: none; border: 0; border-radius: 0; padding: 0; color: var(--accent); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+table button.link:hover, h2 button.link:hover { color: var(--accent-hover); }
+
+tr.selected td { background: var(--panel); }
+table.events tr.fail td { color: var(--accent-hover); }
+.mono { font-family: var(--font-mono); font-size: 0.8rem; }
+td a { color: var(--ink); }
+button:not(.link) { margin-top: 0.6rem; }

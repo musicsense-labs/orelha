@@ -8,6 +8,8 @@
 
   a { color: var(--ink); text-decoration: none; }
   a.active:not(.brand) { border-bottom: 2px solid var(--accent); }
+  /* e-mail de quem está logado: pequeno, discreto, no canto direito */
+  .who { margin-left: auto; font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.04em; color: var(--muted); white-space: nowrap; }
 
   // Assinatura horizontal: cena (caixa · Orelha · vitrola · caixa) + nome e organização.
   .brand { display: inline-flex; align-items: center; gap: 0.9rem; margin-right: 1rem; }

@@ -188,6 +188,34 @@ export interface AccessInfo {
   remote: boolean;
   email: string | null;
   importFolderAllowed: boolean;
+  admin: boolean;
+}
+
+/** Auditoria (só o administrador lê). */
+export type AuditKind = 'ENTER' | 'OPEN_TRACK' | 'ACTION';
+
+export interface AuditEvent {
+  id: number;
+  at: string;
+  actor: string;
+  remote: boolean;
+  ip: string | null;
+  kind: AuditKind;
+  method: string;
+  path: string;
+  status: number;
+  durationMs: number | null;
+  trackId: number | null;
+  userAgent: string | null;
+}
+
+export interface ActorSummary {
+  actor: string;
+  firstSeen: string;
+  lastSeen: string;
+  events: number;
+  actions: number;
+  remoteEvents: number;
 }
 
 export type SectionSource = 'DERIVED' | 'EXTRACTOR' | 'MANUAL';

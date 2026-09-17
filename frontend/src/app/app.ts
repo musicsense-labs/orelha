@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Access } from './shared/access';
 
 @Component({
   selector: 'app-root',
@@ -7,4 +8,7 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
-export class App {}
+export class App {
+  /** Quem está logado (pelo Access do Cloudflare) e se vê a aba do administrador. */
+  readonly access = inject(Access);
+}

@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { Admin } from './admin/admin';
 import { Compare } from './compare/compare';
 import { Collection } from './collection/collection';
 import { Profile } from './profile/profile';
@@ -10,5 +11,6 @@ export const routes: Routes = [
   { path: 'artists/:id', component: Profile, data: { scope: 'artists' }, title: 'Artista — Orelha' },
   { path: 'albums/:id', component: Profile, data: { scope: 'albums' }, title: 'Álbum — Orelha' },
   { path: 'compare', component: Compare, title: 'Comparar — Orelha' },
+  { path: 'admin', component: Admin, title: 'Administrador — Orelha' },
   { path: '**', redirectTo: '' },
 ];

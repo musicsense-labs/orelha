@@ -1,0 +1,73 @@
+<div class="page-head">
+  <h1>Administrador</h1>
+  <span class="muted small">quem entrou e o que fez · gravado pelo backend em cada entrada, faixa aberta e ação</span>
+</div>
+
+@if (forbidden()) {
+  <p class="error">Só o administrador vê esta aba.</p>
+} @else {
+  <section class="card">
+    <h2>Usuários</h2>
+    @if (users.hasValue() && users.value().length > 0) {
+      <table>
+        <thead>
+          <tr><th>usuário</th><th>por onde</th><th>primeira vez</th><th>última vez</th><th class="num">eventos</th><th class="num">ações</th></tr>
+        </thead>
+        <tbody>
+          @for (u of users.value(); track u.actor) {
+            <tr [class.selected]="actor() === u.actor">
+              <td><button type="button" class="link" (click)="filter(actor() === u.actor ? '' : u.actor)" [title]="actor() === u.actor ? 'ver todos' : 'só este usuário'">{{ u.actor }}</button></td>
+              <td class="muted">{{ u.remoteEvents > 0 ? 'orelha.app' : 'este PC' }}</td>
+              <td>{{ when(u.firstSeen) }}</td>
+              <td>{{ when(u.lastSeen) }}</td>
+              <td class="num">{{ u.events }}</td>
+              <td class="num">{{ u.actions }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    } @else if (users.isLoading()) {
+      <p class="muted">Carregando…</p>
+    } @else {
+      <p class="muted">Ninguém entrou ainda.</p>
+    }
+  </section>
+
+  <section class="card">
+    <h2>Eventos
+      @if (actor()) { <small class="muted">de {{ actor() }} · <button type="button" class="link" (click)="filter('')">ver todos</button></small> }
+    </h2>
+    @if (all().length > 0) {
+      <table class="events">
+        <thead>
+          <tr><th>quando</th><th>usuário</th><th>o que</th><th class="num">status</th><th class="num">ms</th><th>ip</th></tr>
+        </thead>
+        <tbody>
+          @for (e of all(); track e.id) {
+            <tr [class.fail]="e.status >= 400">
+              <td class="mono">{{ when(e.at) }}</td>
+              <td>{{ e.actor }}</td>
+              <td [title]="e.method + ' ' + e.path + (e.userAgent ? ' · ' + e.userAgent : '')">
+                @if (e.trackId != null) {
+                  <a [routerLink]="['/tracks', e.trackId]">{{ describe(e) }}</a>
+                } @else {
+                  {{ describe(e) }}
+                }
+              </td>
+              <td class="num mono">{{ e.status }}</td>
+              <td class="num mono muted">{{ e.durationMs ?? '' }}</td>
+              <td class="mono muted">{{ e.remote ? (e.ip ?? '') : '—' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      @if (all().length % 200 === 0) {
+        <button type="button" (click)="loadMore()" [disabled]="loadingMore()">{{ loadingMore() ? 'carregando…' : 'mais antigos' }}</button>
+      }
+    } @else if (events.isLoading()) {
+      <p class="muted">Carregando…</p>
+    } @else {
+      <p class="muted">Nenhum evento.</p>
+    }
+  </section>
+}

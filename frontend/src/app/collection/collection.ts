@@ -2,7 +2,8 @@ import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { HttpClient, httpResource } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { AccessInfo, Album, Artist, Track } from '../api/models';
+import { Album, Artist, Track } from '../api/models';
+import { Access } from '../shared/access';
 import { formatTime } from '../shared/music';
 import { Import } from './import';
 
@@ -22,8 +23,7 @@ export class Collection {
   private readonly tick = signal(0);
 
   /** Aberto pelo túnel? Importar pasta é só no PC do acervo (o backend também bloqueia). */
-  readonly access = httpResource<AccessInfo>(() => '/api/access');
-  readonly importFolderAllowed = computed(() => !this.access.hasValue() || this.access.value().importFolderAllowed);
+  readonly importFolderAllowed = inject(Access).importFolderAllowed;
   readonly artists = httpResource<Artist[]>(() => '/api/artists');
   readonly albums = httpResource<Album[]>(() => '/api/albums');
   readonly tracks = httpResource<Track[]>(() => `/api/tracks?tick=${this.tick()}`);

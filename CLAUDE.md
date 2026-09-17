@@ -53,7 +53,14 @@ alguém = adicionar o e-mail na política. Roteiro e limites (100 MB por upload 
 em `/api/tracks/import*` e `/import-path*` quando a requisição traz os cabeçalhos que o túnel e o Access
 injetam (`Cf-Connecting-Ip`, `Cf-Access-Authenticated-User-Email`; `RemoteAccess`); `GET /api/access` diz
 à UI se o acesso é remoto e o botão "+ importar pasta" fica desabilitado com a explicação no `title`.
-Upload de uma faixa continua liberado remotamente. Tarefa agendada "Orelha" (`deploy/install-task.ps1` → `start-orelha.ps1`) sobe Docker,
+Upload de uma faixa continua liberado remotamente. **Quem está logado e o que fez** (2026-09-17): a barra
+mostra o e-mail do Access no canto direito ("local" sem túnel; `shared/access.ts` é o único `GET /api/access`
+por carga); `AuditFilter` grava em `audit_event` (V12) ENTER (`GET /api/access`), OPEN_TRACK
+(`GET /api/tracks/{id}/timeline`) e ACTION (POST/PUT/DELETE em /api) com ator, IP, status e duração, em
+transação própria (`AuditService`), nunca derrubando a requisição; leituras de apoio e polling não entram.
+Aba **administrador** (`/admin`, `admin/`) só para `orelha.admin.emails` (padrão dfcsantos@gmail.com) e para
+acesso local: resumo por usuário e eventos descritos em português (`GET /api/admin/audit[/users]`, 403 para
+os demais). `AdminProperties.isAdmin` decide; `/api/access` devolve `admin`. Tarefa agendada "Orelha" (`deploy/install-task.ps1` → `start-orelha.ps1`) sobe Docker,
 compose e backend no logon; o backend de produção é dela, não de sessões de desenvolvimento. Plano B
 com o PC desligado: Oracle Cloud Always Free para banco, backend e stems, extrator em casa.
 

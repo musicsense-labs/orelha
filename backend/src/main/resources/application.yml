@@ -38,6 +38,8 @@ orelha:
   worker:
     enabled: true
     poll-ms: 5000
+  admin:
+    emails: dfcsantos@gmail.com   # quem vê a aba administrador (auditoria); acesso local é sempre admin
   hooktheory:
     url: https://api.hooktheory.com/v1/
     activkey: ${ORELHA_HOOKTHEORY_ACTIVKEY:}   # token da conta do dono (POST /v1/users/auth); vazio = desligado
