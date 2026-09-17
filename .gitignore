@@ -20,3 +20,6 @@ extractor/out/
 frontend/proxy.local.json
 
 CLAUDE.local.md
+
+# Logs da tarefa agendada (deploy/start-orelha.ps1)
+deploy/logs/

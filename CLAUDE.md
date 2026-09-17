@@ -48,7 +48,8 @@ o fallback das rotas), então o túnel aponta para `localhost:8081` só. **No ar
 (id em `%USERPROFILE%\.cloudflared\config.yml`, serviço do Windows), Zero Trust Free com a aplicação
 "Orelha" e a política "usuarios" (Allow por e-mail, One-time PIN; equipe `broken-hill-eda2`). Liberar
 alguém = adicionar o e-mail na política. Roteiro e limites (100 MB por upload no plano Free) em
-`deploy/README.md`; pendente: backend e `docker compose` subirem com o Windows (tarefa agendada). Plano B
+`deploy/README.md`. Tarefa agendada "Orelha" (`deploy/install-task.ps1` → `start-orelha.ps1`) sobe Docker,
+compose e backend no logon; o backend de produção é dela, não de sessões de desenvolvimento. Plano B
 com o PC desligado: Oracle Cloud Always Free para banco, backend e stems, extrator em casa.
 
 ## Contexto
