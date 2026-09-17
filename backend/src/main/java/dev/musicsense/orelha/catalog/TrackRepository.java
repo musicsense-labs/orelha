@@ -12,5 +12,11 @@ public interface TrackRepository extends JpaRepository<Track, Long> {
 
     boolean existsByAudioSha256(String audioSha256);
 
+    /** Outra faixa com os mesmos bytes: stems e features (por SHA) são dela também. */
+    boolean existsByAudioSha256AndIdNot(String audioSha256, Long id);
+
+    /** Outra faixa cadastrada sobre o mesmo arquivo (por path). */
+    boolean existsByAudioPathAndIdNot(String audioPath, Long id);
+
     boolean existsByAlbumIdAndTrackNo(Long albumId, Integer trackNo);
 }

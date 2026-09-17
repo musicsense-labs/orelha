@@ -70,4 +70,6 @@ button.mini { font: inherit; font-size: 0.75rem; padding: 0 0.35rem; margin-left
 button.mini:hover { color: var(--ink); }
 td.actions { width: 7rem; text-align: right; }
 button.mini.primary-mini { background: var(--accent); color: var(--paper); border-color: var(--accent); padding: 0.1rem 0.5rem; }
+button.mini.danger:hover:not(:disabled) { color: var(--paper); background: var(--accent-hover); border-color: var(--accent-hover); }
+button.mini:disabled { opacity: 0.45; cursor: default; }
 input, select, textarea { font-family: inherit; color: var(--ink); background: var(--surface); }

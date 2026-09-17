@@ -2,9 +2,13 @@ package dev.musicsense.orelha.catalog;
 
 import dev.musicsense.orelha.analysis.AnalysisQueue;
 import dev.musicsense.orelha.analysis.AnalysisRun;
+import dev.musicsense.orelha.analysis.AnalysisRunRepository;
 import dev.musicsense.orelha.analysis.RunStatus;
 import dev.musicsense.orelha.common.NotFoundException;
 import dev.musicsense.orelha.extraction.AudioExtractor;
+import dev.musicsense.orelha.extraction.DataPaths;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -20,12 +24,14 @@ import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
 @Service
 public class TrackService {
 
+    private static final Logger log = LoggerFactory.getLogger(TrackService.class);
     private static final Set<String> AUDIO_EXTENSIONS = Set.of("mp3", "wav", "flac", "ogg", "m4a", "aac", "aiff", "aif");
 
     private final TrackRepository tracks;
@@ -33,14 +39,47 @@ public class TrackService {
     private final AnalysisQueue queue;
     private final AudioExtractor extractor;
     private final AudioLibrary library;
+    private final AnalysisRunRepository runs;
+    private final DataPaths dataPaths;
 
     TrackService(TrackRepository tracks, AlbumRepository albums, AnalysisQueue queue, AudioExtractor extractor,
-                 AudioLibrary library) {
+                 AudioLibrary library, AnalysisRunRepository runs, DataPaths dataPaths) {
         this.tracks = tracks;
         this.albums = albums;
         this.queue = queue;
         this.extractor = extractor;
         this.library = library;
+        this.runs = runs;
+        this.dataPaths = dataPaths;
+    }
+
+    /**
+     * Tira a faixa do acervo e devolve o que apagar do disco — o chamador apaga depois do commit
+     * ({@link TrackRemoval#delete}), para um disco indisponível nunca deixar a transação pela metade.
+     * Os runs são travados (FOR UPDATE) e saem pelo JPA antes da faixa (o que deriva deles vai por cascata,
+     * V5): carregados para listar stems e features, eles ficariam no contexto apontando para uma faixa
+     * removida e o flush recusaria. Com um run em execução o worker ainda vai gravar nele; a exclusão
+     * espera ele terminar. Stems e features são por SHA do áudio, e o arquivo da biblioteca pode ter sido
+     * cadastrado por path numa segunda faixa: o que outra faixa ainda referencia fica no disco.
+     */
+    @Transactional
+    public Set<Path> remove(long trackId) {
+        Track track = tracks.findById(trackId).orElseThrow(() -> new NotFoundException("Track", trackId));
+        List<AnalysisRun> trackRuns = runs.lockByTrackId(trackId);
+        if (trackRuns.stream().anyMatch(r -> r.getStatus() == RunStatus.RUNNING)) {
+            throw new IllegalStateException("A faixa está sendo analisada; espere o run terminar para excluí-la.");
+        }
+        boolean sharedBytes = tracks.existsByAudioSha256AndIdNot(track.getAudioSha256(), trackId);
+        boolean sharedFile = tracks.existsByAudioPathAndIdNot(track.getAudioPath(), trackId);
+        boolean inLibrary = !Path.of(track.getAudioPath()).isAbsolute();
+        if (sharedBytes || sharedFile) {
+            log.info("track {}: outra faixa usa os mesmos {}; ficam no disco", trackId, sharedBytes ? "bytes (stems e features)" : "arquivo");
+        }
+        Set<Path> files = TrackRemoval.filesOf(inLibrary && !sharedFile ? library.resolve(track) : null,
+                sharedBytes ? List.of() : trackRuns, dataPaths);
+        runs.deleteAll(trackRuns);
+        tracks.delete(track);
+        return files;
     }
 
     /** Cadastra uma faixa a partir de um arquivo já no disco, fixa a identidade dos bytes e enfileira a análise. */

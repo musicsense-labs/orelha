@@ -4,6 +4,7 @@ import { RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { Album, Artist, Track } from '../api/models';
 import { Access } from '../shared/access';
+import { errorText } from '../shared/errors';
 import { formatTime } from '../shared/music';
 import { Import } from './import';
 
@@ -22,8 +23,11 @@ export class Collection {
   /** Muda a cada 5 s enquanto houver run QUEUED/RUNNING: força o reload das faixas. */
   private readonly tick = signal(0);
 
+  private readonly access = inject(Access);
   /** Aberto pelo túnel? Importar pasta é só no PC do acervo (o backend também bloqueia). */
-  readonly importFolderAllowed = inject(Access).importFolderAllowed;
+  readonly importFolderAllowed = this.access.importFolderAllowed;
+  /** Excluir faixa é só do administrador (o backend responde 403 aos demais). */
+  readonly admin = this.access.admin;
   readonly artists = httpResource<Artist[]>(() => '/api/artists');
   readonly albums = httpResource<Album[]>(() => '/api/albums');
   readonly tracks = httpResource<Track[]>(() => `/api/tracks?tick=${this.tick()}`);
@@ -83,17 +87,38 @@ export class Collection {
   }
 
   readonly reanalysing = signal<ReadonlySet<number>>(new Set());
+  readonly removing = signal<ReadonlySet<number>>(new Set());
+  /** Erro da última ação da lista (reprocessar, excluir): mostrado acima do acervo, fora do formulário. */
+  readonly actionError = signal<string | null>(null);
 
   /** Novo run para a faixa (o anterior é mantido; o canônico só muda se o dono trocar). */
   async reanalyse(track: Track): Promise<void> {
     this.reanalysing.update((s) => new Set([...s, track.id]));
+    this.actionError.set(null);
     try {
       await firstValueFrom(this.http.post<{ runId: number }>(`/api/tracks/${track.id}/analyze`, null));
       this.tick.update((n) => n + 1);
     } catch (e: unknown) {
-      this.formError.set((e as { error?: { detail?: string } })?.error?.detail ?? String(e));
+      this.actionError.set(errorText(e));
     } finally {
       this.reanalysing.update((s) => new Set([...s].filter((id) => id !== track.id)));
+    }
+  }
+
+  /** Só o administrador (o backend responde 403 aos demais): leva runs, anotações, stems e o áudio da biblioteca. */
+  async remove(track: Track): Promise<void> {
+    if (!confirm(`Excluir "${track.title}" do acervo?\n\nSaem os runs, as anotações, os stems e o áudio da biblioteca. Não dá para desfazer.`)) {
+      return;
+    }
+    this.removing.update((s) => new Set([...s, track.id]));
+    this.actionError.set(null);
+    try {
+      await firstValueFrom(this.http.delete(`/api/tracks/${track.id}`));
+      this.tick.update((n) => n + 1);
+    } catch (e: unknown) {
+      this.actionError.set(errorText(e));
+    } finally {
+      this.removing.update((s) => new Set([...s].filter((id) => id !== track.id)));
     }
   }
 
@@ -161,8 +186,7 @@ export class Collection {
       this.albums.reload();
       this.tick.update((n) => n + 1);
     } catch (e: unknown) {
-      const detail = (e as { error?: { detail?: string } })?.error?.detail;
-      this.formError.set(detail ?? String(e));
+      this.formError.set(errorText(e));
     } finally {
       this.submitting.set(false);
     }

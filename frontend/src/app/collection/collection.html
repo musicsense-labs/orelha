@@ -63,6 +63,10 @@
   </form>
 }
 
+@if (actionError()) {
+  <p class="error">{{ actionError() }} <button type="button" class="mini" (click)="actionError.set(null)" title="fechar">✕</button></p>
+}
+
 @if (error()) {
   <p class="error">Backend indisponível: {{ error() }}</p>
 } @else if (loading() && tree().length === 0) {
@@ -113,6 +117,13 @@
                             [disabled]="reanalysing().has(t.id)" (click)="reanalyse(t)"
                             [title]="t.latestRunStatus === 'FAILED' ? ('reprocessar — ' + (t.latestRunError ?? '')) : 'reprocessar com o extrator atual (novo run; o anterior é mantido)'">
                       {{ t.latestRunStatus === 'FAILED' ? 'reprocessar' : '↻' }}
+                    </button>
+                  }
+                  @if (admin()) {
+                    <button type="button" class="mini danger" [disabled]="removing().has(t.id) || t.latestRunStatus === 'RUNNING'"
+                            (click)="remove(t)"
+                            [title]="t.latestRunStatus === 'RUNNING' ? 'em análise; espere terminar' : 'excluir do acervo (runs, anotações, stems e o áudio da biblioteca) — só o administrador'">
+                      {{ removing().has(t.id) ? '…' : '✕' }}
                     </button>
                   }
                 </td>

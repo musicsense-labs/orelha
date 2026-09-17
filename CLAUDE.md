@@ -60,7 +60,16 @@ por carga); `AuditFilter` grava em `audit_event` (V12) ENTER (`GET /api/access`)
 transação própria (`AuditService`), nunca derrubando a requisição; leituras de apoio e polling não entram.
 Aba **administrador** (`/admin`, `admin/`) só para `orelha.admin.emails` (padrão dfcsantos@gmail.com) e para
 acesso local: resumo por usuário e eventos descritos em português (`GET /api/admin/audit[/users]`, 403 para
-os demais). `AdminProperties.isAdmin` decide; `/api/access` devolve `admin`. Tarefa agendada "Orelha" (`deploy/install-task.ps1` → `start-orelha.ps1`) sobe Docker,
+os demais). `AdminProperties.isAdmin` decide; `/api/access` devolve `admin`. **Excluir faixa é só do administrador**
+(2026-09-17): `DELETE /api/tracks/{id}` responde 403 aos demais e 409 com run RUNNING; `TrackService.remove`
+trava os runs (`lockByTrackId`, FOR UPDATE — o SKIP LOCKED do worker pula o que está saindo), apaga runs e
+faixa pelo JPA (o resto vai por cascata, V5) e devolve os arquivos do host, que `TrackRemoval.delete` apaga
+**depois do commit**, sem nunca falhar a operação: áudio da biblioteca (não o cadastrado por path fora dela),
+`data/stems/<sha>/` e o Parquet. Stems e features são por SHA do áudio, então ficam se outra faixa tiver os
+mesmos bytes (`upload` e `POST /api/tracks` não deduplicam por SHA; só o import faz). Botão ✕ na lista do
+acervo só com `access.admin()`, com `confirm()`; erros das ações da lista aparecem acima do acervo
+(`actionError`), não dentro do formulário de upload — foi por isso que o ↻ postou em `/api/tracks//analyze`
+por dois dias sem ninguém ver (corrigido em 2026-09-17). Tarefa agendada "Orelha" (`deploy/install-task.ps1` → `start-orelha.ps1`) sobe Docker,
 compose e backend no logon; o backend de produção é dela, não de sessões de desenvolvimento. Plano B
 com o PC desligado: Oracle Cloud Always Free para banco, backend e stems, extrator em casa.
 

@@ -80,7 +80,7 @@ export class Admin {
       p.endsWith('/reference') ? (e.method === 'DELETE' ? 'apagou a referência' : 'gravou a referência') :
       p.endsWith('/upload') ? 'enviou uma faixa' :
       p.includes('/import') ? 'importou pasta' :
-      e.method === 'DELETE' && track ? 'apagou' :
+      e.method === 'DELETE' && track ? 'excluiu do acervo' :
       p.startsWith('/api/artists') ? 'mexeu em artista' :
       p.startsWith('/api/albums') ? 'mexeu em álbum' :
       `${e.method} ${p}`;

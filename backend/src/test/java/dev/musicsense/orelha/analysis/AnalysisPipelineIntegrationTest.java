@@ -62,9 +62,14 @@ class AnalysisPipelineIntegrationTest {
     @org.springframework.test.context.DynamicPropertySource
     static void dataRoot(org.springframework.test.context.DynamicPropertyRegistry registry) throws IOException {
         dataRoot = Files.createTempDirectory("orelha-data");
+        registry.add("orelha.data.host-root", () -> dataRoot.toString());
+    }
+
+    /** O stub declara sempre /data/stems/stub/; recriado a cada teste porque excluir uma faixa apaga a pasta. */
+    @org.junit.jupiter.api.BeforeEach
+    void stubStems() throws IOException {
         Files.createDirectories(dataRoot.resolve("stems/stub"));
         Files.writeString(dataRoot.resolve("stems/stub/bass.wav"), "bass stem");
-        registry.add("orelha.data.host-root", () -> dataRoot.toString());
     }
 
     @TestConfiguration
@@ -440,12 +445,36 @@ class AnalysisPipelineIntegrationTest {
         assertThat(rest.getForObject("/api/tracks/" + trackId + "/timeline", TimelineResponse.class).runId())
                 .isEqualTo(secondRun);
 
-        // Apagar a faixa leva os runs e tudo que deriva deles (V5: ON DELETE CASCADE).
-        ResponseEntity<Void> deleted = rest.exchange("/api/tracks/" + trackId, org.springframework.http.HttpMethod.DELETE,
-                null, Void.class);
-        assertThat(deleted.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        // Apagar é só do administrador: um usuário remoto comum recebe 403 e a faixa continua lá.
+        org.springframework.http.HttpHeaders friend = new org.springframework.http.HttpHeaders();
+        friend.set(dev.musicsense.orelha.common.RemoteAccess.EMAIL_HEADER, "amigo@example.com");
+        friend.set(dev.musicsense.orelha.common.RemoteAccess.ORIGIN_IP_HEADER, "203.0.113.9");
+        assertThat(rest.exchange("/api/tracks/" + trackId, org.springframework.http.HttpMethod.DELETE,
+                new org.springframework.http.HttpEntity<>(friend), String.class).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(rest.getForEntity("/api/tracks/" + trackId, String.class).getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        // Uma segunda faixa sobre o mesmo arquivo (mesmos bytes → mesma pasta de stems e mesmo Parquet, que
+        // o extrator chaveia por SHA): excluir uma delas não pode levar os arquivos da outra.
+        Long twinId = rest.postForEntity("/api/tracks",
+                new TrackRequest(albumId, "Stub 2 (cópia)", 2, audio.toString()), TrackResponse.class).getBody().id();
+        worker.pollOnce();
+        ResponseEntity<String> twinDeleted = rest.exchange("/api/tracks/" + twinId, org.springframework.http.HttpMethod.DELETE,
+                null, String.class);
+        assertThat(twinDeleted.getStatusCode()).as(String.valueOf(twinDeleted.getBody())).isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(rest.getForEntity("/api/tracks/" + twinId, String.class).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(Files.exists(dataRoot.resolve("stems/stub/bass.wav"))).isTrue();
+        assertThat(rest.getForEntity("/api/tracks/" + trackId + "/stems/bass", byte[].class).getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        // Apagar a faixa (local = administrador) leva os runs e tudo que deriva deles (V5: ON DELETE CASCADE).
+        ResponseEntity<String> deleted = rest.exchange("/api/tracks/" + trackId, org.springframework.http.HttpMethod.DELETE,
+                null, String.class);
+        assertThat(deleted.getStatusCode()).as(String.valueOf(deleted.getBody())).isEqualTo(HttpStatus.NO_CONTENT);
         assertThat(rest.getForEntity("/api/tracks/" + trackId, String.class).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(rest.getForEntity("/api/analysis/runs/" + canonical, String.class).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(rest.getForEntity("/api/analysis/runs/" + secondRun, String.class).getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        // Agora ninguém mais usa os bytes: do disco saem os stems dos runs; o áudio cadastrado por path fora
+        // da biblioteca é do dono e fica.
+        assertThat(Files.exists(dataRoot.resolve("stems/stub"))).isFalse();
+        assertThat(Files.exists(audio)).isTrue();
     }
 }

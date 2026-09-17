@@ -6,6 +6,7 @@ import dev.musicsense.orelha.analysis.BassNoteRepository;
 import dev.musicsense.orelha.analysis.BeatRepository;
 import dev.musicsense.orelha.analysis.LyricsService;
 import dev.musicsense.orelha.analysis.VocalNoteKind;
+import dev.musicsense.orelha.common.AdminProperties;
 import dev.musicsense.orelha.analysis.VocalNoteRepository;
 import dev.musicsense.orelha.common.NotFoundException;
 import dev.musicsense.orelha.extraction.DataPaths;
@@ -29,6 +30,8 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.math.BigDecimal;
 import java.nio.file.Files;
@@ -51,11 +54,13 @@ public class TrackController {
     private final VocalNoteRepository vocalNotes;
     private final BassNoteRepository bassNotes;
     private final LyricsService lyrics;
+    private final AdminProperties admin;
 
     TrackController(TrackRepository tracks, TrackService service, DataPaths dataPaths, AnalysisRunRepository runs,
                     ImportService importer, BeatRepository beats, AudioLibrary library, VocalNoteRepository vocalNotes,
-                    BassNoteRepository bassNotes, LyricsService lyrics) {
+                    BassNoteRepository bassNotes, LyricsService lyrics, AdminProperties admin) {
         this.lyrics = lyrics;
+        this.admin = admin;
         this.tracks = tracks;
         this.service = service;
         this.dataPaths = dataPaths;
@@ -274,10 +279,14 @@ public class TrackController {
         return response(service.setCanonicalRun(id, req.runId()));
     }
 
+    /** Só o administrador tira faixas do acervo; vai junto o áudio da biblioteca, os stems e as features. */
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    void delete(@PathVariable Long id) {
-        tracks.delete(find(id));
+    void delete(@PathVariable Long id, HttpServletRequest request) {
+        if (!admin.isAdmin(request)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Só o administrador exclui faixas do acervo.");
+        }
+        TrackRemoval.delete(service.remove(id));
     }
 
     private Track find(Long id) {

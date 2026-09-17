@@ -1,6 +1,7 @@
 import { Component, computed, inject, output, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { errorText } from '../shared/errors';
 
 export interface ImportItem {
   key: string;
@@ -97,7 +98,7 @@ export class Import {
       this.rows.set(previews.flatMap((p) => p.items).map((i) => ({ ...i, include: !i.duplicate })));
       this.files.set([]);
     } catch (e: unknown) {
-      this.error.set(detail(e));
+      this.error.set(errorText(e));
     } finally {
       this.running.set(false);
     }
@@ -120,7 +121,7 @@ export class Import {
       this.stagingId.set(null);
       this.rows.set(preview.items.map((i) => ({ ...i, include: !i.duplicate })));
     } catch (e: unknown) {
-      this.error.set(detail(e));
+      this.error.set(errorText(e));
     } finally {
       this.running.set(false);
     }
@@ -178,7 +179,7 @@ export class Import {
       this.stagingId.set(null);
       this.done.emit();
     } catch (e: unknown) {
-      this.error.set(detail(e));
+      this.error.set(errorText(e));
     } finally {
       this.running.set(false);
     }
@@ -217,6 +218,3 @@ function numberOrNull(v: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function detail(e: unknown): string {
-  return (e as { error?: { detail?: string } })?.error?.detail ?? String(e);
-}

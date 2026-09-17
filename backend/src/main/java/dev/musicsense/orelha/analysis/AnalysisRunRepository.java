@@ -1,6 +1,8 @@
 package dev.musicsense.orelha.analysis;
 
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
@@ -23,4 +25,12 @@ public interface AnalysisRunRepository extends JpaRepository<AnalysisRun, Long> 
     List<AnalysisRun> findLatestPerTrack();
 
     Optional<AnalysisRun> findFirstByTrackIdOrderByIdDesc(long trackId);
+
+    /**
+     * Os runs de uma faixa travados (FOR UPDATE) até o fim da transação: o SKIP LOCKED do worker pula
+     * o que está sendo removido, e um run que o worker já reivindicou aparece como RUNNING.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select r from AnalysisRun r where r.track.id = :trackId")
+    List<AnalysisRun> lockByTrackId(long trackId);
 }

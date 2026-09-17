@@ -2,6 +2,8 @@ package dev.musicsense.orelha.analysis;
 
 import dev.musicsense.orelha.catalog.Track;
 import dev.musicsense.orelha.common.NotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,6 +14,8 @@ import java.util.Optional;
 /** A fila é a tabela analysis_run; cada método é uma transação curta. */
 @Service
 public class AnalysisQueue {
+
+    private static final Logger log = LoggerFactory.getLogger(AnalysisQueue.class);
 
     private final AnalysisRunRepository runs;
 
@@ -44,9 +48,14 @@ public class AnalysisQueue {
         run.setFinishedAt(Instant.now());
     }
 
+    /** Registra a falha; um run que sumiu no meio (faixa excluída enquanto o worker rodava) só vira aviso. */
     @Transactional
     public void fail(long runId, Throwable error) {
-        AnalysisRun run = find(runId);
+        AnalysisRun run = runs.findById(runId).orElse(null);
+        if (run == null) {
+            log.warn("run {}: não existe mais; falha descartada ({})", runId, error.toString());
+            return;
+        }
         run.setStatus(RunStatus.FAILED);
         run.setLockedAt(null);
         run.setFinishedAt(Instant.now());
