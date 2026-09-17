@@ -49,7 +49,11 @@ o fallback das rotas), então o túnel aponta para `localhost:8081` só. **No ar
 "Orelha" e a política "usuarios" (Allow por e-mail, One-time PIN; id do túnel e nome da equipe ficam fora do
 repositório, em `CLAUDE.local.md` e na memória). Liberar
 alguém = adicionar o e-mail na política. Roteiro e limites (100 MB por upload no plano Free) em
-`deploy/README.md`. Tarefa agendada "Orelha" (`deploy/install-task.ps1` → `start-orelha.ps1`) sobe Docker,
+`deploy/README.md`. **Importar pasta é só no PC do acervo** (2026-09-17): `RemoteImportGuard` responde 403
+em `/api/tracks/import*` e `/import-path*` quando a requisição traz os cabeçalhos que o túnel e o Access
+injetam (`Cf-Connecting-Ip`, `Cf-Access-Authenticated-User-Email`; `RemoteAccess`); `GET /api/access` diz
+à UI se o acesso é remoto e o botão "+ importar pasta" fica desabilitado com a explicação no `title`.
+Upload de uma faixa continua liberado remotamente. Tarefa agendada "Orelha" (`deploy/install-task.ps1` → `start-orelha.ps1`) sobe Docker,
 compose e backend no logon; o backend de produção é dela, não de sessões de desenvolvimento. Plano B
 com o PC desligado: Oracle Cloud Always Free para banco, backend e stems, extrator em casa.
 

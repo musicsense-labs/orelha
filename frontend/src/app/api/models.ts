@@ -184,6 +184,12 @@ export interface Lyrics {
   segments: LyricSegment[];
 }
 
+export interface AccessInfo {
+  remote: boolean;
+  email: string | null;
+  importFolderAllowed: boolean;
+}
+
 export type SectionSource = 'DERIVED' | 'EXTRACTOR' | 'MANUAL';
 
 /** Um acorde da progressão de uma parte (um ciclo), já anotado pela tonalidade preferida. */

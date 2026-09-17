@@ -1,7 +1,9 @@
 <div class="page-head">
   <h1>Acervo</h1>
   <span>
-    <button type="button" class="primary" (click)="showImport.set(!showImport()); showForm.set(false)">
+    <button type="button" class="primary" (click)="showImport.set(!showImport()); showForm.set(false)"
+            [disabled]="!importFolderAllowed()"
+            [title]="importFolderAllowed() ? '' : 'importar pasta só no próprio PC do acervo; pelo endereço remoto use + uma faixa'">
       {{ showImport() ? 'fechar' : '+ importar pasta' }}
     </button>
     <button type="button" class="primary" (click)="showForm.set(!showForm()); showImport.set(false)">

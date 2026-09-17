@@ -46,7 +46,7 @@ select { font: inherit; padding: 0.25rem 0.4rem; }
 .distances { display: flex; gap: 2.5rem; }
 .page-head { display: flex; justify-content: space-between; align-items: center; }
 button.primary { font: inherit; padding: 0.35rem 0.9rem; border-radius: 6px; border: 1px solid var(--ink); background: var(--ink); color: var(--paper); cursor: pointer; }
-button.primary:disabled { opacity: 0.45; cursor: default; }
+button.primary:disabled { opacity: 0.45; cursor: not-allowed; }
 .upload .row { display: flex; gap: 1rem; align-items: end; flex-wrap: wrap; margin-bottom: 0.6rem; }
 .upload label { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.85rem; color: var(--muted); }
 .upload input, .upload select { font: inherit; padding: 0.3rem 0.4rem; border: 1px solid var(--line); border-radius: 4px; }
