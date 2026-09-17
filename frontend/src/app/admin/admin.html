@@ -35,8 +35,15 @@
 
   <section class="card">
     <h2>Eventos
-      @if (actor()) { <small class="muted">de {{ actor() }} · <button type="button" class="link" (click)="filter('')">ver todos</button></small> }
+      <small class="muted">{{ total() }}@if (actor()) { de {{ actor() }} · <button type="button" class="link" (click)="filter('')">ver todos</button> }</small>
     </h2>
+    @if (all().length > 0 || page() > 0) {
+      <nav class="pager" aria-label="páginas de eventos">
+        <button type="button" (click)="prev()" [disabled]="page() === 0 || events.isLoading()">‹ mais recentes</button>
+        <span class="mono muted">página {{ page() + 1 }} de {{ pages() }}</span>
+        <button type="button" (click)="next()" [disabled]="!hasNext() || events.isLoading()">mais antigos ›</button>
+      </nav>
+    }
     @if (all().length > 0) {
       <table class="events">
         <thead>
@@ -61,9 +68,11 @@
           }
         </tbody>
       </table>
-      @if (all().length % 200 === 0) {
-        <button type="button" (click)="loadMore()" [disabled]="loadingMore()">{{ loadingMore() ? 'carregando…' : 'mais antigos' }}</button>
-      }
+      <nav class="pager" aria-label="páginas de eventos">
+        <button type="button" (click)="prev()" [disabled]="page() === 0 || events.isLoading()">‹ mais recentes</button>
+        <span class="mono muted">página {{ page() + 1 }} de {{ pages() }}</span>
+        <button type="button" (click)="next()" [disabled]="!hasNext() || events.isLoading()">mais antigos ›</button>
+      </nav>
     } @else if (events.isLoading()) {
       <p class="muted">Carregando…</p>
     } @else {

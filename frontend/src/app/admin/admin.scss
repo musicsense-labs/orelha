@@ -13,3 +13,5 @@ table.events tr.fail td { color: var(--accent-hover); }
 .mono { font-family: var(--font-mono); font-size: 0.8rem; }
 td a { color: var(--ink); }
 button:not(.link) { margin-top: 0.6rem; }
+.pager { display: flex; align-items: center; gap: 0.8rem; margin: 0.4rem 0; }
+.pager button { margin-top: 0; }

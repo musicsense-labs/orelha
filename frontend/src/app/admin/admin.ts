@@ -1,5 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { HttpClient, httpResource } from '@angular/common/http';
+import { httpResource } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 import { ActorSummary, AuditEvent, Track } from '../api/models';
 import { Access } from '../shared/access';
@@ -15,19 +15,31 @@ import { Access } from '../shared/access';
   styleUrl: './admin.scss',
 })
 export class Admin {
+  static readonly PAGE = 100;
+
   readonly access = inject(Access);
-  private readonly http = inject(HttpClient);
 
   readonly actor = signal<string>('');
+  /** Página atual (0 = mais recentes) e, por página já visitada, o id antes do qual ela começa (keyset da API). */
+  readonly page = signal(0);
+  private readonly cursors = signal<(number | undefined)[]>([undefined]);
   readonly users = httpResource<ActorSummary[]>(() => '/api/admin/audit/users');
-  readonly events = httpResource<AuditEvent[]>(() =>
-    `/api/admin/audit?limit=200${this.actor() ? '&actor=' + encodeURIComponent(this.actor()) : ''}`);
+  readonly events = httpResource<AuditEvent[]>(() => {
+    const before = this.cursors()[this.page()];
+    return `/api/admin/audit?limit=${Admin.PAGE}${before != null ? '&before=' + before : ''}`
+      + (this.actor() ? '&actor=' + encodeURIComponent(this.actor()) : '');
+  });
   readonly tracks = httpResource<Track[]>(() => '/api/tracks');
-  readonly more = signal<AuditEvent[]>([]);
-  readonly loadingMore = signal(false);
 
   readonly forbidden = computed(() => this.events.error() != null && (this.events.error() as { status?: number })?.status === 403);
-  readonly all = computed(() => [...(this.events.hasValue() ? this.events.value() : []), ...this.more()]);
+  readonly all = computed(() => (this.events.hasValue() ? this.events.value() : []));
+  /** Total (do usuário filtrado ou de todos) vem do resumo por usuário — não há endpoint de contagem. */
+  readonly total = computed(() => {
+    const users = this.users.hasValue() ? this.users.value() : [];
+    return this.actor() ? (users.find((u) => u.actor === this.actor())?.events ?? 0) : users.reduce((n, u) => n + u.events, 0);
+  });
+  readonly pages = computed(() => Math.max(1, Math.ceil(this.total() / Admin.PAGE)));
+  readonly hasNext = computed(() => this.all().length === Admin.PAGE);
   readonly titles = computed(() => {
     const map = new Map<number, string>();
     for (const t of this.tracks.hasValue() ? this.tracks.value() : []) {
@@ -37,27 +49,24 @@ export class Admin {
   });
 
   filter(actor: string): void {
-    this.more.set([]);
     this.actor.set(actor);
+    this.page.set(0);
+    this.cursors.set([undefined]);
   }
 
-  loadMore(): void {
+  /** Próxima página = os eventos anteriores ao último desta; a anterior já tem o cursor guardado. */
+  next(): void {
     const last = this.all()[this.all().length - 1];
-    if (!last) {
+    if (!last || !this.hasNext()) {
       return;
     }
-    this.loadingMore.set(true);
-    const params: Record<string, string> = { limit: '200', before: String(last.id) };
-    if (this.actor()) {
-      params['actor'] = this.actor();
-    }
-    this.http.get<AuditEvent[]>('/api/admin/audit', { params }).subscribe({
-      next: (page) => {
-        this.more.update((m) => [...m, ...page]);
-        this.loadingMore.set(false);
-      },
-      error: () => this.loadingMore.set(false),
-    });
+    const cursor = last.id;
+    this.cursors.update((c) => { const copy = [...c]; copy[this.page() + 1] = cursor; return copy; });
+    this.page.update((p) => p + 1);
+  }
+
+  prev(): void {
+    this.page.update((p) => Math.max(0, p - 1));
   }
 
   /** O que a pessoa fez, em português, a partir de método e caminho. */
