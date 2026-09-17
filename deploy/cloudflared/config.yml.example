@@ -5,7 +5,7 @@ credentials-file: C:\Users\dfcsa\.cloudflared\<TUNNEL_ID>.json
 
 ingress:
   # Tudo (SPA + /api) sai do backend numa porta só; o Angular compilado é servido por ele.
-  - hostname: orelha.SEU-DOMINIO.com
+  - hostname: orelha.app
     service: http://localhost:8081
     originRequest:
       # o extrator leva minutos, mas as respostas da API são curtas; o túnel só precisa aguentar upload

@@ -21,15 +21,15 @@ Always Free (ARM, 24 GB) para banco, backend e stems, com o extrator em casa.
    ```powershell
    cloudflared tunnel login
    cloudflared tunnel create orelha
-   cloudflared tunnel route dns orelha orelha.SEU-DOMINIO.com
+   cloudflared tunnel route dns orelha orelha.app
    ```
    Anote o id impresso pelo `create`.
 4. **Configurar**: copie `deploy/cloudflared/config.yml.example` para `%USERPROFILE%\.cloudflared\config.yml`
    e preencha `<TUNNEL_ID>` e o hostname.
-5. **Testar**: `cloudflared tunnel run orelha` e abra `https://orelha.SEU-DOMINIO.com`. Deve mostrar o
+5. **Testar**: `cloudflared tunnel run orelha` e abra `https://orelha.app`. Deve mostrar o
    acervo (com o backend rodando na 8081 e o frontend compilado, ver abaixo).
 6. **Login na borda (obrigatório antes de divulgar o endereço)**: no painel Cloudflare → Zero Trust →
-   Access → Applications → Add → Self-hosted; domínio `orelha.SEU-DOMINIO.com`; política *Allow* com
+   Access → Applications → Add → Self-hosted; domínio `orelha.app`; política *Allow* com
    *Emails* = os e-mails dos poucos usuários; identity provider *One-time PIN* (código por e-mail, sem
    senha). Gratuito até 50 usuários. Sem isso a API fica aberta ao mundo, e o acervo é áudio com
    direitos autorais.
