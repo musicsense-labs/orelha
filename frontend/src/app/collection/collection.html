@@ -1,5 +1,10 @@
 <div class="page-head">
   <h1>Acervo</h1>
+  <label class="filter">
+    <input type="search" [value]="query()" (input)="query.set($any($event.target).value)" (keydown.escape)="query.set('')"
+           placeholder="filtrar por artista, álbum ou faixa" aria-label="filtrar faixas do acervo" autocomplete="off" />
+    @if (query()) { <small class="muted">{{ shownTracks() }} de {{ totalTracks() }}</small> }
+  </label>
   <span>
     <button type="button" class="primary" (click)="showImport.set(!showImport()); showForm.set(false)"
             [disabled]="!importFolderAllowed()"
@@ -71,8 +76,10 @@
   <p class="error">Backend indisponível: {{ error() }}</p>
 } @else if (loading() && tree().length === 0) {
   <p class="muted">Carregando…</p>
+} @else if (tree().length === 0 && query()) {
+  <p class="muted">Nenhuma faixa, álbum ou artista com "{{ query() }}".</p>
 } @else if (tree().length === 0) {
-  <p class="muted">Nenhum artista cadastrado. Use "+ nova faixa".</p>
+  <p class="muted">Nenhum artista cadastrado. Use "+ uma faixa".</p>
 }
 
 @for (node of tree(); track node.artist.id) {

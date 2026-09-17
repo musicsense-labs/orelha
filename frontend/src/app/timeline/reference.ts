@@ -3,10 +3,11 @@ import { HttpClient, httpResource } from '@angular/common/http';
 import { SlicePipe } from '@angular/common';
 import { Comparison, Reference } from '../api/models';
 import { keyName, percent } from '../shared/music';
+import { fold } from '../shared/text';
 
 /** Slug no padrão das URLs do TheoryTab ("The Beatles" → "the-beatles"). */
 export function theorytabSlug(text: string): string {
-  return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  return fold(text)
     .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 }
 

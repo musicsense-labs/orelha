@@ -6,6 +6,7 @@ import { Album, Artist, Track } from '../api/models';
 import { Access } from '../shared/access';
 import { errorText } from '../shared/errors';
 import { formatTime } from '../shared/music';
+import { fold } from '../shared/text';
 import { Import } from './import';
 
 /**
@@ -32,9 +33,17 @@ export class Collection {
   readonly albums = httpResource<Album[]>(() => '/api/albums');
   readonly tracks = httpResource<Track[]>(() => `/api/tracks?tick=${this.tick()}`);
 
+  /**
+   * Filtro do acervo: cada palavra digitada precisa aparecer em "artista álbum faixa" (sem acento, sem caixa);
+   * álbuns e artistas sem faixa que case somem da árvore.
+   */
+  readonly query = signal('');
+  private readonly terms = computed(() => fold(this.query()).split(/\s+/).filter((t) => t !== ''));
+
   readonly tree = computed(() => {
     const albums = this.albums.value() ?? [];
     const tracks = this.tracks.value() ?? [];
+    const terms = this.terms();
     return (this.artists.value() ?? []).map((artist) => ({
       artist,
       albums: albums
@@ -42,10 +51,20 @@ export class Collection {
         .sort((a, b) => (a.year ?? 0) - (b.year ?? 0))
         .map((album) => ({
           album,
-          tracks: tracks.filter((t) => t.albumId === album.id).sort((a, b) => (a.trackNo ?? 0) - (b.trackNo ?? 0)),
-        })),
-    }));
+          tracks: tracks
+            .filter((t) => t.albumId === album.id)
+            .filter((t) => {
+              const hay = fold(`${artist.name} ${album.title} ${t.title}`);
+              return terms.every((term) => hay.includes(term));
+            })
+            .sort((a, b) => (a.trackNo ?? 0) - (b.trackNo ?? 0)),
+        }))
+        .filter((a) => terms.length === 0 || a.tracks.length > 0),
+    })).filter((n) => terms.length === 0 || n.albums.length > 0);
   });
+
+  readonly totalTracks = computed(() => (this.tracks.value() ?? []).length);
+  readonly shownTracks = computed(() => this.tree().reduce((n, a) => n + a.albums.reduce((m, al) => m + al.tracks.length, 0), 0));
 
   readonly loading = computed(() => this.artists.isLoading() || this.albums.isLoading() || this.tracks.isLoading());
   readonly error = computed(() => this.artists.error() ?? this.albums.error() ?? this.tracks.error());
