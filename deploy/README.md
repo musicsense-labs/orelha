@@ -33,10 +33,11 @@ Always Free (ARM, 24 GB) para banco, backend e stems, com o extrator em casa.
    *Emails* = os e-mails dos poucos usuários; identity provider *One-time PIN* (código por e-mail, sem
    senha). Gratuito até 50 usuários. Sem isso a API fica aberta ao mundo, e o acervo é áudio com
    direitos autorais.
-7. **Subir com o Windows**: `cloudflared service install` registra o agente como serviço. Para o
-   backend, um Agendador de Tarefas "ao iniciar sessão" rodando `C:\Users\dfcsa\orelha\backend\run.ps1 -Port 8081`,
-   e `docker compose up -d` na raiz para Postgres e extrator (o Docker Desktop precisa iniciar com o
-   Windows).
+7. **Subir com o Windows**: `cloudflared service install` (PowerShell como administrador) registra o agente
+   como serviço. Para o resto, `.\deploy\install-task.ps1` registra a tarefa agendada "Orelha" no logon do
+   usuário: ela roda `deploy/start-orelha.ps1`, que inicia o Docker Desktop se preciso, espera o daemon,
+   faz `docker compose up -d` e sobe o backend na 8081 (logs em `deploy/logs/`). Para testar sem relogar,
+   ou para reiniciar o backend com código novo: matar o java da 8081 e `Start-ScheduledTask Orelha`.
 
 ## Estado (2026-09-17)
 
