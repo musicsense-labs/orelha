@@ -53,9 +53,10 @@ Always Free (ARM, 24 GB) para banco, backend e stems, com o extrator em casa.
 
 ## Estado (2026-09-17)
 
-Feito: domínio, túnel `78152cec-…` como serviço do Windows, Zero Trust Free ativado, aplicação "Orelha"
-com a política "usuarios" (dfcsantos@gmail.com). Acesso anônimo a qualquer caminho responde 302 para
-`broken-hill-eda2.cloudflareaccess.com`. Tarefa agendada "Orelha" registrada e testada (sobe compose + backend no logon).
+Feito: domínio, túnel `orelha` como serviço do Windows, Zero Trust Free ativado, aplicação "Orelha"
+com a política "usuarios" (e-mail do dono). Acesso anônimo a qualquer caminho responde 302 para a tela
+de login da equipe no Cloudflare Access. Tarefa agendada "Orelha" registrada e testada (sobe compose +
+backend no logon).
 
 ## Rotina
 

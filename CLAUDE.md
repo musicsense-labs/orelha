@@ -46,7 +46,8 @@ não cabe em plano gratuito, o resto é leve. O backend serve o Angular compilad
 (`spring.web.resources.static-locations` → `frontend/dist/frontend/browser`, `SpaForwardController` faz
 o fallback das rotas), então o túnel aponta para `localhost:8081` só. **No ar desde 2026-09-17 em `https://orelha.app`**: domínio no Cloudflare Registrar, túnel `orelha`
 (id em `%USERPROFILE%\.cloudflared\config.yml`, serviço do Windows), Zero Trust Free com a aplicação
-"Orelha" e a política "usuarios" (Allow por e-mail, One-time PIN; equipe `broken-hill-eda2`). Liberar
+"Orelha" e a política "usuarios" (Allow por e-mail, One-time PIN; id do túnel e nome da equipe ficam fora do
+repositório, em `CLAUDE.local.md` e na memória). Liberar
 alguém = adicionar o e-mail na política. Roteiro e limites (100 MB por upload no plano Free) em
 `deploy/README.md`. Tarefa agendada "Orelha" (`deploy/install-task.ps1` → `start-orelha.ps1`) sobe Docker,
 compose e backend no logon; o backend de produção é dela, não de sessões de desenvolvimento. Plano B
