@@ -34,4 +34,7 @@ services:
       - ./data/stems:/data/stems
 
 volumes:
+  # Criado fora do compose na migração riff-lab → orelha (2026-09-15); external evita o aviso no `up`.
   pgdata:
+    external: true
+    name: orelha_pgdata
