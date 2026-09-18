@@ -383,6 +383,13 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
   risquinho quando não; célula BAIXO mostra `corda A · casa 3`. Limite honesto: a tab é tão boa quanto a
   transcrição — oitavas dobradas (G1+G2 no Creep) e notas curtas engolidas vêm do extrator, não do arranjo.
   Referência humana candidata: Songsterr (tabs de pessoas), como o TheoryTab é para a harmonia.
+- **Ciclo das quintas** (`timeline/fifths.ts`, 2026-09-18): na célula ACORDE do painel, atrás do botão "círculo"
+  (desligado por padrão, preferência no `localStorage`). Anel de fora = maiores por quintas (C no topo), anel de
+  dentro = relativas menores na mesma posição; o acorde atual acende o setor da fundamental — fora se a tríade é
+  maior/sus/power/7, dentro se menor ou diminuta (Cm acende "c" sob E♭) — com a cor do eixo A, e a tônica ganha
+  contorno no anel do seu modo. Com o círculo, a coluna do acorde cresce e as outras cedem padding para a grade
+  continuar cabendo nos 1200 px; o painel de detalhe é uma grade de colunas fixas (2026-09-17) justamente para
+  não se mexer enquanto a música toca.
 - **Upload** (acervo): formulário cria artista/álbum se preciso, envia multipart e faz polling
   de `/api/tracks` a cada 5 s enquanto houver run QUEUED/RUNNING; badges na fila/analisando…/falhou.
   Cada faixa tem **reprocessar** (`POST /api/tracks/{id}/analyze`): destacado quando falhou, `↻`

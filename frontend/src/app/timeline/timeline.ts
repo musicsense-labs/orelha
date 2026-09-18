@@ -10,6 +10,7 @@ import { Device } from '../shared/device';
 import { StemPanner } from '../shared/panner';
 import { Sections } from './sections';
 import { ReferencePanel } from './reference';
+import { Fifths } from './fifths';
 import {
   KEY_RELATION_COLORS, KEY_RELATION_ORDER, chordName, formatTime, keyName, noteName, percent, relationHint, relationLabel,
 } from '../shared/music';
@@ -41,9 +42,17 @@ function readFlag(key: string): boolean {
   }
 }
 
+function saveFlag(key: string, on: boolean): void {
+  try {
+    localStorage.setItem(key, on ? '1' : '0');
+  } catch {
+    // sem storage: a escolha vale só nesta visita
+  }
+}
+
 @Component({
   selector: 'app-timeline',
-  imports: [RouterLink, Sections, ReferencePanel],
+  imports: [RouterLink, Sections, ReferencePanel, Fifths],
   templateUrl: './timeline.html',
   styleUrl: './timeline.scss',
 })
@@ -81,6 +90,8 @@ export class Timeline {
   readonly showLeak = signal(false);
   /** Lane de baixo como tablatura (corda e casa por nota) em vez de piano roll; preferência guardada no navegador. */
   readonly tabMode = signal(readFlag('orelha.timeline.bassTab'));
+  /** Ciclo das quintas na célula ACORDE (desligado por padrão; preferência guardada no navegador). */
+  readonly showCircle = signal(readFlag('orelha.timeline.circle'));
   readonly leakCount = computed(() => this.vocalNoteList().filter((n) => n.kind === 'LIKELY_LEAK').length);
   readonly vocalShown = computed(() =>
     this.showLeak() ? this.vocalNoteList() : this.vocalNoteList().filter((n) => n.kind !== 'LIKELY_LEAK'));
@@ -477,11 +488,12 @@ export class Timeline {
 
   setTabMode(on: boolean): void {
     this.tabMode.set(on);
-    try {
-      localStorage.setItem('orelha.timeline.bassTab', on ? '1' : '0');
-    } catch {
-      // sem storage: a escolha vale só nesta visita
-    }
+    saveFlag('orelha.timeline.bassTab', on);
+  }
+
+  setShowCircle(on: boolean): void {
+    this.showCircle.set(on);
+    saveFlag('orelha.timeline.circle', on);
   }
 
   setRows(n: number): void {

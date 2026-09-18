@@ -206,7 +206,7 @@
     border-radius: 3px;
     min-width: 4ch;
   }
-  .lyric-cell .tiny {
+  .lyric-cell .tiny, .chord-cell .tiny {
     font: inherit;
     font-size: 0.65rem;
     letter-spacing: 0;
@@ -235,15 +235,27 @@
   .val { font-size: 1.35rem; font-weight: 600; line-height: 1.2; font-variant-numeric: tabular-nums; display: inline-flex; align-items: baseline; gap: 0.5rem; }
   .sub { font-size: 0.8rem; min-height: 1rem; display: inline-flex; align-items: center; gap: 0.5rem; }
   .degree-big { font-size: 1.1rem; font-weight: 500; color: var(--muted); }
+
+  /* ciclo das quintas: à direita da célula do acorde; a coluna cresce 4,4 rem e as outras cedem 0,6 rem de
+     padding cada, para a grade continuar cabendo nos 1200 px da página */
+  .chord-cell { position: relative; }
+  .chord-cell .tiny { margin-left: 0.5rem; }
+  &.circle {
+    grid-template-columns: 21rem 5.9rem 5.9rem 8.4rem 8.4rem 26.8rem;
+    .cell { padding: 0.3rem 0.8rem; }
+    .chord-cell { padding-right: calc(0.8rem + 80px + 0.5rem); }
+    .fifths { position: absolute; right: 0.8rem; top: 50%; transform: translateY(-50%); }
+  }
 }
 @media (max-width: 1200px) {
   .detail { grid-template-columns: minmax(12rem, 1fr) 6.5rem 6.5rem 9rem 9rem; }
+  .detail.circle { grid-template-columns: minmax(16rem, 1fr) 5.9rem 5.9rem 8.4rem 8.4rem; }
   .detail .vocal-cell { border-right: none; }
   .detail .lyric-cell { grid-column: 1 / -1; border-top: 1px solid var(--line); margin-top: 0.3rem; padding-top: 0.5rem; }
 }
 /* Celular (tela estreita): painel em pilha de pares, mixer em coluna com sliders na largura toda. */
 @media (max-width: 700px) {
-  .detail { grid-template-columns: 1fr 1fr; }
+  .detail, .detail.circle { grid-template-columns: 1fr 1fr; }
   .detail .chord-cell { grid-column: 1 / -1; border-right: none; }
   .detail .cell:nth-child(3), .detail .cell:nth-child(5) { border-right: none; }
   .detail .cell { padding: 0.3rem 0.6rem; }

@@ -189,9 +189,18 @@
     <!-- Painel do instante: acorde, tempo, compasso, baixo, voz e letra em células de largura fixa — a grade não
          se mexe quando o conteúdo muda; sem segmento sob o cursor/playhead as células mostram "—". -->
     @let s = focus();
-    <div class="detail card">
+    <div class="detail card" [class.circle]="showCircle()">
       <div class="cell chord-cell">
-        <span class="lbl">acorde</span>
+        <span class="lbl">acorde
+          <button type="button" class="tiny" (click)="setShowCircle(!showCircle())"
+                  [title]="showCircle() ? 'esconder o ciclo das quintas' : 'mostrar o ciclo das quintas com o acorde atual aceso e a tônica contornada'">
+            {{ showCircle() ? 'sem círculo' : 'círculo' }}
+          </button>
+        </span>
+        @if (showCircle()) {
+          <app-fifths class="fifths" [rootPc]="s?.rootPc ?? null" [quality]="s?.quality ?? 'UNKNOWN'" [color]="s ? color(s) : '#ccc'"
+                      [tonicPc]="timeline.value()?.key?.tonicPc ?? null" [mode]="timeline.value()?.key?.mode ?? null" [size]="80" />
+        }
         <span class="val">
           @if (s) {
             <strong>{{ labelWithBass(s) }}</strong><span class="degree-big">{{ s.degreeLabel ?? '—' }}</span>
