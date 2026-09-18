@@ -211,14 +211,11 @@
         <span class="sub">
           @if (s) {
             <span class="badge" [style.background]="color(s)" [title]="relationHint(s.keyRelation)">{{ relationLabel(s.keyRelation) }}</span>
+            @if (s.relationFromPrev) { <span class="muted" [title]="relationHint(s.relationFromPrev)">← {{ relationLabel(s.relationFromPrev) }}</span> }
             @if (s.inverted) { <span class="muted">baixo {{ noteName(s.effectiveBassPc) }}</span> }
           } @else {
             <span class="muted">passe o mouse ou dê play</span>
           }
-        </span>
-        <!-- eixo B (relação com o acorde anterior) na própria linha, para não disputar espaço com o badge -->
-        <span class="sub">
-          @if (s?.relationFromPrev; as prev) { <span class="muted" [title]="relationHint(prev)">← {{ relationLabel(prev) }}</span> }
         </span>
       </div>
       <div class="cell">
