@@ -22,7 +22,7 @@
     </header>
 
     @for (p of parts(); track p.id; let i = $index) {
-      <div class="part" [class.current]="p.id === currentId()">
+      <div class="part" [class.current]="p.id === currentId()" [class.looping]="p.id === loopPartId()">
         <div class="head">
           @if (editing() === p.id) {
             <input #name type="text" class="name" [value]="p.label" maxlength="64" autofocus
@@ -42,6 +42,11 @@
             <button type="button" class="nudge" (click)="nudge(i, 'end', -1)" [disabled]="saving()" title="fim um compasso antes">◀</button>
             <button type="button" class="nudge" (click)="nudge(i, 'end', 1)" [disabled]="saving()" title="fim um compasso depois">▶</button>
           </span>
+          <button type="button" class="link loop" [class.on]="p.id === loopPartId()"
+                  (click)="loop.emit(p.id === loopPartId() ? null : { partId: p.id, startS: p.startS, endS: p.endS })"
+                  [title]="p.id === loopPartId() ? 'parar de repetir' : 'repetir esta parte até parar'">
+            {{ p.id === loopPartId() ? '■ repetindo' : '⟳ repetir' }}
+          </button>
           @if (i > 0) {
             <button type="button" class="link" (click)="mergeWithPrevious(i)" [disabled]="saving()"
                     title="juntar com a parte anterior">⤴ juntar</button>

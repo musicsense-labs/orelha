@@ -94,6 +94,9 @@ export class Timeline {
   readonly showCircle = signal(readFlag('orelha.timeline.circle'));
   /** Velocidade de reprodução (1 = normal), mestre e stems juntos, sem mudar o tom; volta a 1 a cada visita. */
   readonly rate = signal(1);
+  /** Parte em repetição: ao cruzar o fim, volta ao início (só quando chega lá tocando — um seek para depois não volta). */
+  readonly loop = signal<{ partId: number; startS: number; endS: number } | null>(null);
+  private lastTickS = 0;
   readonly rates = [0.5, 0.6, 0.7, 0.75, 0.8, 0.9, 1, 1.1, 1.25];
   readonly leakCount = computed(() => this.vocalNoteList().filter((n) => n.kind === 'LIKELY_LEAK').length);
   readonly vocalShown = computed(() =>
@@ -617,6 +620,11 @@ export class Timeline {
     const tick = () => {
       const el = this.audio()?.nativeElement;
       if (el) {
+        const l = this.loop();
+        if (l && this.lastTickS < l.endS && el.currentTime >= l.endS) {
+          el.currentTime = l.startS;   // (seeked) realinha stems e metrônomo
+        }
+        this.lastTickS = el.currentTime;
         this.currentTime.set(el.currentTime);
         this.keepStemsInSync(el.currentTime);
         if (this.metronomeOn()) {
@@ -646,12 +654,33 @@ export class Timeline {
   onSeeked(): void {
     const el = this.audio()?.nativeElement;
     if (el) {
+      this.lastTickS = el.currentTime;
       this.currentTime.set(el.currentTime);
       for (const ref of this.stemAudios()) {
         ref.nativeElement.currentTime = el.currentTime;
       }
       this.metronome.reset(el.currentTime);
     }
+  }
+
+  setLoop(l: { partId: number; startS: number; endS: number } | null): void {
+    this.loop.set(l);
+    const el = this.audio()?.nativeElement;
+    if (l && el && (el.currentTime < l.startS || el.currentTime >= l.endS)) {
+      this.seekTo(l.startS);
+    }
+  }
+
+  /** Fim do áudio: com loop numa parte que termina no fim da faixa, volta e segue; senão é pausa. */
+  onEnded(): void {
+    const l = this.loop();
+    const el = this.audio()?.nativeElement;
+    if (l && el) {
+      el.currentTime = l.startS;
+      void el.play().catch(() => undefined);
+      return;
+    }
+    this.onPause();
   }
 
   setRate(rate: number): void {

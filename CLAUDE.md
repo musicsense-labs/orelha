@@ -27,7 +27,7 @@ menu; nada de serviço ou repositório por módulo antes de um módulo ter ciclo
 |---|---|---|---|
 | Harmony | O que acontece harmonicamente e como artistas se comparam | `harmony`, `collection`, timeline, perfil, comparação | tonalidade `DERIVED`, modo por I7/IV7, linha de baixo sob acorde |
 | Stems | Que instrumento faz o quê | extrator (demucs), player multi-stem | — |
-| Practice | Como tocar junto | `practice`: tablatura e MIDI do baixo; mixer, volumes, balanço L/R, metrônomo, letra sincronizada | versão violão e voz, andamento, loop; **Orelha no bolso** (Android, ver abaixo) |
+| Practice | Como tocar junto | `practice`: tablatura e MIDI do baixo; mixer, volumes, balanço L/R, metrônomo, letra sincronizada, velocidade 0,5–1,25× sem mudar o tom, repetir uma parte | versão violão e voz; **Orelha no bolso** (Android, ver abaixo) |
 | Production | Como o som foi construído | `timbre_summary` por álbum e stem | análise de produção (estudo em andamento) |
 | Guide | O que é ouvir e entender isso | — | guia cultural e nerd na entrada; referência: Music Genome Project |
 
@@ -400,8 +400,12 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
   edição manda a lista inteira no PUT (vira MANUAL) e "voltar à derivação" manda lista vazia. Edição
   manual (2026-09-15): "✂ dividir aqui" corta a parte em execução no downbeat mais próximo do
   playhead; "zerar partes" vira uma parte A só, para marcar do zero; setas ◀ ▶ movem início/fim um
-  compasso (a borda é compartilhada com a vizinha; mínimo de um compasso por parte). Backlog:
-  arrastar bordas na timeline; definir ciclo/×N à mão.
+  compasso (a borda é compartilhada com a vizinha; mínimo de um compasso por parte). **Repetir** (2026-09-18):
+  `⟳ repetir` numa parte faz a timeline voltar ao início dela ao cruzar o fim tocando (o laço de frames compara
+  o instante anterior com o atual; um seek para depois do fim não volta; `ended` com loop volta e segue);
+  ligar fora da parte leva ao início dela. **Velocidade** (2026-09-18): seletor 0,5–1,25× no transporte aplica
+  `playbackRate` (com `preservesPitch`) no mestre e nos stems; o metrônomo divide a distância até o beat pela
+  velocidade e escala o lookahead. Backlog: arrastar bordas na timeline; definir ciclo/×N à mão.
 - **Nomes de arquivo com `..`** ("N.I.B..mp3"): o guarda de path traversal do staging descarta
   segmentos `..`, nunca substitui a sequência dentro de um nome (bug corrigido em 2026-09-15:
   virava `N.I.B..b_mp3` e o ChordMini não reconhecia a extensão).

@@ -14,7 +14,7 @@
     <div class="player">
       <!-- Sem controles nativos: mute e volume só existem no mixer, senão os dois brigam pelo mesmo elemento. -->
       <audio #audio preload="metadata" [src]="'/api/tracks/' + t.id + '/audio'"
-             (play)="onPlay()" (pause)="onPause()" (ended)="onPause()" (seeked)="onSeeked()"></audio>
+             (play)="onPlay()" (pause)="onPause()" (ended)="onEnded()" (seeked)="onSeeked()"></audio>
       <div class="transport">
         <button type="button" class="play" (click)="togglePlay()" [title]="playing() ? 'pausar' : 'tocar'">
           {{ playing() ? '❚❚' : '▶' }}
@@ -281,6 +281,7 @@
     </div>
 
     <app-sections [trackId]="id()" [currentTime]="currentTime()" [downbeats]="downbeatTimes()" [duration]="duration()"
+                  [loopPartId]="loop()?.partId ?? null" (loop)="setLoop($event)"
                   (seek)="seekTo($event)" />
     <app-reference [trackId]="id()" [title]="t.title" [artist]="artist.hasValue() ? artist.value().name : ''" />
   }

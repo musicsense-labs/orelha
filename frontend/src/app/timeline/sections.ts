@@ -23,6 +23,9 @@ export class Sections {
   readonly downbeats = input<number[]>([]);
   readonly duration = input(0);
   readonly seek = output<number>();
+  /** Repetir uma parte: a timeline é quem faz o loop (relógio do mestre); aqui só o pedido e o estado. */
+  readonly loop = output<{ partId: number; startS: number; endS: number } | null>();
+  readonly loopPartId = input<number | null>(null);
 
   private readonly http = inject(HttpClient);
 

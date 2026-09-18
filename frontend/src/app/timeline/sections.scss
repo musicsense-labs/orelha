@@ -58,6 +58,9 @@
   .time { font-variant-numeric: tabular-nums; text-decoration: none; }
   .ht { margin-left: 0.4rem; }
   .ht.on { font-weight: 700; }
+  .loop { margin-left: 0.4rem; }
+  .loop.on { color: var(--accent); font-weight: 700; text-decoration: none; }
+  .part.looping { box-shadow: inset 3px 0 0 var(--accent); }
   .trends {
     display: flex;
     flex-wrap: wrap;
