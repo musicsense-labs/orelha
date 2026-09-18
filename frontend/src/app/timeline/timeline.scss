@@ -182,8 +182,8 @@
   .vocal-cell .val { color: var(--voice-strong); }
   .lyric-cell .val.line {
     font-size: 0.95rem; font-weight: 400; line-height: 1.3;
-    height: 2.6rem;                                   /* duas linhas reservadas, mesmo com uma ou nenhuma */
-    white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    height: 3.9rem;                                   /* três linhas reservadas, mesmo com uma ou nenhuma */
+    white-space: normal; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
   }
   .lyric-cell .word {
     font: inherit;
@@ -241,9 +241,9 @@
   .chord-cell { position: relative; }
   .chord-cell .tiny { margin-left: 0.5rem; }
   &.circle {
-    grid-template-columns: 21rem 5.9rem 5.9rem 8.4rem 8.4rem 26.8rem;
+    grid-template-columns: 22.4rem 5.9rem 5.9rem 8.4rem 8.4rem 25.4rem;
     .cell { padding: 0.3rem 0.8rem; }
-    .chord-cell { padding-right: calc(0.8rem + 80px + 0.5rem); }
+    .chord-cell { padding-right: calc(0.8rem + 96px + 0.5rem); min-height: calc(96px + 0.6rem); box-sizing: border-box; }
     .fifths { position: absolute; right: 0.8rem; top: 50%; transform: translateY(-50%); }
   }
 }
