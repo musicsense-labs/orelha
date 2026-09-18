@@ -27,7 +27,7 @@ menu; nada de serviço ou repositório por módulo antes de um módulo ter ciclo
 |---|---|---|---|
 | Harmony | O que acontece harmonicamente e como artistas se comparam | `harmony`, `collection`, timeline, perfil, comparação | tonalidade `DERIVED`, modo por I7/IV7, linha de baixo sob acorde |
 | Stems | Que instrumento faz o quê | extrator (demucs), player multi-stem | — |
-| Practice | Como tocar junto | mixer, volumes, balanço L/R, metrônomo, letra sincronizada | versão violão e voz, andamento, loop; **Orelha no bolso** (Android, ver abaixo) |
+| Practice | Como tocar junto | `practice`: tablatura e MIDI do baixo; mixer, volumes, balanço L/R, metrônomo, letra sincronizada | versão violão e voz, andamento, loop; **Orelha no bolso** (Android, ver abaixo) |
 | Production | Como o som foi construído | `timbre_summary` por álbum e stem | análise de produção (estudo em andamento) |
 | Guide | O que é ouvir e entender isso | — | guia cultural e nerd na entrada; referência: Music Genome Project |
 
@@ -369,6 +369,20 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
   (`GET /api/tracks/{id}/beats`, downbeat acentuado a 1400 Hz, beat a 950 Hz), agendados 250 ms à
   frente do relógio do mestre a cada frame; `reset` em seek/pause. Independente do mix/stems: toca
   por cima do que estiver soando. A timeline desenha os downbeats como linhas de compasso.
+- **Tablatura do baixo (2026-09-18, pacote `practice`)**: `TabArranger` (Java puro) escolhe corda e casa para cada
+  `bass_note` por Viterbi sobre a sequência — custo = deslocamento de casas entre notas fretadas (até 4 casas é
+  abertura de mão, meio custo; folga > 0,75 s alivia), 0,3 por corda trocada, 0,5 por casa acima da 12ª, e
+  **corda solta preferida** (−0,5; decisão do dono em 2026-09-18; `?open=false` penaliza +1). Entrar ou sair de
+  solta não move a mão (custo zero) — aproximação: depois da solta o algoritmo não lembra onde a mão estava.
+  Afinação 4 cordas E A D G (28 33 38 43), 24 casas; nota fora do braço sobe/desce de oitava e sai
+  `octaveShifted` (o basic-pitch erra a oitava em graves). `GET /api/tracks/{id}/bass-tab` (run canônico);
+  `GET …/bass.mid` = `BassMidiExporter` (`javax.sound.midi`, zero dependência): notas quantizadas na grade de
+  beats (tick = beat × 480 interpolado, semicolcheia), um andamento só (mediana dos beats), fórmula de compasso,
+  programa 33 — para o MuseScore/TuxGuitar gerarem a tab com ritmo. Na timeline, a lane de baixo tem
+  `notas | tab` (preferência no `localStorage`): quatro linhas (G em cima), casa no ataque quando cabe (≥ 9 px),
+  risquinho quando não; célula BAIXO mostra `corda A · casa 3`. Limite honesto: a tab é tão boa quanto a
+  transcrição — oitavas dobradas (G1+G2 no Creep) e notas curtas engolidas vêm do extrator, não do arranjo.
+  Referência humana candidata: Songsterr (tabs de pessoas), como o TheoryTab é para a harmonia.
 - **Upload** (acervo): formulário cria artista/álbum se preciso, envia multipart e faz polling
   de `/api/tracks` a cada 5 s enquanto houver run QUEUED/RUNNING; badges na fila/analisando…/falhou.
   Cada faixa tem **reprocessar** (`POST /api/tracks/{id}/analyze`): destacado quando falhou, `↻`

@@ -198,6 +198,18 @@ class AnalysisPipelineIntegrationTest {
         assertThat(bassLine.getBody()).extracting(dev.musicsense.orelha.catalog.TrackController.NoteResponse::midi)
                 .containsExactly(45, 41, 43, 45);
 
+        // Tablatura (Practice): Lá2 Fá2 Sol2 Lá2 — Fá e Sol cabem na corda D (3ª e 5ª casas) ou na A;
+        // a solução tem corda e casa coerentes com a afinação E A D G, e o MIDI sai quantizado nos beats.
+        dev.musicsense.orelha.practice.PracticeController.TabResponse tab = rest.getForObject(
+                "/api/tracks/" + track.id() + "/bass-tab", dev.musicsense.orelha.practice.PracticeController.TabResponse.class);
+        assertThat(tab.tuning()).containsExactly(28, 33, 38, 43);
+        assertThat(tab.notes()).hasSize(4);
+        assertThat(tab.notes()).allSatisfy(n -> assertThat(tab.tuning()[n.string()] + n.fret()).isEqualTo(n.midi()));
+        ResponseEntity<byte[]> midi = rest.getForEntity("/api/tracks/" + track.id() + "/bass.mid", byte[].class);
+        assertThat(midi.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(midi.getHeaders().getContentType().toString()).isEqualTo("audio/midi");
+        assertThat(new String(midi.getBody(), 0, 4, java.nio.charset.StandardCharsets.US_ASCII)).isEqualTo("MThd");
+
         // Notas da voz do run canônico (extrator ≥ 0.5.0), classificadas pela letra (≥ 0.6.0).
         ResponseEntity<List<dev.musicsense.orelha.catalog.TrackController.NoteResponse>> vocals = rest.exchange(
                 "/api/tracks/" + track.id() + "/vocal-notes", org.springframework.http.HttpMethod.GET, null,

@@ -317,3 +317,22 @@ export interface HooktheorySong {
   section: string;
   url: string;
 }
+
+/** Tablatura do baixo (Practice): corda 0 = a mais grave; casa 0 = solta. */
+export interface TabNote {
+  startS: number;
+  endS: number;
+  midi: number;
+  string: number;
+  fret: number;
+  /** A nota transcrita não cabia no braço e subiu/desceu de oitava. */
+  octaveShifted: boolean;
+}
+
+export interface BassTab {
+  /** MIDI de cada corda solta, grave → aguda (E1 A1 D2 G2 = 28 33 38 43). */
+  tuning: number[];
+  strings: string[];
+  preferOpen: boolean;
+  notes: TabNote[];
+}

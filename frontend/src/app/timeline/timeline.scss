@@ -113,7 +113,10 @@
       cursor: pointer;
     }
     button.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+    button.wide { width: auto; padding: 0 0.45rem; }
+    a.midi { font-size: 0.75rem; margin-left: 0.3rem; }
   }
+  .rows-picker + .rows-picker { margin-left: 0.9rem; }
 }
 
 .timeline {
@@ -138,6 +141,13 @@
   .lyric:hover rect { fill: #cfe0dc; }
   .bass-bg { stroke: var(--surface); stroke-width: 0.5; }
   .bass-note { fill: var(--bass); opacity: 0.9; }
+  /* tablatura: cordas como linhas finas; a casa num rótulo pequeno sobre a linha; nota comprimida = risquinho */
+  .string { stroke: var(--line); stroke-width: 0.8; pointer-events: none; }
+  .fret rect { fill: var(--bass); rx: 1.5; }
+  .fret text { font-family: var(--font-mono); font-size: 8px; font-weight: 600; fill: var(--paper); }
+  .fret rect.dense { fill: var(--bass); }
+  .fret.shifted rect { fill: var(--bass); opacity: 0.45; }
+  .fret:hover rect { fill: var(--bass-strong); opacity: 1; }
   .bass-note:hover { fill: var(--bass-strong); }
   .tick { font-size: 10px; fill: var(--muted); }
   .segment:hover rect { filter: brightness(1.12); }

@@ -84,6 +84,13 @@
           {{ showLeak() ? 'esconder' : 'mostrar' }} vazamento ({{ leakCount() }})
         </button>
       }
+      <span class="rows-picker" title="lane do baixo: piano roll das notas do stem ou tablatura (corda e casa, 4 cordas E A D G, cordas soltas preferidas)">
+        baixo
+        <button type="button" class="wide" [class.on]="!tabMode()" (click)="setTabMode(false)">notas</button>
+        <button type="button" class="wide" [class.on]="tabMode()" (click)="setTabMode(true)">tab</button>
+        <a class="midi" [href]="'/api/tracks/' + t.id + '/bass.mid'" download
+           title="a linha de baixo em MIDI, quantizada nos beats do run: abra no MuseScore (instrumento Baixo elétrico com pauta de tab) ou no TuxGuitar para a tablatura com ritmo">MIDI ↓</a>
+      </span>
       <span class="rows-picker" title="quebra a timeline em linhas: útil em faixas longas ou com muita troca de acorde">
         linhas
         @for (n of [1, 2, 3, 4]; track n) {
@@ -113,12 +120,31 @@
                 (click)="seek(p.s)" (mouseenter)="hovered.set(p.s)" />
         </g>
       }
-      <!-- lane 2: linha de baixo nota a nota (piano roll do stem de baixo) -->
-      @for (n of bassRoll(); track n.key) {
-        <rect class="bass-note" [attr.x]="n.x" [attr.y]="rowHeight * n.row + n.y" [attr.width]="n.w" [attr.height]="n.h"
-              (click)="seekTo(n.x / width * rowSpan() + n.row * rowSpan())">
-          <title>{{ noteName(n.midi % 12) }}{{ Math.floor(n.midi / 12) - 1 }}</title>
-        </rect>
+      <!-- lane 2: linha de baixo nota a nota — piano roll do stem, ou tablatura (uma linha por corda, casa no ataque) -->
+      @if (tabMode()) {
+        @for (r of rowIndexes(); track r) {
+          @for (y of stringYs(); track $index) {
+            <line class="string" x1="0" [attr.x2]="width" [attr.y1]="rowHeight * r + y" [attr.y2]="rowHeight * r + y" />
+          }
+        }
+        @for (m of tabMarks(); track m.key) {
+          <g class="fret" [class.shifted]="m.shifted" (click)="seekTo(m.x / width * rowSpan() + m.row * rowSpan())">
+            @if (m.w >= 9) {
+              <rect [attr.x]="m.x - 0.5" [attr.y]="rowHeight * m.row + m.y - 4.5" [attr.width]="m.fret >= 10 ? 11 : 7" height="9" />
+              <text [attr.x]="m.x + (m.fret >= 10 ? 5 : 3)" [attr.y]="rowHeight * m.row + m.y + 3" text-anchor="middle">{{ m.fret }}</text>
+            } @else {
+              <rect class="dense" [attr.x]="m.x" [attr.y]="rowHeight * m.row + m.y - 2" width="1.5" height="4" />
+            }
+            <title>{{ noteName(m.midi % 12) }}{{ Math.floor(m.midi / 12) - 1 }} · corda {{ bassTab.value()?.strings?.[m.string] }} casa {{ m.fret }}{{ m.shifted ? ' (oitava ajustada)' : '' }}</title>
+          </g>
+        }
+      } @else {
+        @for (n of bassRoll(); track n.key) {
+          <rect class="bass-note" [attr.x]="n.x" [attr.y]="rowHeight * n.row + n.y" [attr.width]="n.w" [attr.height]="n.h"
+                (click)="seekTo(n.x / width * rowSpan() + n.row * rowSpan())">
+            <title>{{ noteName(n.midi % 12) }}{{ Math.floor(n.midi / 12) - 1 }}</title>
+          </rect>
+        }
       }
       <!-- lane 3: voz (piano roll das notas do stem de voz; vazia em runs anteriores ao extrator 0.5.0) -->
       @for (r of rowIndexes(); track r) {
@@ -196,7 +222,10 @@
       <div class="cell bass-cell">
         <span class="lbl">baixo</span>
         <span class="val note" [class.off]="bassNow()?.state === 'off'">{{ bassNow()?.name ?? '—' }}</span>
-        <span class="sub muted">{{ bassNoteList().length === 0 ? 'sem notas neste run' : 'linha do stem' }}</span>
+        <span class="sub muted">
+          @if (tabNow(); as p) { corda {{ p.string }} · casa {{ p.fret }}{{ p.shifted ? ' ~8va' : '' }} }
+          @else { {{ bassNoteList().length === 0 ? 'sem notas neste run' : 'linha do stem' }} }
+        </span>
       </div>
       <div class="cell vocal-cell">
         <span class="lbl">voz</span>

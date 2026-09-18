@@ -3,7 +3,7 @@ import {
 } from '@angular/core';
 import { HttpClient, httpResource } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
-import { Album, Artist, Beat, LyricSegment, Note, Segment, Timeline as TimelineDto, Track } from '../api/models';
+import { Album, Artist, BassTab, Beat, LyricSegment, Note, Segment, Timeline as TimelineDto, Track } from '../api/models';
 import { Lyrics } from '../api/models';
 import { Metronome } from '../shared/metronome';
 import { Device } from '../shared/device';
@@ -33,6 +33,14 @@ function readRows(fallback: number): number {
   }
 }
 
+function readFlag(key: string): boolean {
+  try {
+    return localStorage.getItem(key) === '1';
+  } catch {
+    return false;
+  }
+}
+
 @Component({
   selector: 'app-timeline',
   imports: [RouterLink, Sections, ReferencePanel],
@@ -56,6 +64,8 @@ export class Timeline {
   readonly beats = httpResource<Beat[]>(() => `/api/tracks/${this.id()}/beats`);
   readonly vocalNotes = httpResource<Note[]>(() => `/api/tracks/${this.id()}/vocal-notes`);
   readonly bassNotes = httpResource<Note[]>(() => `/api/tracks/${this.id()}/bass-notes`);
+  /** Só é pedida no modo tab (Practice: TabArranger no núcleo). */
+  readonly bassTab = httpResource<BassTab>(() => (this.tabMode() ? `/api/tracks/${this.id()}/bass-tab` : undefined));
   /** Listas seguras: um recurso em erro (404 num backend antigo, rede) vale como "sem notas", não como falha da tela. */
   readonly bassNoteList = computed(() => (this.bassNotes.hasValue() ? this.bassNotes.value() : []));
   readonly vocalNoteList = computed(() => (this.vocalNotes.hasValue() ? this.vocalNotes.value() : []));
@@ -69,6 +79,8 @@ export class Timeline {
   readonly lyricSegments = computed(() => (this.lyrics.hasValue() ? this.lyrics.value().segments : []));
   /** Notas que o ASR sugere serem outro instrumento no stem de voz ficam escondidas, salvo pedido. */
   readonly showLeak = signal(false);
+  /** Lane de baixo como tablatura (corda e casa por nota) em vez de piano roll; preferência guardada no navegador. */
+  readonly tabMode = signal(readFlag('orelha.timeline.bassTab'));
   readonly leakCount = computed(() => this.vocalNoteList().filter((n) => n.kind === 'LIKELY_LEAK').length);
   readonly vocalShown = computed(() =>
     this.showLeak() ? this.vocalNoteList() : this.vocalNoteList().filter((n) => n.kind !== 'LIKELY_LEAK'));
@@ -168,6 +180,49 @@ export class Timeline {
 
   /** Piano roll da linha de baixo (stem), na lane do baixo. */
   readonly bassRoll = computed(() => this.roll(this.bassNoteList(), this.bassTop, this.bassLane, 'b'));
+
+  /** y de cada corda dentro da lane de baixo (G em cima, E embaixo), como numa tab impressa. */
+  readonly stringYs = computed(() => {
+    const n = this.bassTab.hasValue() ? this.bassTab.value().tuning.length : 4;
+    const step = this.bassLane / n;
+    return Array.from({ length: n }, (_, s) => this.bassTop + this.bassLane - step * (s + 0.5));
+  });
+
+  /** Casas na lane de baixo, uma por nota, na linha da sua corda; nota que cruza a borda vai à linha do ataque. */
+  readonly tabMarks = computed(() => {
+    if (!this.tabMode() || !this.bassTab.hasValue()) {
+      return [];
+    }
+    const span = this.rowSpan();
+    const rows = this.rows();
+    const ys = this.stringYs();
+    return this.bassTab.value().notes.map((n, i) => {
+      const row = Math.min(rows - 1, Math.floor(n.startS / span));
+      return {
+        key: 't' + i, row, fret: n.fret, shifted: n.octaveShifted, midi: n.midi, string: n.string,
+        x: ((n.startS - row * span) / span) * this.width,
+        w: Math.max((Math.min(n.endS, (row + 1) * span) - n.startS) / span * this.width, 1),
+        y: ys[n.string],
+      };
+    });
+  });
+
+  /** Corda e casa da nota de baixo que soa agora (ou da última), para a célula BAIXO do painel. */
+  readonly tabNow = computed(() => {
+    if (!this.tabMode() || !this.bassTab.hasValue()) {
+      return null;
+    }
+    const t = this.currentTime();
+    const tab = this.bassTab.value();
+    let last: (typeof tab.notes)[number] | null = null;
+    for (const n of tab.notes) {
+      if (n.startS > t) {
+        break;
+      }
+      last = n;
+    }
+    return last ? { string: tab.strings[last.string], fret: last.fret, shifted: last.octaveShifted } : null;
+  });
   /** Piano roll da voz, na lane da voz. */
   readonly vocalRoll = computed(() => this.roll(this.vocalShown(), this.vocalTop, this.vocalLane, 'v'));
 
@@ -418,6 +473,15 @@ export class Timeline {
   xIn(seconds: number): number {
     const span = this.rowSpan();
     return ((seconds - this.rowOf(seconds) * span) / span) * this.width;
+  }
+
+  setTabMode(on: boolean): void {
+    this.tabMode.set(on);
+    try {
+      localStorage.setItem('orelha.timeline.bassTab', on ? '1' : '0');
+    } catch {
+      // sem storage: a escolha vale só nesta visita
+    }
   }
 
   setRows(n: number): void {
