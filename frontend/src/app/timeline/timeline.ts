@@ -6,6 +6,7 @@ import { RouterLink } from '@angular/router';
 import { Album, Artist, Beat, LyricSegment, Note, Segment, Timeline as TimelineDto, Track } from '../api/models';
 import { Lyrics } from '../api/models';
 import { Metronome } from '../shared/metronome';
+import { Device } from '../shared/device';
 import { StemPanner } from '../shared/panner';
 import { Sections } from './sections';
 import { ReferencePanel } from './reference';
@@ -22,12 +23,13 @@ import {
  * silencia os stems; ligar um stem silencia o mix); stems se combinam entre si; cada canal tem
  * volume. O metrônomo (Web Audio sobre os beats do run) é independente e toca por cima.
  */
-function readRows(): number {
+/** Linhas da timeline: a escolha guardada no navegador vence; sem escolha, 4 em tela estreita e 2 no PC. */
+function readRows(fallback: number): number {
   try {
     const n = Number(localStorage.getItem('orelha.timeline.rows'));
-    return n >= 1 && n <= 4 ? n : 1;
+    return n >= 1 && n <= 4 ? n : fallback;
   } catch {
-    return 1;
+    return fallback;
   }
 }
 
@@ -100,8 +102,9 @@ export class Timeline {
   readonly lanesBottom = this.lyricTop + this.lyricLane;
   /** Altura de uma linha da timeline: as quatro lanes + eixo de tempo. */
   readonly rowHeight = this.lanesBottom + 30;
-  /** Em quantas linhas a timeline quebra (preferência do visitante, guardada no navegador). */
-  readonly rows = signal(readRows());
+  readonly device = inject(Device);
+  /** Em quantas linhas a timeline quebra (preferência do visitante, guardada no navegador; 4 no celular, 2 no PC). */
+  readonly rows = signal(readRows(this.device.narrow() ? 4 : 2));
 
   readonly stemLabels: Record<string, string> = { drums: 'bateria', bass: 'baixo', other: 'guitarras/teclados', vocals: 'voz' };
 

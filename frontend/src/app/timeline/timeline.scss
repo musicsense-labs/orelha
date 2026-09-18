@@ -231,8 +231,33 @@
   .detail .vocal-cell { border-right: none; }
   .detail .lyric-cell { grid-column: 1 / -1; border-top: 1px solid var(--line); margin-top: 0.3rem; padding-top: 0.5rem; }
 }
+/* Celular (tela estreita): painel em pilha de pares, mixer em coluna com sliders na largura toda. */
 @media (max-width: 700px) {
-  .detail { grid-template-columns: 1fr 1fr 1fr; }
+  .detail { grid-template-columns: 1fr 1fr; }
   .detail .chord-cell { grid-column: 1 / -1; border-right: none; }
-  .detail .cell:nth-child(4) { border-right: none; }
+  .detail .cell:nth-child(3), .detail .cell:nth-child(5) { border-right: none; }
+  .detail .cell { padding: 0.3rem 0.6rem; }
+  .detail .lyric-cell { margin-top: 0.2rem; padding-top: 0.4rem; }
+
+  .track-header { flex-direction: column; align-items: stretch; }
+  .player { align-items: stretch; }
+  .transport { min-width: 0; }
+  .mixer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.35rem;
+    .channel { display: grid; grid-template-columns: 8rem minmax(0, 1fr) 4.5rem; gap: 0.5rem; align-items: center; }
+    .channel button { text-align: left; }
+    .channel input[type="range"] { width: 100%; }
+    .channel input[type="range"].pan { width: 100%; }
+    .channel.metronome { margin-left: 0; padding-left: 0; border-left: none; border-top: 1px solid var(--line); padding-top: 0.4rem; }
+    .small-note { grid-column: 1 / -1; }
+  }
+}
+/* Dedo em vez de mouse: alvos maiores, independentemente da largura. */
+@media (pointer: coarse) {
+  .mixer button { padding: 0.45rem 0.7rem; font-size: 0.9rem; }
+  .mixer .channel input[type="range"] { height: 2rem; }
+  .transport .play { width: 2.8rem; height: 2.8rem; }
+  .transport .seek { height: 2rem; }
 }
