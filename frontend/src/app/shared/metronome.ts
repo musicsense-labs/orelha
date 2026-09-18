@@ -60,8 +60,12 @@ export class Metronome {
     }
   }
 
-  /** Chamado a cada frame enquanto toca: agenda os beats dentro da janela de lookahead. */
-  schedule(masterTime: number): void {
+  /**
+   * Chamado a cada frame enquanto toca: agenda os beats dentro da janela de lookahead. `rate` é a velocidade
+   * de reprodução do mestre: o tempo da faixa corre rate× o relógio do AudioContext, então a distância até o
+   * beat é dividida por ele e a janela, em segundos de faixa, cresce na mesma proporção.
+   */
+  schedule(masterTime: number, rate = 1): void {
     const ctx = this.context();
     if (ctx.state === 'suspended') {
       void ctx.resume();
@@ -70,10 +74,10 @@ export class Metronome {
       this.reset(masterTime);   // voltou no tempo sem passar pelo seek
     }
     this.lastMasterTime = masterTime;
-    const horizon = masterTime + LOOKAHEAD_S;
+    const horizon = masterTime + LOOKAHEAD_S * rate;
     while (this.nextIndex < this.beats.length && this.beats[this.nextIndex].timeS <= horizon) {
       const beat = this.beats[this.nextIndex++];
-      const when = ctx.currentTime + Math.max(0, beat.timeS - masterTime);
+      const when = ctx.currentTime + Math.max(0, beat.timeS - masterTime) / rate;
       this.click(when, beat.downbeat);
     }
   }

@@ -26,6 +26,7 @@
   }
   .time { font-variant-numeric: tabular-nums; font-size: 0.85rem; color: var(--muted); min-width: 2.6rem; text-align: center; }
   .seek { flex: 1; accent-color: var(--accent); }
+  .rate { font-family: var(--font-mono); font-size: 0.75rem; padding: 0.15rem 0.2rem; border: 1px solid var(--line); border-radius: 4px; color: var(--muted); }
 }
 
 .player {

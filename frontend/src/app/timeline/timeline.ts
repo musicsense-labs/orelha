@@ -92,6 +92,9 @@ export class Timeline {
   readonly tabMode = signal(readFlag('orelha.timeline.bassTab'));
   /** Ciclo das quintas na célula ACORDE (desligado por padrão; preferência guardada no navegador). */
   readonly showCircle = signal(readFlag('orelha.timeline.circle'));
+  /** Velocidade de reprodução (1 = normal), mestre e stems juntos, sem mudar o tom; volta a 1 a cada visita. */
+  readonly rate = signal(1);
+  readonly rates = [0.5, 0.6, 0.7, 0.75, 0.8, 0.9, 1, 1.1, 1.25];
   readonly leakCount = computed(() => this.vocalNoteList().filter((n) => n.kind === 'LIKELY_LEAK').length);
   readonly vocalShown = computed(() =>
     this.showLeak() ? this.vocalNoteList() : this.vocalNoteList().filter((n) => n.kind !== 'LIKELY_LEAK'));
@@ -605,6 +608,7 @@ export class Timeline {
   onPlay(): void {
     this.playing.set(true);
     this.panner.resume();
+    this.applyRate();
     for (const ref of this.stemAudios()) {
       void ref.nativeElement.play().catch(() => undefined);
     }
@@ -616,7 +620,7 @@ export class Timeline {
         this.currentTime.set(el.currentTime);
         this.keepStemsInSync(el.currentTime);
         if (this.metronomeOn()) {
-          this.metronome.schedule(el.currentTime);
+          this.metronome.schedule(el.currentTime, this.rate());
         }
       }
       if (this.playing()) {
@@ -647,6 +651,26 @@ export class Timeline {
         ref.nativeElement.currentTime = el.currentTime;
       }
       this.metronome.reset(el.currentTime);
+    }
+  }
+
+  setRate(rate: number): void {
+    this.rate.set(rate);
+    this.applyRate();
+    const el = this.audio()?.nativeElement;
+    this.metronome.reset(el ? el.currentTime : 0);   // os cliques já agendados foram calculados na velocidade antiga
+  }
+
+  /** playbackRate no mestre e em cada stem (os stems podem chegar depois: onPlay reaplica). */
+  private applyRate(): void {
+    const rate = this.rate();
+    const master = this.audio()?.nativeElement;
+    const all = [master, ...this.stemAudios().map((r) => r.nativeElement)].filter((el): el is HTMLAudioElement => !!el);
+    for (const el of all) {
+      el.preservesPitch = true;
+      if (el.playbackRate !== rate) {
+        el.playbackRate = rate;
+      }
     }
   }
 

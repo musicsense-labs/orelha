@@ -23,6 +23,12 @@
         <input type="range" class="seek" min="0" [max]="duration()" step="0.1" [value]="currentTime()"
                (input)="seekTo(+$any($event.target).value)" title="posição">
         <span class="time">{{ formatTime(duration()) }}</span>
+        <select class="rate" [value]="rate()" (change)="setRate(+$any($event.target).value)"
+                title="velocidade de reprodução: mix, stems e metrônomo juntos, sem mudar o tom">
+          @for (r of rates; track r) {
+            <option [value]="r" [selected]="rate() === r">{{ r === 1 ? '1×' : (r + '×').replace('.', ',') }}</option>
+          }
+        </select>
       </div>
       <div class="mixer">
         <div class="channel">
