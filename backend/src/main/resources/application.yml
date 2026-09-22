@@ -32,7 +32,9 @@ orelha:
     container-root: /data       # como o extrator nomeia seus volumes
     host-root: ../data          # onde o compose faz o bind mount (./data na raiz do repo)
   library:
-    dir: ../data/audio          # uploads pela UI: <dir>/<albumId>/<título>.<ext>
+    # Raiz da biblioteca de áudio; track.audio_path é relativo a ela (V6), então mudar de pasta ou de disco
+    # é só apontar aqui. Na máquina do dono vem do .env (D:\orelha desde 2026-09-22).
+    dir: ${ORELHA_LIBRARY_DIR:../data/audio}          # uploads pela UI: <dir>/<albumId>/<título>.<ext>
   staging:
     dir: ../data/staging        # uploads de pasta entre a pré-visualização e a confirmação
   worker:

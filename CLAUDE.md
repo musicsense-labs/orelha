@@ -253,7 +253,8 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
   (`store`/`resolve`) e é o único lugar que conhece a raiz; `TrackResponse.audioPath` devolve o caminho
   resolvido. Decidido em 2026-09-15 depois que mover a pasta riff-lab → orelha quebrou o player em 235
   faixas (V6 converteu o que já existia). Mover a pasta ou trocar de máquina agora é só apontar
-  `orelha.library.dir`.
+  `orelha.library.dir` (`ORELHA_LIBRARY_DIR` no `.env`; a biblioteca do dono saiu de `data/audio` para outro
+  disco em 2026-09-22 sem tocar no banco — copiar, apontar, conferir, só então apagar a origem).
 - **Upload pela UI**: `POST /api/tracks/upload` (multipart `file`, `albumId`, `title?`, `trackNo?`)
   grava em `orelha.library.dir/<albumId>/<título>.<ext>` (sem sobrescrever) e enfileira;
   `TrackResponse` traz o último run (`latestRunId/Status/Error`) numa query só para a lista.
