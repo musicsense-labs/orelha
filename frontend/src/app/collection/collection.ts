@@ -48,7 +48,7 @@ export class Collection {
       artist,
       albums: albums
         .filter((a) => a.artistId === artist.id)
-        .sort((a, b) => (a.year ?? 0) - (b.year ?? 0))
+        .sort((a, b) => (a.effectiveYear ?? 0) - (b.effectiveYear ?? 0))
         .map((album) => ({
           album,
           tracks: tracks

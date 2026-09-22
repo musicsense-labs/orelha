@@ -37,14 +37,14 @@ class CollectionQueries {
             """;
 
     private static final String TIMBRE_BY_ALBUM = """
-            SELECT al.id, al.title, al.year, ts.stem_name, COUNT(*),
+            SELECT al.id, al.title, COALESCE(al.first_released, al.year), ts.stem_name, COUNT(*),
                    AVG(ts.centroid_mean), AVG(ts.centroid_std), AVG(ts.flatness_mean), AVG(ts.rolloff_p95), AVG(ts.rms_mean)
             FROM track t
             JOIN album al ON al.id = t.album_id
             JOIN timbre_summary ts ON ts.analysis_run_id = t.canonical_run_id
             WHERE t.id IN (:trackIds)
-            GROUP BY al.id, al.title, al.year, ts.stem_name
-            ORDER BY al.year NULLS LAST, al.title, ts.stem_name
+            GROUP BY al.id, al.title, COALESCE(al.first_released, al.year), ts.stem_name
+            ORDER BY COALESCE(al.first_released, al.year) NULLS LAST, al.title, ts.stem_name
             """;
 
     private final EntityManager em;

@@ -49,7 +49,7 @@
         <select (change)="selectAlbum($any($event.target).value)" [disabled]="artistId() === null">
           <option value="" [selected]="albumId() === null">—</option>
           @for (al of albumsOfSelectedArtist(); track al.id) {
-            <option [value]="al.id" [selected]="albumId() === al.id">{{ al.title }} {{ al.year ?? '' }}</option>
+            <option [value]="al.id" [selected]="albumId() === al.id">{{ al.title }} {{ al.effectiveYear ?? '' }}</option>
           }
           <option value="new" [selected]="albumId() === 'new'">novo álbum…</option>
         </select>
@@ -100,7 +100,7 @@
     }
     @for (a of node.albums; track a.album.id) {
       <h3>
-        {{ a.album.title }} <small class="muted">{{ a.album.year ?? '' }}</small>
+        {{ a.album.title }} <small class="muted" [title]="a.album.firstReleased ? 'primeira edição (MusicBrainz); no disco: ' + (a.album.year ?? '—') : 'ano das tags'">{{ a.album.effectiveYear ?? '' }}</small>
         <a class="small" [routerLink]="['/albums', a.album.id]">perfil do álbum</a>
       </h3>
       @if (a.tracks.length === 0) {

@@ -7,11 +7,38 @@ export interface Artist {
   formedYear: number | null;
 }
 
+export type MetadataSource = 'TAGS' | 'MUSICBRAINZ' | 'MANUAL';
+
 export interface Album {
   id: number;
   artistId: number;
   title: string;
+  /** O que as tags disseram: a edição que está no disco. */
   year: number | null;
+  /** Primeira edição do release-group (MusicBrainz). */
+  firstReleased: number | null;
+  /** O que vale como era: firstReleased, ou year enquanto ninguém identificou. */
+  effectiveYear: number | null;
+  mbid: string | null;
+  metadataSource: MetadataSource;
+}
+
+/** Um release-group candidato, já pontuado pelo backend. */
+export interface MusicBrainzCandidate {
+  mbid: string;
+  title: string;
+  artist: string;
+  primaryType: string | null;
+  firstReleased: number | null;
+  disambiguation: string | null;
+  score: number;
+  confident: boolean;
+}
+
+export interface MusicBrainzCandidates {
+  searchedTitle: string;
+  configured: boolean;
+  candidates: MusicBrainzCandidate[];
 }
 
 export interface Track {

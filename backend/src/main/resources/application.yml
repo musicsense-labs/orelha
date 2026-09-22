@@ -43,6 +43,11 @@ orelha:
   hooktheory:
     url: https://api.hooktheory.com/v1/
     activkey: ${ORELHA_HOOKTHEORY_ACTIVKEY:}   # token da conta do dono (POST /v1/users/auth); vazio = desligado
+  musicbrainz:
+    url: https://musicbrainz.org/ws/2
+    # A API é aberta, mas exige contato no User-Agent e 1 requisição por segundo. Vazio = desligado.
+    contact: ${ORELHA_MUSICBRAINZ_CONTACT:}
+    app-version: 0.7.0
   harmony:
     # 0 = desligado. Medido em 2026-09-14: o chroma não separa power chord distorcido de tríade limpa
     # (intermodulação f + 1,5f = terça maior). Ver PowerChordDetector.

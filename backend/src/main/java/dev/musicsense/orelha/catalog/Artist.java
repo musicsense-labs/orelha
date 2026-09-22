@@ -23,6 +23,9 @@ public class Artist {
     @Column(name = "formed_year")
     private Integer formedYear;
 
+    /** MusicBrainz: o artista; fixa a identidade que o nome sozinho não fixa ("The Beatles" × "Beatles"). */
+    private String mbid;
+
     protected Artist() {
     }
 
@@ -54,6 +57,14 @@ public class Artist {
 
     public Integer getFormedYear() {
         return formedYear;
+    }
+
+    public String getMbid() {
+        return mbid;
+    }
+
+    public void setMbid(String mbid) {
+        this.mbid = mbid;
     }
 
     public void setFormedYear(Integer formedYear) {

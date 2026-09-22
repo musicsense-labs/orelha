@@ -5,6 +5,10 @@
 } @else if (profile.value(); as p) {
   <h1>{{ p.name }} <small class="muted">{{ p.scope === 'artist' ? 'artista' : 'álbum' }}</small></h1>
 
+  @if (scope() === 'albums') {
+    <app-musicbrainz [albumId]="id()" />
+  }
+
   @if (p.segments === 0) {
     <p class="muted">Nenhuma faixa analisada neste escopo. O perfil aparece quando houver runs concluídos.</p>
   } @else {

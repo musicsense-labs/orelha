@@ -32,7 +32,7 @@ public class AlbumController {
     @GetMapping
     @Transactional(readOnly = true)
     List<AlbumResponse> list(@RequestParam(required = false) Long artistId) {
-        List<Album> result = artistId == null ? albums.findAll() : albums.findByArtistIdOrderByYearAscTitleAsc(artistId);
+        List<Album> result = artistId == null ? albums.findAll() : albums.findByArtistOrderedByEra(artistId);
         return result.stream().map(AlbumResponse::of).toList();
     }
 

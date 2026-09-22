@@ -4,12 +4,13 @@ import { RouterLink } from '@angular/router';
 import { HarmonicProfile, PedalPassage } from '../api/models';
 import { DegreeBars } from '../shared/degree-bars';
 import { Heatmap } from '../shared/heatmap';
+import { MusicBrainz } from './musicbrainz';
 import { KEY_RELATION_ORDER, formatTime, noteName, percent, relationHint, relationLabel } from '../shared/music';
 
 /** Perfil harmônico de um artista ou álbum: eixo A, graus, matriz de transição, relações, timbre. */
 @Component({
   selector: 'app-profile',
-  imports: [RouterLink, Heatmap, DegreeBars],
+  imports: [RouterLink, Heatmap, DegreeBars, MusicBrainz],
   templateUrl: './profile.html',
 })
 export class Profile {
