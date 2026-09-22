@@ -30,7 +30,7 @@ orelha:
     timeout: 30m          # uma faixa leva minutos em CPU (demucs + BTC + madmom)
   data:
     container-root: /data       # como o extrator nomeia seus volumes
-    host-root: ../data          # onde o compose faz o bind mount (./data na raiz do repo)
+    host-root: ${ORELHA_DATA_HOST_ROOT:../data}   # onde o compose faz o bind mount; o mesmo caminho do ORELHA_DATA_DIR
   library:
     # Raiz da biblioteca de áudio; track.audio_path é relativo a ela (V6), então mudar de pasta ou de disco
     # é só apontar aqui. Na máquina do dono vem do .env (D:\orelha desde 2026-09-22).

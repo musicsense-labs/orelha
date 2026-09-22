@@ -244,8 +244,10 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
   analysis_run SET stems = replace(stems::text, '.wav"', '.ogg"')::jsonb`. Tipos MIME servidos:
   ogg/opus → `audio/ogg`, m4a/aac → `audio/mp4`, flac, wav, mp3. O extrator grava o upload como
   `audio.<ext>` (nome neutro) porque títulos com pontos já derrubaram o ChordMini, e inclui a saída
-  do script na mensagem de erro quando não há `.lab`. O extrator devolve `stems` no JSON; o compose faz bind mount de `./data/{features,stems}` no host e
-  `DataPaths` traduz `/data/...` → `orelha.data.host-root` (default `../data`). O backend serve
+  do script na mensagem de erro quando não há `.lab`. O extrator devolve `stems` no JSON; o compose faz bind mount de `{features,stems}` no host (`ORELHA_DATA_DIR`
+  no `.env`, que o compose lê sozinho; vazio = `./data`) e `DataPaths` traduz `/data/...` → `orelha.data.host-root`
+  (`ORELHA_DATA_HOST_ROOT`, o mesmo caminho; default `../data`). Trocar de disco é copiar, apontar os dois,
+  recriar o extrator (`docker compose up -d extractor`) e conferir uma análise nova antes de apagar a origem. O backend serve
   `GET /api/tracks/{id}/stems` e `/stems/{name}` (Range) a partir do run canônico; runs anteriores
   a 0.3.0 não têm stems (a UI avisa e sugere re-análise). `data/` é ignorado pelo git.
 - **`track.audio_path`**: relativo a `orelha.library.dir` com `/` (`25/Evil Woman.mp3`) para arquivos

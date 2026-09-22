@@ -29,9 +29,10 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      # Bind mounts no host: o backend lê os stems (player multi-stem) e o Parquet daqui.
-      - ./data/features:/data/features
-      - ./data/stems:/data/stems
+      # Bind mounts no host: o backend lê os stems (player multi-stem) e o Parquet daqui. A raiz vem do .env
+      # (ORELHA_DATA_DIR), que o compose carrega sozinho; vazio = ./data, dentro do repositório.
+      - ${ORELHA_DATA_DIR:-./data}/features:/data/features
+      - ${ORELHA_DATA_DIR:-./data}/stems:/data/stems
 
 volumes:
   # Criado fora do compose na migração riff-lab → orelha (2026-09-15); external evita o aviso no `up`.
