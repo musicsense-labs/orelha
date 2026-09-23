@@ -25,6 +25,11 @@ services:
     environment:
       STEM_FORMAT: opus          # opus | aac | flac | wav (stems persistidos para o player)
       WHISPER_MODEL: small       # letra por ASR no stem de voz; o modelo é baixado no build da imagem
+      # Análises simultâneas: um processo uvicorn por worker, cada um com ~3 GB durante a análise e com as
+      # threads do torch divididas entre eles. 1 = comportamento de sempre.
+      EXTRACTOR_WORKERS: ${ORELHA_EXTRACTOR_WORKERS:-1}
+      # Vazio = núcleos lógicos ÷ workers. Explícito quando se quer medir outra divisão.
+      TORCH_THREADS: ${ORELHA_TORCH_THREADS:-}
       # WHISPER_LANGUAGE: en     # vazio = detectar por faixa
     ports:
       - "8000:8000"

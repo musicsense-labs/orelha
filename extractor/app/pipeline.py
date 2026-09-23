@@ -1,5 +1,7 @@
+import contextlib
 import logging
 import os
+import time
 from pathlib import Path
 
 import librosa
@@ -17,6 +19,17 @@ from .timbre import timbre_summaries
 
 log = logging.getLogger(__name__)
 
+
+@contextlib.contextmanager
+def step(name: str, timings: dict):
+    """Cronometra uma etapa: é o que diz onde o tempo vai (o total é minutos e as etapas são desiguais)."""
+    started = time.monotonic()
+    try:
+        yield
+    finally:
+        timings[name] = round(time.monotonic() - started, 1)
+        log.info("%s: %.1fs", name, timings[name])
+
 FEATURES_DIR = Path(os.environ.get("FEATURES_DIR", "/data/features"))
 STEMS_DIR = Path(os.environ.get("STEMS_DIR", "/data/stems"))
 
@@ -26,33 +39,35 @@ def analyze(audio_path: Path, audio_sha256: str, work_dir: Path) -> dict:
     duration_s = float(len(y) / sr)
     lufs = float(pyloudnorm.Meter(sr).integrated_loudness(y))
 
-    log.info("stems")
-    stems = separate_stems(audio_path, work_dir / "stems")          # WAV temporário: entrada das análises
-    log.info("chords")
-    chords = recognize_chords(audio_path, work_dir / "chords")
-    log.info("chroma")
-    spans = [(c["start_s"], c["end_s"]) for c in chords]
-    guitars, guitars_sr = librosa.load(stems["other"], sr=None, mono=True)
-    for chord, chroma, chroma_low in zip(chords, chroma_per_segment(y, sr, spans),
-                                         chroma_low_per_segment(guitars, guitars_sr, spans)):
-        chord["chroma"] = chroma
-        chord["chroma_low"] = chroma_low
-    log.info("beats")
-    beats, bpm, time_signature = track_beats(audio_path)
-    log.info("key")
-    key = estimate_key(audio_path)
-    log.info("bass")
-    bass_notes = transcribe_bass(stems["bass"])
-    log.info("vocals")
-    vocal_notes = transcribe_vocals(stems["vocals"])
-    log.info("lyrics")
-    lyrics = transcribe_lyrics(stems["vocals"])
-    log.info("stems: encoding as %s", STEM_FORMAT)
-    persisted = persist_stems(stems, STEMS_DIR / audio_sha256)      # o que a UI toca
-    log.info("timbre")
-    FEATURES_DIR.mkdir(parents=True, exist_ok=True)
-    features_path = FEATURES_DIR / f"{audio_sha256}.parquet"
-    timbre = timbre_summaries(stems, "htdemucs", features_path)
+    timings: dict[str, float] = {}
+    with step("stems", timings):
+        stems = separate_stems(audio_path, work_dir / "stems")      # WAV temporário: entrada das análises
+    with step("chords", timings):
+        chords = recognize_chords(audio_path, work_dir / "chords")
+    with step("chroma", timings):
+        spans = [(c["start_s"], c["end_s"]) for c in chords]
+        guitars, guitars_sr = librosa.load(stems["other"], sr=None, mono=True)
+        for chord, chroma, chroma_low in zip(chords, chroma_per_segment(y, sr, spans),
+                                             chroma_low_per_segment(guitars, guitars_sr, spans)):
+            chord["chroma"] = chroma
+            chord["chroma_low"] = chroma_low
+    with step("beats", timings):
+        beats, bpm, time_signature = track_beats(audio_path)
+    with step("key", timings):
+        key = estimate_key(audio_path)
+    with step("bass", timings):
+        bass_notes = transcribe_bass(stems["bass"])
+    with step("vocals", timings):
+        vocal_notes = transcribe_vocals(stems["vocals"])
+    with step("lyrics", timings):
+        lyrics = transcribe_lyrics(stems["vocals"])
+    with step(f"encode-{STEM_FORMAT}", timings):
+        persisted = persist_stems(stems, STEMS_DIR / audio_sha256)  # o que a UI toca
+    with step("timbre", timings):
+        FEATURES_DIR.mkdir(parents=True, exist_ok=True)
+        features_path = FEATURES_DIR / f"{audio_sha256}.parquet"
+        timbre = timbre_summaries(stems, "htdemucs", features_path)
+    log.info("tempos por etapa: %s", timings)
 
     return {
         "extractor": {"name": "orelha-extractor", "version": VERSION,

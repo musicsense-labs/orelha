@@ -233,6 +233,16 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
 - `POST /analyze` é síncrono (minutos); a assincronia é a fila do Spring (`analysis_run` +
   `AnalysisWorker`). Cliente Java com `RestClient` (bloqueante por desenho; WebClient traria
   reactor sem ganho).
+- **Onde o tempo vai, e por que não paralelizamos (medido em 2026-09-23)**: o `pipeline` loga a duração de cada
+  etapa. Faixa de 2:33 em 115 s: **letra/Whisper 49 s (43 %)**, **stems/demucs 36 s (31 %)**, beats/madmom 12 s,
+  encode opus 4 s, o resto 13 s. A CPU fica em ~30 % de média (pico de 14 das 28 threads lógicas), o que sugeria
+  folga — mas o A/B com as mesmas 4 faixas e aquecimento deu **255 s em série × 361 s com 3 processos**: paralelizar
+  **piorou 1,4×**. Dar mais threads ao torch é pior ainda (28 threads: 204 s por faixa contra 115 s com o padrão de
+  14) — o i7-14700 tem 8 núcleos rápidos e 12 lentos, e espalhar trabalho nos E-cores custa caro. As medições variam
+  bastante entre rodadas (provável limitação térmica depois de muitos lotes), então nenhum ganho de 10–20 % seria
+  confiável aqui. `EXTRACTOR_WORKERS` (compose) e `orelha.worker.concurrency` (backend) existem e são configuráveis,
+  **ambos 1 por padrão**; as alavancas reais para ganhar tempo são o Whisper (modelo menor, `beam_size`, ou não
+  transcrever quando a letra não interessa) e uma GPU, que acelera demucs e Whisper juntos.
 - Só aqui se conhece o JSON do extrator: `extraction/orelhaextractor/*`. O domínio vê
   `ExtractionResult`; rótulos Harte são traduzidos por `HarteLabel`.
 - **Power chord não é inferível pelo chroma** (medido em 2026-09-14, três faixas reais): sob

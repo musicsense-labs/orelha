@@ -10,11 +10,17 @@ import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * Poller da fila. Claim, extração e persistência são passos separados de propósito: a chamada ao
@@ -38,6 +44,9 @@ public class AnalysisWorker {
     private final Duration heartbeat;
     private final Duration staleAfter;
     private final int maxAttempts;
+    private final int concurrency;
+    /** Uma thread por análise simultânea; existe mesmo com concurrency=1 e não custa nada. */
+    private final ExecutorService analyses;
     private final ScheduledExecutorService heartbeats =
             Executors.newSingleThreadScheduledExecutor(r -> Thread.ofPlatform().name("orelha-heartbeat").daemon().unstarted(r));
 
@@ -45,7 +54,8 @@ public class AnalysisWorker {
                    @Value("${orelha.worker.enabled:true}") boolean enabled,
                    @Value("${orelha.worker.heartbeat:30s}") Duration heartbeat,
                    @Value("${orelha.worker.stale-after:2m}") Duration staleAfter,
-                   @Value("${orelha.worker.max-attempts:3}") int maxAttempts) {
+                   @Value("${orelha.worker.max-attempts:3}") int maxAttempts,
+                   @Value("${orelha.worker.concurrency:1}") int concurrency) {
         this.queue = queue;
         this.pipeline = pipeline;
         this.extractor = extractor;
@@ -53,6 +63,9 @@ public class AnalysisWorker {
         this.heartbeat = heartbeat;
         this.staleAfter = staleAfter;
         this.maxAttempts = maxAttempts;
+        this.concurrency = Math.max(1, concurrency);
+        this.analyses = Executors.newFixedThreadPool(this.concurrency,
+                r -> Thread.ofPlatform().name("orelha-analysis", 0).daemon().unstarted(r));
     }
 
     @Scheduled(fixedDelayString = "${orelha.worker.poll-ms:5000}")
@@ -61,6 +74,29 @@ public class AnalysisWorker {
             return;
         }
         reclaimAbandoned();
+        if (concurrency <= 1) {
+            drain();
+            return;
+        }
+        // Vários drenos ao mesmo tempo: claimNext usa FOR UPDATE SKIP LOCKED, então cada um pega um run
+        // diferente. O ciclo só termina quando todos pararem, e aí o fixedDelay reprograma o próximo.
+        List<Future<?>> running = IntStream.range(0, concurrency)
+                .mapToObj(i -> analyses.submit(this::drain))
+                .collect(Collectors.toList());
+        for (Future<?> f : running) {
+            try {
+                f.get();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            } catch (ExecutionException e) {
+                log.error("um dreno da fila morreu", e.getCause());
+            }
+        }
+    }
+
+    /** Puxa runs enquanto houver. */
+    private void drain() {
         while (pollOnce().isPresent()) {
             // drena a fila antes de dormir de novo
         }
