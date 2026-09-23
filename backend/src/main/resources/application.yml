@@ -40,6 +40,11 @@ orelha:
   worker:
     enabled: true
     poll-ms: 5000
+    # Enquanto extrai (minutos), o worker bate o ponto no run; quem parou de bater há mais que stale-after
+    # foi abandonado (backend derrubado no meio) e volta para a fila, até max-attempts vezes.
+    heartbeat: 30s
+    stale-after: 2m
+    max-attempts: 3
   admin:
     emails: dfcsantos@gmail.com   # quem vê a aba administrador (auditoria); acesso local é sempre admin
   hooktheory:

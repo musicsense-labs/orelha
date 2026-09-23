@@ -9,11 +9,22 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Optional;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Poller da fila. Claim, extração e persistência são passos separados de propósito: a chamada ao
  * extrator leva minutos e não pode segurar uma transação de banco.
+ *
+ * <p>Enquanto processa, o worker bate o ponto no run ({@code locked_at}) a cada
+ * {@code orelha.worker.heartbeat}; um run RUNNING cujo ponto parou há mais de
+ * {@code orelha.worker.stale-after} foi abandonado (o backend caiu no meio da extração — acontecia a cada
+ * reinício da tarefa agendada) e volta para a fila no ciclo seguinte. O batimento é o que permite reclamar
+ * em minutos sem risco de roubar o run de outro worker vivo.
  */
 @Component
 public class AnalysisWorker {
@@ -24,21 +35,43 @@ public class AnalysisWorker {
     private final AnalysisPipeline pipeline;
     private final AudioExtractor extractor;
     private final boolean enabled;
+    private final Duration heartbeat;
+    private final Duration staleAfter;
+    private final int maxAttempts;
+    private final ScheduledExecutorService heartbeats =
+            Executors.newSingleThreadScheduledExecutor(r -> Thread.ofPlatform().name("orelha-heartbeat").daemon().unstarted(r));
 
     AnalysisWorker(AnalysisQueue queue, AnalysisPipeline pipeline, AudioExtractor extractor,
-                   @Value("${orelha.worker.enabled:true}") boolean enabled) {
+                   @Value("${orelha.worker.enabled:true}") boolean enabled,
+                   @Value("${orelha.worker.heartbeat:30s}") Duration heartbeat,
+                   @Value("${orelha.worker.stale-after:2m}") Duration staleAfter,
+                   @Value("${orelha.worker.max-attempts:3}") int maxAttempts) {
         this.queue = queue;
         this.pipeline = pipeline;
         this.extractor = extractor;
         this.enabled = enabled;
+        this.heartbeat = heartbeat;
+        this.staleAfter = staleAfter;
+        this.maxAttempts = maxAttempts;
     }
 
     @Scheduled(fixedDelayString = "${orelha.worker.poll-ms:5000}")
     void poll() {
-        if (enabled) {
-            while (pollOnce().isPresent()) {
-                // drena a fila antes de dormir de novo
-            }
+        if (!enabled) {
+            return;
+        }
+        reclaimAbandoned();
+        while (pollOnce().isPresent()) {
+            // drena a fila antes de dormir de novo
+        }
+    }
+
+    /** Runs que ficaram órfãos de um worker morto; normalmente não há nenhum e a consulta é barata. */
+    void reclaimAbandoned() {
+        try {
+            queue.reclaimStale(staleAfter, maxAttempts);
+        } catch (Exception e) {
+            log.warn("não deu para reclamar runs abandonados: {}", e.getMessage());
         }
     }
 
@@ -50,6 +83,7 @@ public class AnalysisWorker {
     }
 
     private void process(long runId) {
+        ScheduledFuture<?> ticking = startHeartbeat(runId);
         try {
             AnalysisPipeline.Input input = pipeline.load(runId);
             log.info("run {}: extracting {}", runId, input.audioPath());
@@ -60,6 +94,19 @@ public class AnalysisWorker {
         } catch (Exception e) {
             log.error("run {}: failed", runId, e);
             queue.fail(runId, e);
+        } finally {
+            ticking.cancel(false);
         }
+    }
+
+    private ScheduledFuture<?> startHeartbeat(long runId) {
+        long millis = Math.max(1_000, heartbeat.toMillis());
+        return heartbeats.scheduleWithFixedDelay(() -> {
+            try {
+                queue.touch(runId);
+            } catch (Exception e) {
+                log.debug("run {}: batimento falhou ({})", runId, e.getMessage());
+            }
+        }, millis, millis, TimeUnit.MILLISECONDS);
     }
 }

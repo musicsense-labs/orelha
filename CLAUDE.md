@@ -174,7 +174,13 @@ Revisado em relação ao esboço original; ver `backend/src/main/resources/db/mi
 - **Beats têm tabela própria** (`beat`), com `bar_no` e `is_downbeat`.
 - **Um run canônico por faixa** (`track.canonical_run_id`) para as queries do acervo.
 - **A fila é `analysis_run`** (`status`, `attempts`, `locked_at`), poller `@Scheduled`
-  com `SELECT … FOR UPDATE SKIP LOCKED`. Sem Kafka, sem Redis.
+  com `SELECT … FOR UPDATE SKIP LOCKED`. Sem Kafka, sem Redis. **Batimento e reclamação (2026-09-23)**: enquanto
+  extrai (minutos), o worker atualiza `locked_at` a cada `orelha.worker.heartbeat` (30 s) numa thread própria;
+  todo ciclo do poller reclama os RUNNING cujo ponto parou há mais de `stale-after` (2 min) — de volta a QUEUED
+  até `max-attempts` (3), depois FAILED com a razão. É o conserto do run que ficava travado para sempre quando
+  o backend caía no meio da extração (aconteceu três vezes entre 18 e 23/09: a faixa não podia ser excluída,
+  respondia 409, e perdia o botão de reprocessar). O batimento é o que permite reclamar em minutos sem roubar
+  o run de outro worker vivo — a fila continua válida para vários processos.
 - **Grau é inteiro** (`degree_interval`, 0–11 semitons acima da tônica); o numeral
   romano é renderização.
 - Séries por frame não vão para o Postgres: `analysis_run.features_path` (Parquet).

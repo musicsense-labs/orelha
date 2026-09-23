@@ -7,7 +7,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -46,6 +48,41 @@ public class AnalysisQueue {
         run.setStatus(RunStatus.DONE);
         run.setLockedAt(null);
         run.setFinishedAt(Instant.now());
+    }
+
+    /**
+     * Devolve à fila (ou dá por perdido) os runs que ficaram em RUNNING sem ninguém trabalhando neles — o
+     * caso do backend reiniciado no meio da extração, que acontecia toda vez que a tarefa agendada subia de
+     * novo: a faixa ficava sem poder ser excluída (409) e sem botão de reprocessar na tela. Abandonado é
+     * quem parou de bater o ponto (locked_at) há mais de {@code staleAfter}; enquanto trabalha, o worker
+     * mantém o batimento. Volta para QUEUED até {@code maxAttempts} tentativas; depois vira FAILED, para
+     * não ficar em laço num áudio que sempre derruba o extrator. Devolve quantos foram reclamados.
+     */
+    @Transactional
+    public int reclaimStale(Duration staleAfter, int maxAttempts) {
+        List<AnalysisRun> stale = runs.lockStaleRunning(Instant.now().minus(staleAfter));
+        for (AnalysisRun run : stale) {
+            if (run.getAttempts() < maxAttempts) {
+                run.setStatus(RunStatus.QUEUED);
+                run.setLockedAt(null);
+                run.setStartedAt(null);
+                run.setError(null);
+                log.warn("run {}: abandonado em execução (tentativa {}); de volta à fila", run.getId(), run.getAttempts());
+            } else {
+                run.setStatus(RunStatus.FAILED);
+                run.setLockedAt(null);
+                run.setFinishedAt(Instant.now());
+                run.setError("Abandonado em execução " + maxAttempts + " vezes (o backend caiu durante a extração?).");
+                log.warn("run {}: abandonado pela {}ª vez; marcado como falho", run.getId(), run.getAttempts());
+            }
+        }
+        return stale.size();
+    }
+
+    /** Batimento do run em execução: enquanto isto acontece, ninguém o considera abandonado. */
+    @Transactional
+    public void touch(long runId) {
+        runs.touch(runId, Instant.now());
     }
 
     /** Registra a falha; um run que sumiu no meio (faixa excluída enquanto o worker rodava) só vira aviso. */
