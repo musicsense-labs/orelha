@@ -1,5 +1,8 @@
 package dev.musicsense.orelha.analysis;
 
+import dev.musicsense.orelha.lyrics.LrcFile;
+import dev.musicsense.orelha.lyrics.LrcLineRepository;
+import dev.musicsense.orelha.lyrics.LyricMerger;
 import jakarta.persistence.EntityManager;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Service;
@@ -17,6 +20,7 @@ import java.util.List;
 @EnableConfigurationProperties(LyricsProperties.class)
 public class LyricsService {
 
+
     public record WordEdit(BigDecimal startS, BigDecimal endS, String text) {
     }
 
@@ -30,9 +34,11 @@ public class LyricsService {
     private final LyricsProperties properties;
     private final VocalNoteClassifier classifier;
     private final EntityManager em;
+    private final LrcLineRepository lrcLines;
 
     LyricsService(LyricSegmentRepository lyrics, VocalNoteRepository vocalNotes, BeatRepository beats,
-                  TrackAnalysisRepository analyses, LyricsProperties properties, EntityManager em) {
+                  TrackAnalysisRepository analyses, LyricsProperties properties, EntityManager em,
+                  LrcLineRepository lrcLines) {
         this.lyrics = lyrics;
         this.vocalNotes = vocalNotes;
         this.beats = beats;
@@ -40,6 +46,7 @@ public class LyricsService {
         this.properties = properties;
         this.classifier = properties.classifier();
         this.em = em;
+        this.lrcLines = lrcLines;
     }
 
     /** Trechos da fonte preferida: MANUAL se o dono corrigiu, senão os do extrator. */
@@ -106,23 +113,62 @@ public class LyricsService {
         List<Beat> grid = beats.findByRunIdOrderByBeatNo(run.getId());
         List<VocalNote> notes = vocalNotes.findByRunIdOrderByStartS(run.getId());
         double tolerance = properties.wordToleranceS();
-        List<LyricsResponse.Segment> segments = found.stream()
-                .map(s -> new LyricsResponse.Segment(s.getStartS(), s.getEndS(), s.getText(), s.getNoSpeechProb(),
-                        barAt(grid, s.getStartS()), s.getWords().stream()
+        LyricSource source = found.isEmpty() ? null : found.get(0).getSource();
+
+        // O ASR diz quando se canta; o .lrc da faixa diz o quê. A correção do dono (MANUAL) vence os dois.
+        List<LyricMerger.Segment> heard = found.stream()
+                .map(s -> new LyricMerger.Segment(s.getStartS().doubleValue(), s.getEndS().doubleValue(), s.getText(),
+                        s.getWords().stream()
+                                .map(w -> new LyricMerger.Word(w.getStartS().doubleValue(), w.getEndS().doubleValue(),
+                                        w.getText(), w.getProbability() == null ? null : w.getProbability().doubleValue()))
+                                .toList()))
+                .toList();
+        LyricMerger.Result merged = source == LyricSource.EXTRACTOR
+                ? LyricMerger.merge(heard, lrcLines(run))
+                : new LyricMerger.Result(heard, 0, 0, 0, 0);
+
+        List<LyricsResponse.Segment> segments = merged.segments().stream()
+                .map(s -> new LyricsResponse.Segment(decimal(s.startS()), decimal(s.endS()), s.text(), noSpeechOf(found, s),
+                        barAt(grid, decimal(s.startS())), s.words().stream()
                         .map(w -> {
-                            LyricAligner.Onset onset = LyricAligner.nearestOnset(w.getStartS(), notes, tolerance);
-                            BigDecimal at = onset == null ? w.getStartS() : onset.startS();
-                            return new LyricsResponse.Word(w.getStartS(), w.getEndS(), w.getText(), w.getProbability(),
+                            BigDecimal start = decimal(w.startS());
+                            LyricAligner.Onset onset = LyricAligner.nearestOnset(start, notes, tolerance);
+                            BigDecimal at = onset == null ? start : onset.startS();
+                            return new LyricsResponse.Word(start, decimal(w.endS()), w.text(),
+                                    w.probability() == null ? null : w.probability().floatValue(),
                                     barAt(grid, at), onset == null ? null : onset.startS(),
                                     onset == null ? null : onset.midi());
                         })
                         .toList()))
                 .toList();
-        LyricSource source = found.isEmpty() ? null : found.get(0).getSource();
+        LyricsResponse.LrcMerge report = merged.changedAnything()
+                ? new LyricsResponse.LrcMerge(merged.corrected(), merged.inserted(), merged.dropped(), merged.kept())
+                : null;
         return analyses.findByRunId(run.getId())
                 .map(a -> new LyricsResponse(run.getId(), source, a.getLyricsLanguage(), a.getLyricsLanguageConfidence(),
-                        segments))
-                .orElseGet(() -> new LyricsResponse(run.getId(), source, null, null, segments));
+                        segments, report))
+                .orElseGet(() -> new LyricsResponse(run.getId(), source, null, null, segments, report));
+    }
+
+    /** Os versos do .lrc da faixa deste run (vazio quando o arquivo não veio ao lado do áudio). */
+    private List<LrcFile.Line> lrcLines(AnalysisRun run) {
+        return lrcLines.findByTrackIdOrderByLineNo(run.getTrack().getId()).stream()
+                .map(l -> new LrcFile.Line(l.getStartS().doubleValue(), l.getText()))
+                .toList();
+    }
+
+    /** O no_speech_prob do trecho do ASR que cobre este verso, quando houver: é evidência do ASR, não do .lrc. */
+    private static Float noSpeechOf(List<LyricSegment> asr, LyricMerger.Segment segment) {
+        for (LyricSegment s : asr) {
+            if (s.getStartS().doubleValue() <= segment.startS() && segment.startS() < s.getEndS().doubleValue()) {
+                return s.getNoSpeechProb();
+            }
+        }
+        return null;
+    }
+
+    private static BigDecimal decimal(double seconds) {
+        return BigDecimal.valueOf(Math.round(seconds * 1000), 3);
     }
 
     /** Compasso do último beat que não vem depois do instante; null antes do primeiro beat ou sem grade. */

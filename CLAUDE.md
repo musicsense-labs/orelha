@@ -324,6 +324,19 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
   120 ms (o ASR marca a consoante, o basic-pitch a vogal); o compasso da palavra e o negrito na UI usam esse
   instante. Endpoints de letra vivem em `LyricsController`; `LyricsService` é o único lugar que decide a
   fonte preferida e classifica as notas de voz.
+- **Letra sincronizada do arquivo (.lrc, 2026-09-23, pacote )**: o app do dono (yt-mp3) baixa um   ao lado de cada faixa — texto humano com carimbo por verso, sem fim de linha e sem tempo por palavra. Ele
+  **não substitui o ASR, corrige o texto dele**: o Whisper sabe *quando* se canta (tempo por palavra e, sobretudo,
+  os trechos sem canto, que separam voz de solo vazado no stem); o .lrc sabe *o quê*.  lê o arquivo,
+   grava os versos em  (V14, por faixa e não por run: a re-análise não perde) quando a
+  faixa entra no acervo, e  varre o que já estava lá.  (Java puro) casa
+  verso a verso — janela do carimbo até o próximo, folga de 1,5 s, Needleman–Wunsch sobre as palavras sem
+  acento/caixa/pontuação: igual mantém tempo do ASR, **diferente fica com o texto do .lrc e o tempo do ASR**,
+  o que o ASR não ouviu entra interpolado entre as vizinhas, e o que o ASR ouviu mas o verso não tem **cai fora**
+  (alucinação sobre instrumental). O tempo medido nunca é alterado: quando a ordem quebra, quem cede é a palavra
+  interpolada. A fusão é **derivada na leitura** (), então MANUAL continua vencendo tudo e dá para
+  comparar com o bruto. Medido em 25 faixas (4778 palavras): 56 % o ASR já acertava, **19 % corrigidas**, 25 % ele
+  nem ouviu, e 1042 alucinações descartadas. Acervo em 2026-09-23: 269 das 326 faixas com .lrc (8536 versos);
+  16 arquivos vazios e 41 sem arquivo caem no ASR puro. Na timeline, o selo  na célula LETRA conta quanto mudou.
 - **Re-análise herda overrides**: ao concluir um run novo, a tonalidade MANUAL e as partes MANUAL do run
   canônico anterior são copiadas para ele (a tonalidade re-anota). O canônico continua sendo escolha do
   dono (`PUT /canonical-run`).

@@ -7,6 +7,7 @@ import dev.musicsense.orelha.catalog.ImportReport.Item;
 import dev.musicsense.orelha.catalog.ImportReport.Preview;
 import dev.musicsense.orelha.catalog.ImportReport.Skipped;
 import dev.musicsense.orelha.extraction.AudioExtractor;
+import dev.musicsense.orelha.lyrics.LrcImporter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -45,11 +46,12 @@ public class ImportService {
     private final AudioExtractor extractor;
     private final TransactionTemplate tx;
     private final AudioLibrary library;
+    private final LrcImporter lrc;
     private final Path stagingDir;
 
     ImportService(ArtistRepository artists, AlbumRepository albums, TrackRepository tracks, AnalysisQueue queue,
                   AudioExtractor extractor, PlatformTransactionManager transactionManager, AudioLibrary library,
-                  @Value("${orelha.staging.dir:../data/staging}") String stagingDir) {
+                  LrcImporter lrc, @Value("${orelha.staging.dir:../data/staging}") String stagingDir) {
         this.artists = artists;
         this.albums = albums;
         this.tracks = tracks;
@@ -57,6 +59,7 @@ public class ImportService {
         this.extractor = extractor;
         this.tx = new TransactionTemplate(transactionManager);
         this.library = library;
+        this.lrc = lrc;
         this.stagingDir = Path.of(stagingDir).toAbsolutePath().normalize();
     }
 
@@ -195,6 +198,7 @@ public class ImportService {
         }
         Path audio = keepInPlace ? content : moveIntoLibrary(content, album, tags.title());
         Track track = tracks.save(new Track(album, tags.title(), trackNo, library.store(audio), sha));
+        lrc.importFor(track);   // .lrc ao lado do arquivo (o app do dono baixa a letra junto)
         queue.enqueue(track, extractor.name());
         return new Registered(track, artist.getName(), album.getTitle());
     }

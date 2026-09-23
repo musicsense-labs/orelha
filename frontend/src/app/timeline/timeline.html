@@ -253,6 +253,10 @@
             <button type="button" class="tiny" (click)="revertLyrics()" [disabled]="savingLyrics()"
                     title="descarta a correção e volta ao que o ASR transcreveu">corrigida · voltar à transcrição</button>
           }
+          @if (lyrics.value()?.lrcMerge; as m) {
+            <span class="tiny lrc"
+                  [title]="'texto do .lrc que veio com a faixa, sobre os tempos do ASR: ' + m.corrected + ' palavra(s) corrigida(s), ' + m.inserted + ' que o ASR não ouviu, ' + m.dropped + ' descartada(s) como alucinação'">.lrc</span>
+          }
         </span>
         @if (currentLine(); as line) {
           <span class="val line">

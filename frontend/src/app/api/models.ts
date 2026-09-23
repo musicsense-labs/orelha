@@ -209,6 +209,15 @@ export interface Lyrics {
   language: string | null;
   languageConfidence: number | null;
   segments: LyricSegment[];
+  /** Presente quando o texto do ASR foi corrigido pelo .lrc que veio com a faixa. */
+  lrcMerge: LrcMerge | null;
+}
+
+export interface LrcMerge {
+  corrected: number;
+  inserted: number;
+  dropped: number;
+  kept: number;
 }
 
 export interface AccessInfo {

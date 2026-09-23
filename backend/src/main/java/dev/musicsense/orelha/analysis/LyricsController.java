@@ -52,7 +52,7 @@ public class LyricsController {
                 ? runs.findById(runId).orElseThrow(() -> new NotFoundException("AnalysisRun", runId))
                 : track.getCanonicalRun();
         if (run == null || !run.getTrack().getId().equals(trackId)) {
-            return new LyricsResponse(null, null, null, null, List.of());
+            return new LyricsResponse(null, null, null, null, List.of(), null);
         }
         return service.response(run);
     }

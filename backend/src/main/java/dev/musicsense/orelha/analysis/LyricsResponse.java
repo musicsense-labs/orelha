@@ -10,7 +10,11 @@ import java.util.List;
  * com ela ({@code noteStartS}, {@code midi}), quando há uma na folga configurada.
  */
 public record LyricsResponse(Long runId, LyricSource source, String language, Float languageConfidence,
-                             List<Segment> segments) {
+                             List<Segment> segments, LrcMerge lrcMerge) {
+
+    /** Quando o texto veio corrigido pelo .lrc da faixa: quantas palavras mudaram, entraram e saíram. */
+    public record LrcMerge(int corrected, int inserted, int dropped, int kept) {
+    }
 
     public record Segment(BigDecimal startS, BigDecimal endS, String text, Float noSpeechProb, Integer barNo,
                           List<Word> words) {

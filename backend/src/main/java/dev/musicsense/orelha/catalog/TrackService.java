@@ -7,6 +7,7 @@ import dev.musicsense.orelha.analysis.RunStatus;
 import dev.musicsense.orelha.common.NotFoundException;
 import dev.musicsense.orelha.extraction.AudioExtractor;
 import dev.musicsense.orelha.extraction.DataPaths;
+import dev.musicsense.orelha.lyrics.LrcImporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -41,9 +42,10 @@ public class TrackService {
     private final AudioLibrary library;
     private final AnalysisRunRepository runs;
     private final DataPaths dataPaths;
+    private final LrcImporter lrc;
 
     TrackService(TrackRepository tracks, AlbumRepository albums, AnalysisQueue queue, AudioExtractor extractor,
-                 AudioLibrary library, AnalysisRunRepository runs, DataPaths dataPaths) {
+                 AudioLibrary library, AnalysisRunRepository runs, DataPaths dataPaths, LrcImporter lrc) {
         this.tracks = tracks;
         this.albums = albums;
         this.queue = queue;
@@ -51,6 +53,7 @@ public class TrackService {
         this.library = library;
         this.runs = runs;
         this.dataPaths = dataPaths;
+        this.lrc = lrc;
     }
 
     /**
@@ -138,6 +141,7 @@ public class TrackService {
 
     private Track register(Album album, String title, Integer trackNo, Path audio) {
         Track track = tracks.save(new Track(album, title, trackNo, library.store(audio), sha256(audio)));
+        lrc.importFor(track);   // letra sincronizada que veio ao lado do arquivo, quando existe
         queue.enqueue(track, extractor.name());
         return track;
     }

@@ -221,6 +221,8 @@
     text-decoration: underline;
   }
   .lyric-cell .error { color: var(--accent-hover); }
+  /* selo discreto: o texto veio do .lrc da faixa, sobre os tempos do ASR */
+  .lyric-cell .tiny.lrc { margin-left: 0.4rem; text-decoration: none; border: 1px solid var(--line); border-radius: 3px; padding: 0 0.25rem; color: var(--muted); cursor: help; }
   .bass-cell .val { color: var(--bass-strong); }
   /* nota em execução em negrito; depois que termina fica leve até a próxima chegar (não pisca) */
   .val.note { font-weight: 700; transition: opacity 0.25s, font-weight 0.25s; }

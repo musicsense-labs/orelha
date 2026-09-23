@@ -1,6 +1,7 @@
 package dev.musicsense.orelha.analysis;
 
 import dev.musicsense.orelha.common.AdminProperties;
+import dev.musicsense.orelha.lyrics.LrcImporter;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.http.HttpStatus;
@@ -22,10 +23,24 @@ public class MaintenanceController {
 
     private final OrphanSweeper sweeper;
     private final AdminProperties admin;
+    private final LrcImporter lrc;
 
-    MaintenanceController(OrphanSweeper sweeper, AdminProperties admin) {
+    MaintenanceController(OrphanSweeper sweeper, AdminProperties admin, LrcImporter lrc) {
         this.sweeper = sweeper;
         this.admin = admin;
+        this.lrc = lrc;
+    }
+
+    /**
+     * Procura o .lrc ao lado do áudio de cada faixa e grava os versos. Faixas novas já fazem isso ao entrar;
+     * isto é para o acervo que veio antes (ou para quando o arquivo aparece depois).
+     */
+    @PostMapping("/lrc-scan")
+    LrcImporter.Report lrcScan(HttpServletRequest request, @RequestParam(defaultValue = "true") boolean onlyMissing) {
+        if (!admin.isAdmin(request)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Só o administrador varre o acervo.");
+        }
+        return lrc.scan(onlyMissing);
     }
 
     @PostMapping("/orphans")
