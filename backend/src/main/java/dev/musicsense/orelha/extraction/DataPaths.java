@@ -21,6 +21,11 @@ public class DataPaths {
         this.hostRoot = Path.of(hostRoot).toAbsolutePath().normalize();
     }
 
+    /** Onde os diretórios do extrator (stems, features) aparecem no host. */
+    public Path hostRoot() {
+        return hostRoot;
+    }
+
     /** Caminho no host, ou null se o caminho não está sob a raiz do container. */
     public Path toHost(String containerPath) {
         if (containerPath == null || !containerPath.startsWith(containerRoot + "/")) {

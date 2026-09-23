@@ -180,7 +180,13 @@ Revisado em relação ao esboço original; ver `backend/src/main/resources/db/mi
   até `max-attempts` (3), depois FAILED com a razão. É o conserto do run que ficava travado para sempre quando
   o backend caía no meio da extração (aconteceu três vezes entre 18 e 23/09: a faixa não podia ser excluída,
   respondia 409, e perdia o botão de reprocessar). O batimento é o que permite reclamar em minutos sem roubar
-  o run de outro worker vivo — a fila continua válida para vários processos.
+  o run de outro worker vivo — a fila continua válida para vários processos. **Faxina de órfãos** (2026-09-23,
+  `OrphanSweeper`): a cada `orelha.data.orphan-sweep-interval` (6 h) apaga pasta de stems ou Parquet cujo SHA
+  não é de faixa nenhuma — sobra que o extrator deixa quando grava antes do run ser persistido e o run acaba
+  abandonado. Três travas, porque apaga sozinho: acervo vazio aborta (banco fora do ar não vira faxina geral),
+  só entra o que está parado há mais de `orphan-min-age` (1 h, nunca disputa com análise em andamento) e nada
+  fora de `stems`/`features` é olhado (um .txt na pasta fica). `POST /api/admin/orphans` (só administrador)
+  mostra o que há (`dryRun=true`, padrão) ou limpa na hora.
 - **Grau é inteiro** (`degree_interval`, 0–11 semitons acima da tônica); o numeral
   romano é renderização.
 - Séries por frame não vão para o Postgres: `analysis_run.features_path` (Parquet).

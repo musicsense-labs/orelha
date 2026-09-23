@@ -31,6 +31,13 @@ orelha:
   data:
     container-root: /data       # como o extrator nomeia seus volumes
     host-root: ${ORELHA_DATA_HOST_ROOT:../data}   # onde o compose faz o bind mount; o mesmo caminho do ORELHA_DATA_DIR
+    # Faxina periódica: pasta de stems ou Parquet que não pertence a faixa nenhuma (o extrator grava antes do
+    # run ser persistido; run abandonado ou falho deixa sobra). Nunca mexe no que foi tocado há menos de
+    # orphan-min-age, e não faz nada se o acervo estiver vazio.
+    orphan-sweep-enabled: true
+    orphan-min-age: 1h
+    orphan-sweep-initial-delay: PT5M
+    orphan-sweep-interval: PT6H
   library:
     # Raiz da biblioteca de áudio; track.audio_path é relativo a ela (V6), então mudar de pasta ou de disco
     # é só apontar aqui. Na máquina do dono vem do .env (D:\orelha desde 2026-09-22).
