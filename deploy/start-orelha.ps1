@@ -33,7 +33,23 @@ if ($up) {
     Log "docker não respondeu em 5 min; seguindo só com o backend (a fila e o Postgres podem falhar)"
 }
 
-# 2. Backend (bloqueia enquanto roda; run.ps1 carrega o .env e usa o JDK 21).
+# 2. Um backend antigo ainda na porta faz o novo morrer com "Port already in use" — e como a tarefa
+# bloqueia no run.ps1, Stop-ScheduledTask não alcança o java filho. Reiniciar é, então, parar quem está
+# escutando. Só processos java: a 8080 desta máquina é de outra coisa e nunca é tocada (o padrão é 8081).
+$listening = @(Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue |
+    Select-Object -ExpandProperty OwningProcess -Unique)
+foreach ($processId in $listening) {
+    $proc = Get-Process -Id $processId -ErrorAction SilentlyContinue
+    if ($proc -and $proc.ProcessName -eq "java") {
+        Log "porta $Port ocupada pelo java $processId (backend anterior); encerrando"
+        Stop-Process -Id $processId -Force
+        Start-Sleep -Seconds 5
+    } elseif ($proc) {
+        Log "porta $Port ocupada por $($proc.ProcessName) ($processId), que não é nosso: o backend não vai subir"
+    }
+}
+
+# 3. Backend (bloqueia enquanto roda; run.ps1 carrega o .env e usa o JDK 21).
 Log "subindo backend"
 & (Join-Path $root "backend\run.ps1") -Port $Port 2>&1 | ForEach-Object { "$_" | Out-File -FilePath (Join-Path $logDir "backend.log") -Append }
 Log "backend terminou (código $LASTEXITCODE)"
