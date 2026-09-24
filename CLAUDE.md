@@ -70,7 +70,12 @@ mesmos bytes (`upload` e `POST /api/tracks` não deduplicam por SHA; só o impor
 acervo só com `access.admin()`, com `confirm()`; erros das ações da lista aparecem acima do acervo
 (`actionError`), não dentro do formulário de upload — foi por isso que o ↻ postou em `/api/tracks//analyze`
 por dois dias sem ninguém ver (corrigido em 2026-09-17). Tarefa agendada "Orelha" (`deploy/install-task.ps1` → `start-orelha.ps1`) sobe Docker,
-compose e backend no logon; o backend de produção é dela, não de sessões de desenvolvimento. Plano B
+compose e backend no logon; o backend de produção é dela, não de sessões de desenvolvimento. **Reiniciar é
+`Stop-ScheduledTask Orelha` + `Start-ScheduledTask Orelha`**: o Stop libera a tarefa mas **não alcança o java
+filho** (ela bloqueia no `run.ps1`), então desde 2026-09-24 o `start-orelha.ps1` encerra quem estiver
+escutando na porta antes de subir — e só se for `java`, para nunca encostar no que ocupa a 8080. Sem isso o
+backend novo morria com "Port 8081 was already in use" e o antigo seguia no ar, o que só aparece no
+`deploy/logs/backend.log`. Plano B
 com o PC desligado: Oracle Cloud Always Free para banco, backend e stems, extrator em casa.
 
 ## Contexto
@@ -186,7 +191,16 @@ Revisado em relação ao esboço original; ver `backend/src/main/resources/db/mi
   abandonado. Três travas, porque apaga sozinho: acervo vazio aborta (banco fora do ar não vira faxina geral),
   só entra o que está parado há mais de `orphan-min-age` (1 h, nunca disputa com análise em andamento) e nada
   fora de `stems`/`features` é olhado (um .txt na pasta fica). `POST /api/admin/orphans` (só administrador)
-  mostra o que há (`dryRun=true`, padrão) ou limpa na hora.
+  mostra o que há (`dryRun=true`, padrão) ou limpa na hora. **Pausar a fila sem derrubar o Orelha** (2026-09-24):
+  o extrator ocupa ~13 das 28 threads por horas e nem sempre é hora disso. `POST /api/admin/worker?enabled=false`
+  (`GET` devolve `{enabled, queued, running}`; painel "Fila de análise" na aba administrador) pausa o consumo
+  **em execução**: a flag é lida **dentro do laço de dreno**, não só na entrada do poller — com a fila grande
+  um único ciclo dura dias, e uma pausa que só olhasse a entrada não faria nada. Pausar não aborta a faixa que
+  já está no extrator: ela termina e é gravada. O reclaim de abandonados continua rodando pausado (um RUNNING
+  preso impediria até excluir a faixa). Vale só para o processo: reiniciar volta ao `orelha.worker.enabled`
+  (`ORELHA_WORKER_ENABLED` no `.env` é o padrão de quem quer subir pausado). Alívio sem reiniciar nada:
+  `docker update --cpus=3 orelha-extractor` limita o container em execução (`--cpus=0` solta; recriar o
+  container também).
 - **Grau é inteiro** (`degree_interval`, 0–11 semitons acima da tônica); o numeral
   romano é renderização.
 - Séries por frame não vão para o Postgres: `analysis_run.features_path` (Parquet).

@@ -11,6 +11,8 @@ import java.util.Optional;
 
 public interface AnalysisRunRepository extends JpaRepository<AnalysisRun, Long> {
 
+    long countByStatus(RunStatus status);
+
     /** Próximo run da fila; SKIP LOCKED deixa vários workers coexistirem sem disputar a mesma linha. */
     @Query(value = """
             SELECT * FROM analysis_run

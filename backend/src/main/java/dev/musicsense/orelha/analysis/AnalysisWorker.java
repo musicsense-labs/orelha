@@ -40,7 +40,8 @@ public class AnalysisWorker {
     private final AnalysisQueue queue;
     private final AnalysisPipeline pipeline;
     private final AudioExtractor extractor;
-    private final boolean enabled;
+    /** Consumir a fila ou não; o administrador liga e desliga em execução (a extração come a CPU da máquina). */
+    private volatile boolean enabled;
     private final Duration heartbeat;
     private final Duration staleAfter;
     private final int maxAttempts;
@@ -70,10 +71,10 @@ public class AnalysisWorker {
 
     @Scheduled(fixedDelayString = "${orelha.worker.poll-ms:5000}")
     void poll() {
+        reclaimAbandoned();   // mesmo pausado: run abandonado preso em RUNNING não deixa excluir a faixa
         if (!enabled) {
             return;
         }
-        reclaimAbandoned();
         if (concurrency <= 1) {
             drain();
             return;
@@ -95,11 +96,31 @@ public class AnalysisWorker {
         }
     }
 
-    /** Puxa runs enquanto houver. */
+    /**
+     * Puxa runs enquanto houver — e enquanto o administrador deixar: com a fila grande este laço dura dias
+     * dentro de um único ciclo do poller, então é aqui que a pausa precisa ser vista, não só na entrada.
+     */
     private void drain() {
-        while (pollOnce().isPresent()) {
+        while (enabled && pollOnce().isPresent()) {
             // drena a fila antes de dormir de novo
         }
+    }
+
+    /** O que o administrador vê e muda: consumir a fila ou deixá-la parada. */
+    public boolean enabled() {
+        return enabled;
+    }
+
+    /**
+     * Liga e desliga o consumo da fila em execução. Desligar <b>não aborta</b> a faixa que já está no
+     * extrator — ela termina e é gravada; o worker é que não puxa a próxima. Vale só para este processo:
+     * reiniciar o backend volta ao {@code orelha.worker.enabled} do ambiente.
+     */
+    public void enabled(boolean value) {
+        if (enabled != value) {
+            log.info("consumo da fila {}", value ? "retomado" : "pausado (a faixa em análise termina)");
+        }
+        enabled = value;
     }
 
     /** Runs que ficaram órfãos de um worker morto; normalmente não há nenhum e a consulta é barata. */

@@ -7,6 +7,29 @@
   <p class="error">Só o administrador vê esta aba.</p>
 } @else {
   <section class="card">
+    <h2>Fila de análise</h2>
+    @if (worker.hasValue()) {
+      <p class="queue">
+        <strong>{{ worker.value().enabled ? 'consumindo a fila' : 'pausada' }}</strong>
+        <span class="muted">{{ worker.value().queued }} na fila · {{ worker.value().running }} em análise</span>
+        <button type="button" [class.primary]="!worker.value().enabled" [disabled]="workerBusy()"
+                (click)="setWorker(!worker.value().enabled)">
+          {{ worker.value().enabled ? 'pausar' : 'retomar' }}
+        </button>
+      </p>
+      <p class="muted small-note">
+        Pausar não aborta a faixa que já está no extrator: ela termina e é gravada, e o worker não puxa a
+        próxima. Vale enquanto este backend estiver de pé — ao reiniciar volta ao padrão do ambiente.
+      </p>
+    } @else if (worker.isLoading()) {
+      <p class="muted">Carregando…</p>
+    }
+    @if (workerError()) {
+      <p class="error">{{ workerError() }}</p>
+    }
+  </section>
+
+  <section class="card">
     <h2>Usuários</h2>
     @if (users.hasValue() && users.value().length > 0) {
       <table>

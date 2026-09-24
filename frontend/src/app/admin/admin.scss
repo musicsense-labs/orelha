@@ -15,3 +15,5 @@ td a { color: var(--ink); }
 button:not(.link) { margin-top: 0.6rem; }
 .pager { display: flex; align-items: center; gap: 0.8rem; margin: 0.4rem 0; }
 .pager button { margin-top: 0; }
+.queue { display: flex; align-items: baseline; gap: 0.8rem; margin: 0.2rem 0; }
+.queue button { margin-top: 0; }

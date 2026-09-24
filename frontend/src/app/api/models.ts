@@ -227,6 +227,13 @@ export interface AccessInfo {
   admin: boolean;
 }
 
+/** Fila de análise: se o worker está consumindo e o que falta (só o administrador lê). */
+export interface WorkerState {
+  enabled: boolean;
+  queued: number;
+  running: number;
+}
+
 /** Auditoria (só o administrador lê). */
 export type AuditKind = 'ENTER' | 'OPEN_TRACK' | 'ACTION';
 

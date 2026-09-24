@@ -1,8 +1,10 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { httpResource } from '@angular/common/http';
+import { HttpClient, httpResource } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
-import { ActorSummary, AuditEvent, Track } from '../api/models';
+import { firstValueFrom } from 'rxjs';
+import { ActorSummary, AuditEvent, Track, WorkerState } from '../api/models';
 import { Access } from '../shared/access';
+import { errorText } from '../shared/errors';
 
 /**
  * Aba do administrador: quem entrou e o que fez (auditoria gravada pelo backend em cada entrada, faixa
@@ -18,6 +20,12 @@ export class Admin {
   static readonly PAGE = 100;
 
   readonly access = inject(Access);
+  private readonly http = inject(HttpClient);
+
+  /** Fila de análise: o extrator ocupa a máquina por horas, e nem sempre é hora disso. */
+  readonly worker = httpResource<WorkerState>(() => '/api/admin/worker');
+  readonly workerBusy = signal(false);
+  readonly workerError = signal<string | null>(null);
 
   readonly actor = signal<string>('');
   /** Página atual (0 = mais recentes) e, por página já visitada, o id antes do qual ela começa (keyset da API). */
@@ -47,6 +55,20 @@ export class Admin {
     }
     return map;
   });
+
+  /** Pausa ou retoma o consumo da fila. A faixa que já está no extrator termina de qualquer forma. */
+  async setWorker(enabled: boolean): Promise<void> {
+    this.workerBusy.set(true);
+    this.workerError.set(null);
+    try {
+      await firstValueFrom(this.http.post<WorkerState>('/api/admin/worker?enabled=' + enabled, null));
+      this.worker.reload();
+    } catch (e: unknown) {
+      this.workerError.set(errorText(e));
+    } finally {
+      this.workerBusy.set(false);
+    }
+  }
 
   filter(actor: string): void {
     this.actor.set(actor);
