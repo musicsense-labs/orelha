@@ -1,5 +1,7 @@
 package dev.musicsense.orelha.catalog;
 
+import dev.musicsense.orelha.lyrics.LrcLine;
+import dev.musicsense.orelha.lyrics.LrcLineRepository;
 import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.tag.FieldKey;
@@ -66,6 +68,9 @@ class ImportIntegrationTest {
 
     @Autowired
     TrackRepository trackRepository;
+
+    @Autowired
+    LrcLineRepository lrcLines;
 
     @TempDir
     Path tempDir;
@@ -278,6 +283,35 @@ class ImportIntegrationTest {
                 new ImportReport.Confirmation(preview.stagingId(), preview.items()), ImportReport.class).getBody();
         assertThat(report.imported()).isEmpty();
         assertThat(report.skipped()).extracting(ImportReport.Skipped::reason).containsExactly("arquivo não encontrado");
+    }
+
+    @Test
+    void theLrcBesideTheAudioTravelsToTheLibrary() throws Exception {
+        Path src = wav(tempDir.resolve("lrc/Radiohead/Pablo Honey/03 Creep.wav"), 41);
+        Path lyrics = src.resolveSibling("03 Creep.lrc");
+        Files.writeString(lyrics, "[ti:Creep]\n[00:49.80]I wish I was special\n[00:53.10]So very special\n");
+        MultiValueMap<String, Object> form = new LinkedMultiValueMap<>();
+        form.add("files", named(src, "Radiohead/Pablo Honey/03 Creep.wav"));
+        form.add("files", named(lyrics, "Radiohead/Pablo Honey/03 Creep.lrc"));
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+        ImportReport.Preview preview = rest.postForEntity("/api/tracks/import/stage", new HttpEntity<>(form, headers),
+                ImportReport.Preview.class).getBody();
+        assertThat(preview.items()).hasSize(1);   // o .lrc acompanha o áudio, não é uma faixa a importar
+        assertThat(preview.items().get(0).title()).isEqualTo("Creep");
+
+        ImportReport report = rest.postForEntity("/api/tracks/import/confirm",
+                new ImportReport.Confirmation(preview.stagingId(), preview.items()), ImportReport.class).getBody();
+        assertThat(report.imported()).hasSize(1);
+
+        long trackId = report.imported().get(0).trackId();
+        TrackResponse track = rest.getForObject("/api/tracks/" + trackId, TrackResponse.class);
+        Path audio = Path.of(track.audioPath());
+        assertThat(audio.resolveSibling("Creep.lrc")).exists();      // a letra foi junto, com o nome do destino
+        assertThat(stagingDir.resolve(preview.stagingId())).doesNotExist();
+        assertThat(lrcLines.findByTrackIdOrderByLineNo(trackId)).extracting(LrcLine::getText)
+                .containsExactly("I wish I was special", "So very special");
     }
 
     /** Resource com o nome relativo que o navegador manda num upload de pasta (webkitRelativePath). */

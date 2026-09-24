@@ -7,6 +7,7 @@ import dev.musicsense.orelha.catalog.ImportReport.Item;
 import dev.musicsense.orelha.catalog.ImportReport.Preview;
 import dev.musicsense.orelha.catalog.ImportReport.Skipped;
 import dev.musicsense.orelha.extraction.AudioExtractor;
+import dev.musicsense.orelha.lyrics.LrcFile;
 import dev.musicsense.orelha.lyrics.LrcImporter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -36,6 +37,8 @@ import java.util.stream.Stream;
  */
 @Service
 public class ImportService {
+
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ImportService.class);
 
     static final Set<String> AUDIO_EXTENSIONS = Set.of("mp3", "wav", "flac", "ogg", "m4a", "aac", "aiff", "aif");
 
@@ -96,8 +99,8 @@ public class ImportService {
         for (MultipartFile upload : uploads) {
             String relative = upload.getOriginalFilename() == null ? "" : upload.getOriginalFilename().replace('\\', '/');
             String name = relative.substring(relative.lastIndexOf('/') + 1);
-            if (!isAudio(name)) {
-                continue;
+            if (!isAudio(name) && !isLyrics(name)) {
+                continue;   // o .lrc acompanha o áudio até a biblioteca; o resto da pasta não interessa
             }
             Path target = safeStagingPath(dir, relative);
             try {
@@ -108,7 +111,9 @@ public class ImportService {
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
-            items.add(item(target.toString(), relative, target, Path.of(relative)));
+            if (!isLyrics(name)) {
+                items.add(item(target.toString(), relative, target, Path.of(relative)));
+            }   // o .lrc fica no staging esperando o áudio dele; não é uma faixa a importar
         }
         return new Preview(stagingId, items);
     }
@@ -209,6 +214,7 @@ public class ImportService {
             Files.createDirectories(dir);
             Path target = uniquePath(dir, TrackService.sanitize(title), extensionOf(content.getFileName().toString()));
             Files.move(content, target, StandardCopyOption.REPLACE_EXISTING);
+            moveLyricsBeside(content, target);
             return target;
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -240,6 +246,29 @@ public class ImportService {
 
     static boolean isAudio(String fileName) {
         return AUDIO_EXTENSIONS.contains(extensionOf(fileName));
+    }
+
+    /** Letra sincronizada que o app do dono baixa junto do áudio: viaja com ele até a biblioteca. */
+    static boolean isLyrics(String fileName) {
+        return "lrc".equals(extensionOf(fileName));
+    }
+
+    /**
+     * O .lrc que estava ao lado do áudio na origem vai junto para a biblioteca, com o nome do destino. Sem
+     * isto a letra fica para trás e a faixa entra sem ela — foi o que aconteceu com 1581 faixas em 2026-09-23.
+     */
+    private static void moveLyricsBeside(Path source, Path target) {
+        Path lyrics = LrcFile.besideAudio(source);
+        if (lyrics == null) {
+            return;
+        }
+        String name = target.getFileName().toString();
+        Path destination = target.resolveSibling(name.substring(0, name.lastIndexOf('.')) + ".lrc");
+        try {
+            Files.move(lyrics, destination, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            log.warn("a letra {} não foi para a biblioteca: {}", lyrics.getFileName(), e.getMessage());
+        }
     }
 
     private static Path uniquePath(Path dir, String baseName, String extension) {

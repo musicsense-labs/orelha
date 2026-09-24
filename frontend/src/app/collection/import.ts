@@ -31,7 +31,17 @@ interface Row extends ImportItem {
 }
 
 const AUDIO = /\.(mp3|wav|flac|ogg|m4a|aac|aiff|aif)$/i;
+const LYRICS = /\.lrc$/i;
 const BATCH = 5;
+
+/** O caminho dentro da pasta escolhida; só o navegador o conhece (webkitRelativePath). */
+function pathOf(file: File): string {
+  return (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name;
+}
+
+function withoutExtension(path: string): string {
+  return path.replace(/\.[^./\\]+$/, '').toLowerCase();
+}
 
 /**
  * Importar uma pasta em dois passos: pré-visualização editável (tags lidas, duplicatas marcadas)
@@ -60,6 +70,27 @@ export class Import {
   readonly report = signal<ImportReport | null>(null);
 
   readonly audioFiles = computed(() => this.files().filter((f) => AUDIO.test(f.name)));
+
+  /**
+   * As letras sincronizadas da pasta, pelo caminho sem extensão. Elas sobem no mesmo lote do áudio a
+   * que pertencem — cada lote é um staging diferente, e o backend só acha o .lrc se ele estiver ao
+   * lado do áudio. Sem isso a pasta entra sem letra (foi o que houve com 1581 faixas em 2026-09-23).
+   */
+  private readonly lyricsByBase = computed(() => {
+    const map = new Map<string, File>();
+    for (const f of this.files()) {
+      if (LYRICS.test(f.name)) {
+        map.set(withoutExtension(pathOf(f)), f);
+      }
+    }
+    return map;
+  });
+
+  /** Quantos dos áudios escolhidos têm letra ao lado, para a tela dizer antes de subir. */
+  readonly lyricsCount = computed(() => {
+    const lyrics = this.lyricsByBase();
+    return this.audioFiles().filter((f) => lyrics.has(withoutExtension(pathOf(f)))).length;
+  });
   readonly selectedCount = computed(() => this.rows().filter((r) => r.include).length);
   readonly hasPreview = computed(() => this.rows().length > 0);
 
@@ -86,9 +117,14 @@ export class Import {
       for (let i = 0; i < files.length; i += BATCH) {
         this.progress.set({ sent: i, total: files.length });
         const form = new FormData();
+        const lyrics = this.lyricsByBase();
         for (const f of files.slice(i, i + BATCH)) {
           // O nome enviado carrega o caminho relativo da pasta: é o fallback de artista/álbum sem tags.
-          form.append('files', f, (f as File & { webkitRelativePath?: string }).webkitRelativePath || f.name);
+          form.append('files', f, pathOf(f));
+          const lrc = lyrics.get(withoutExtension(pathOf(f)));
+          if (lrc) {
+            form.append('files', lrc, pathOf(lrc));
+          }
         }
         previews.push(await firstValueFrom(this.http.post<ImportPreview>('/api/tracks/import/stage', form)));
       }

@@ -6,7 +6,12 @@
       <label>Pasta (pelo navegador)
         <input type="file" webkitdirectory multiple (change)="onFolder($event)">
       </label>
-      <span class="muted">{{ audioFiles().length }} arquivo(s) de áudio</span>
+      <span class="muted">
+        {{ audioFiles().length }} arquivo(s) de áudio
+        @if (lyricsCount() > 0) {
+          · {{ lyricsCount() }} com letra (.lrc)
+        }
+      </span>
       <button type="button" class="primary" [disabled]="audioFiles().length === 0 || running()" (click)="stageFolder()">
         {{ running() && progress() ? 'enviando ' + progress()!.sent + '/' + progress()!.total + '…' : 'enviar e revisar' }}
       </button>

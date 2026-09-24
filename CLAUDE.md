@@ -338,6 +338,13 @@ alteração de regra (vai para `harmonic_annotation.normalizer_version`).
   comparar com o bruto. Medido em 25 faixas (4778 palavras): 56 % o ASR já acertava, **19 % corrigidas**, 25 % ele
   nem ouviu, e 1042 alucinações descartadas. Acervo em 2026-09-23: 269 das 326 faixas com .lrc (8536 versos);
   16 arquivos vazios e 41 sem arquivo caem no ASR puro. Na timeline, o selo  na célula LETRA conta quanto mudou.
+  **O .lrc viaja com o áudio na importação (2026-09-24)**: a tela de importar pasta envia cada `.lrc` no mesmo
+  lote do áudio a que pertence (lote = um staging; noutro lote ele não estaria ao lado na hora de confirmar), o
+  `.lrc` não vira linha da pré-visualização, e `ImportService.moveIntoLibrary` o leva para a biblioteca com o
+  nome de destino (`03 Creep.lrc` → `Creep.lrc`). Antes disso a pasta entrava sem letra: a importação de 2229
+  faixas de 2026-09-23 trouxe só o áudio. Recuperação: casar **SHA-256 do áudio** entre a origem (`D:\yt-mp3`) e
+  a biblioteca — o nome não serve, o SHA garante a mesma edição e portanto a mesma sincronia — 1576 arquivos
+  copiados e `POST /api/admin/lrc-scan`, fechando em **1845 faixas com letra, 67660 versos** num acervo de 2498.
 - **Re-análise herda overrides**: ao concluir um run novo, a tonalidade MANUAL e as partes MANUAL do run
   canônico anterior são copiadas para ele (a tonalidade re-anota). O canônico continua sendo escolha do
   dono (`PUT /canonical-run`).
