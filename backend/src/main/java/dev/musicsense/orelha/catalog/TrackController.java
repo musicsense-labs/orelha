@@ -138,16 +138,8 @@ public class TrackController {
     }
 
     /** Atalho sem edição: upload de pasta importado inteiro. */
-    @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    ImportReport importUploads(@RequestPart("files") List<MultipartFile> files) {
-        return importer.importUploads(files);
-    }
 
     /** Atalho sem edição: pasta do servidor importada inteira. */
-    @PostMapping("/import-path")
-    ImportReport importPath(@Valid @RequestBody ImportPathRequest req) {
-        return importer.importDirectory(Path.of(req.path()), req.recursive());
-    }
 
     /** O arquivo de áudio da faixa, para o player da UI. Spring MVC responde a Range (206) para seek. */
     @GetMapping("/{id}/audio")

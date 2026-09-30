@@ -17,7 +17,6 @@ import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -113,10 +112,7 @@ class ImportIntegrationTest {
         wav(root.resolve("Deep Purple/Machine Head/03 - Smoke on the Water.wav"), 3);   // sem tags
         Files.writeString(root.resolve("Deep Purple/Machine Head/cover.txt"), "not audio");
 
-        ResponseEntity<ImportReport> first = rest.postForEntity("/api/tracks/import-path",
-                new TrackController.ImportPathRequest(root.toString(), true), ImportReport.class);
-        assertThat(first.getStatusCode()).isEqualTo(HttpStatus.OK);
-        ImportReport report = first.getBody();
+        ImportReport report = importServerFolder(root);
         assertThat(report.skipped()).isEmpty();
         assertThat(report.imported()).hasSize(3);
         assertThat(report.imported()).extracting(ImportReport.Imported::artist)
@@ -145,8 +141,7 @@ class ImportIntegrationTest {
         assertThat(tracks.getBody()).allSatisfy(t -> assertThat(t.latestRunStatus()).isEqualTo(dev.musicsense.orelha.analysis.RunStatus.QUEUED));
 
         // Segunda passada: tudo já importado.
-        ImportReport again = rest.postForEntity("/api/tracks/import-path",
-                new TrackController.ImportPathRequest(root.toString(), true), ImportReport.class).getBody();
+        ImportReport again = importServerFolder(root);
         assertThat(again.imported()).isEmpty();
         assertThat(again.skipped()).hasSize(3);
         assertThat(again.skipped()).allSatisfy(s -> assertThat(s.reason()).contains("já importado"));
@@ -166,10 +161,10 @@ class ImportIntegrationTest {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
-        ResponseEntity<ImportReport> response = rest.postForEntity("/api/tracks/import", new HttpEntity<>(form, headers),
-                ImportReport.class);
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        ImportReport report = response.getBody();
+        ImportReport.Preview preview = rest.postForEntity("/api/tracks/import/stage", new HttpEntity<>(form, headers),
+                ImportReport.Preview.class).getBody();
+        ImportReport report = rest.postForEntity("/api/tracks/import/confirm",
+                new ImportReport.Confirmation(preview.stagingId(), preview.items()), ImportReport.class).getBody();
         assertThat(report.imported()).extracting(ImportReport.Imported::title).containsExactly("Painkiller", "Hell Patrol");
         assertThat(report.imported()).extracting(ImportReport.Imported::artist).containsOnly("Judas Priest");
         assertThat(report.imported()).extracting(ImportReport.Imported::trackNo).containsExactly(1, 2);
@@ -312,6 +307,14 @@ class ImportIntegrationTest {
         assertThat(stagingDir.resolve(preview.stagingId())).doesNotExist();
         assertThat(lrcLines.findByTrackIdOrderByLineNo(trackId)).extracting(LrcLine::getText)
                 .containsExactly("I wish I was special", "So very special");
+    }
+
+    /** Pasta do servidor confirmada inteira, como vem na pré-visualização (duplicatas incluídas: são puladas). */
+    private ImportReport importServerFolder(Path root) {
+        ImportReport.Preview preview = rest.postForEntity("/api/tracks/import-path/preview",
+                new TrackController.ImportPathRequest(root.toString(), true), ImportReport.Preview.class).getBody();
+        return rest.postForEntity("/api/tracks/import/confirm",
+                new ImportReport.Confirmation(null, preview.items()), ImportReport.class).getBody();
     }
 
     /** Resource com o nome relativo que o navegador manda num upload de pasta (webkitRelativePath). */

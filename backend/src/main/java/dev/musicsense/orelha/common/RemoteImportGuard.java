@@ -19,8 +19,7 @@ import java.io.IOException;
 public class RemoteImportGuard extends OncePerRequestFilter {
 
     static boolean blocked(String path) {
-        return path.startsWith("/api/tracks/import/") || path.equals("/api/tracks/import")
-                || path.startsWith("/api/tracks/import-path");
+        return path.startsWith("/api/tracks/import");   // /import/stage, /import/confirm, /import-path/preview
     }
 
     @Override

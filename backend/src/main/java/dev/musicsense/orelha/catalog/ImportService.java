@@ -155,19 +155,6 @@ public class ImportService {
         FileSystemUtils.deleteRecursively(stagingDir.resolve(requireStagingId(stagingId)).toFile());
     }
 
-    /** Atalhos sem edição: preview + confirmar tudo que não é duplicata. */
-    public ImportReport importDirectory(Path directory, boolean recursive) {
-        return confirm(all(previewDirectory(directory, recursive)));
-    }
-
-    public ImportReport importUploads(List<MultipartFile> uploads) {
-        return confirm(all(stageUploads(uploads)));
-    }
-
-    private static Confirmation all(Preview preview) {
-        return new Confirmation(preview.stagingId(), preview.items());
-    }
-
     private void importOne(Path content, Item item, boolean keepInPlace, List<Imported> imported, List<Skipped> skipped) {
         try {
             String sha = TrackService.sha256(content);
