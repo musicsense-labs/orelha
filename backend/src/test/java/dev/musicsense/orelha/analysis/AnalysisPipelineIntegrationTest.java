@@ -185,11 +185,11 @@ class AnalysisPipelineIntegrationTest {
         assertThat(timeline.key().source()).isEqualTo(KeySource.EXTRACTOR);
 
         // Linha de baixo nota a nota do run canônico.
-        ResponseEntity<List<dev.musicsense.orelha.catalog.TrackController.NoteResponse>> bassLine = rest.exchange(
+        ResponseEntity<List<dev.musicsense.orelha.analysis.NotesController.NoteResponse>> bassLine = rest.exchange(
                 "/api/tracks/" + track.id() + "/bass-notes", org.springframework.http.HttpMethod.GET, null,
                 new org.springframework.core.ParameterizedTypeReference<>() {
                 });
-        assertThat(bassLine.getBody()).extracting(dev.musicsense.orelha.catalog.TrackController.NoteResponse::midi)
+        assertThat(bassLine.getBody()).extracting(dev.musicsense.orelha.analysis.NotesController.NoteResponse::midi)
                 .containsExactly(45, 41, 43, 45);
 
         // Tablatura (Practice): Lá2 Fá2 Sol2 Lá2 — Fá e Sol cabem na corda D (3ª e 5ª casas) ou na A;
@@ -205,13 +205,13 @@ class AnalysisPipelineIntegrationTest {
         assertThat(new String(midi.getBody(), 0, 4, java.nio.charset.StandardCharsets.US_ASCII)).isEqualTo("MThd");
 
         // Notas da voz do run canônico (extrator ≥ 0.5.0), classificadas pela letra (≥ 0.6.0).
-        ResponseEntity<List<dev.musicsense.orelha.catalog.TrackController.NoteResponse>> vocals = rest.exchange(
+        ResponseEntity<List<dev.musicsense.orelha.analysis.NotesController.NoteResponse>> vocals = rest.exchange(
                 "/api/tracks/" + track.id() + "/vocal-notes", org.springframework.http.HttpMethod.GET, null,
                 new org.springframework.core.ParameterizedTypeReference<>() {
                 });
-        assertThat(vocals.getBody()).extracting(dev.musicsense.orelha.catalog.TrackController.NoteResponse::midi)
+        assertThat(vocals.getBody()).extracting(dev.musicsense.orelha.analysis.NotesController.NoteResponse::midi)
                 .containsExactly(64, 65, 67);
-        assertThat(vocals.getBody()).extracting(dev.musicsense.orelha.catalog.TrackController.NoteResponse::kind)
+        assertThat(vocals.getBody()).extracting(dev.musicsense.orelha.analysis.NotesController.NoteResponse::kind)
                 .containsExactly(VocalNoteKind.LEXICAL, VocalNoteKind.NON_LEXICAL, VocalNoteKind.LIKELY_LEAK);
 
         // Letra do run canônico, com o compasso de cada palavra pela grade de beats.
@@ -243,7 +243,7 @@ class AnalysisPipelineIntegrationTest {
         vocals = rest.exchange("/api/tracks/" + track.id() + "/vocal-notes", org.springframework.http.HttpMethod.GET, null,
                 new org.springframework.core.ParameterizedTypeReference<>() {
                 });
-        assertThat(vocals.getBody()).extracting(dev.musicsense.orelha.catalog.TrackController.NoteResponse::kind)
+        assertThat(vocals.getBody()).extracting(dev.musicsense.orelha.analysis.NotesController.NoteResponse::kind)
                 .containsExactly(VocalNoteKind.LEXICAL, VocalNoteKind.LEXICAL, VocalNoteKind.LIKELY_LEAK);   // F4 agora sob "be"
         ResponseEntity<LyricsResponse> revertedLyrics = rest.exchange("/api/tracks/" + track.id() + "/lyrics",
                 org.springframework.http.HttpMethod.PUT, new org.springframework.http.HttpEntity<>(List.of()),
@@ -252,14 +252,14 @@ class AnalysisPipelineIntegrationTest {
         assertThat(revertedLyrics.getBody().segments().get(0).text()).isEqualTo("let it");
 
         // Beats do run canônico, com compasso contado a partir do primeiro downbeat.
-        ResponseEntity<List<dev.musicsense.orelha.catalog.TrackController.BeatResponse>> beats = rest.exchange(
+        ResponseEntity<List<dev.musicsense.orelha.analysis.NotesController.BeatResponse>> beats = rest.exchange(
                 "/api/tracks/" + track.id() + "/beats", org.springframework.http.HttpMethod.GET, null,
                 new org.springframework.core.ParameterizedTypeReference<>() {
                 });
         assertThat(beats.getBody()).hasSize(5);
-        assertThat(beats.getBody()).extracting(dev.musicsense.orelha.catalog.TrackController.BeatResponse::barNo)
+        assertThat(beats.getBody()).extracting(dev.musicsense.orelha.analysis.NotesController.BeatResponse::barNo)
                 .containsExactly(1, 1, 1, 1, 2);
-        assertThat(beats.getBody()).extracting(dev.musicsense.orelha.catalog.TrackController.BeatResponse::downbeat)
+        assertThat(beats.getBody()).extracting(dev.musicsense.orelha.analysis.NotesController.BeatResponse::downbeat)
                 .containsExactly(true, false, false, false, true);
 
         // Stems do run canônico: só os que existem no host são servidos.

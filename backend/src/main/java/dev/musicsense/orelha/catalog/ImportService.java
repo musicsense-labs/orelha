@@ -25,7 +25,6 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -40,7 +39,6 @@ public class ImportService {
 
     private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ImportService.class);
 
-    static final Set<String> AUDIO_EXTENSIONS = Set.of("mp3", "wav", "flac", "ogg", "m4a", "aac", "aiff", "aif");
 
     private final ArtistRepository artists;
     private final AlbumRepository albums;
@@ -232,7 +230,7 @@ public class ImportService {
     }
 
     static boolean isAudio(String fileName) {
-        return AUDIO_EXTENSIONS.contains(extensionOf(fileName));
+        return AudioLibrary.AUDIO_EXTENSIONS.contains(extensionOf(fileName));
     }
 
     /** Letra sincronizada que o app do dono baixa junto do áudio: viaja com ele até a biblioteca. */

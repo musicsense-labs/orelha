@@ -33,7 +33,6 @@ import java.util.Set;
 public class TrackService {
 
     private static final Logger log = LoggerFactory.getLogger(TrackService.class);
-    private static final Set<String> AUDIO_EXTENSIONS = Set.of("mp3", "wav", "flac", "ogg", "m4a", "aac", "aiff", "aif");
 
     private final TrackRepository tracks;
     private final AlbumRepository albums;
@@ -93,7 +92,7 @@ public class TrackService {
         Album album = findAlbum(albumId);
         String original = baseNameOf(file.getOriginalFilename());
         String extension = extensionOf(original);
-        if (!AUDIO_EXTENSIONS.contains(extension)) {
+        if (!AudioLibrary.AUDIO_EXTENSIONS.contains(extension)) {
             throw new IllegalArgumentException("Unsupported audio file: " + original);
         }
         String baseName = (title == null || title.isBlank()) ? original.substring(0, original.length() - extension.length() - 1) : title;

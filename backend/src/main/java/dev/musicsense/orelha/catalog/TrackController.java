@@ -2,21 +2,13 @@ package dev.musicsense.orelha.catalog;
 
 import dev.musicsense.orelha.analysis.AnalysisRun;
 import dev.musicsense.orelha.analysis.AnalysisRunRepository;
-import dev.musicsense.orelha.analysis.BassNoteRepository;
-import dev.musicsense.orelha.analysis.BeatRepository;
-import dev.musicsense.orelha.analysis.LyricsService;
-import dev.musicsense.orelha.analysis.VocalNoteKind;
 import dev.musicsense.orelha.common.AdminProperties;
-import dev.musicsense.orelha.analysis.VocalNoteRepository;
 import dev.musicsense.orelha.common.NotFoundException;
-import dev.musicsense.orelha.extraction.DataPaths;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.core.io.Resource;
-import org.springframework.http.HttpHeaders;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,49 +22,36 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-import jakarta.servlet.http.HttpServletRequest;
 
-import java.math.BigDecimal;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * A faixa como item do acervo: listar, enviar, reprocessar, escolher o run canônico, excluir. Importar pasta
+ * fica em {@link ImportController}; o que o player toca, em {@link MediaController}; notas e beats, no
+ * {@code NotesController} da análise.
+ */
 @RestController
 @RequestMapping("/api/tracks")
 public class TrackController {
 
-    private final TrackRepository tracks;
-    private final TrackService service;
-    private final DataPaths dataPaths;
-    private final AnalysisRunRepository runs;
-    private final ImportService importer;
-    private final BeatRepository beats;
-    private final AudioLibrary library;
-    private final VocalNoteRepository vocalNotes;
-    private final BassNoteRepository bassNotes;
-    private final LyricsService lyrics;
-    private final AdminProperties admin;
-
-    TrackController(TrackRepository tracks, TrackService service, DataPaths dataPaths, AnalysisRunRepository runs,
-                    ImportService importer, BeatRepository beats, AudioLibrary library, VocalNoteRepository vocalNotes,
-                    BassNoteRepository bassNotes, LyricsService lyrics, AdminProperties admin) {
-        this.lyrics = lyrics;
-        this.admin = admin;
-        this.tracks = tracks;
-        this.service = service;
-        this.dataPaths = dataPaths;
-        this.runs = runs;
-        this.importer = importer;
-        this.beats = beats;
-        this.library = library;
-        this.vocalNotes = vocalNotes;
-        this.bassNotes = bassNotes;
+    public record CanonicalRunRequest(@NotNull Long runId) {
     }
 
-    private TrackResponse response(Track track) {
-        return TrackResponse.of(track, runs.findFirstByTrackIdOrderByIdDesc(track.getId()).orElse(null), library);
+    private final TrackRepository tracks;
+    private final TrackService service;
+    private final AnalysisRunRepository runs;
+    private final AudioLibrary library;
+    private final AdminProperties admin;
+
+    TrackController(TrackRepository tracks, TrackService service, AnalysisRunRepository runs, AudioLibrary library,
+                    AdminProperties admin) {
+        this.tracks = tracks;
+        this.service = service;
+        this.runs = runs;
+        this.library = library;
+        this.admin = admin;
     }
 
     @GetMapping
@@ -90,8 +69,7 @@ public class TrackController {
         return response(find(id));
     }
 
-
-    /** Enfileira um novo run para a faixa; devolve o id do run para polling em /api/analysis/runs/{id}. */
+    /** Enfileira um novo run para a faixa; o anterior fica, e o canônico só muda por escolha do dono. */
     @PostMapping("/{id}/analyze")
     @ResponseStatus(HttpStatus.ACCEPTED)
     Map<String, Long> analyze(@PathVariable Long id) {
@@ -107,156 +85,6 @@ public class TrackController {
         return response(service.upload(albumId, title, trackNo, file));
     }
 
-    // --- importação de pasta: preview editável + confirmação -----------------------------------
-
-    /** Upload de pasta: guarda em staging e devolve a pré-visualização (nada entra no catálogo ainda). */
-    @PostMapping(value = "/import/stage", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    ImportReport.Preview stage(@RequestPart("files") List<MultipartFile> files) {
-        return importer.stageUploads(files);
-    }
-
-    public record ImportPathRequest(@jakarta.validation.constraints.NotBlank String path, boolean recursive) {
-    }
-
-    /** Pasta do servidor: pré-visualização (os arquivos ficarão no lugar). */
-    @PostMapping("/import-path/preview")
-    ImportReport.Preview previewPath(@Valid @RequestBody ImportPathRequest req) {
-        return importer.previewDirectory(Path.of(req.path()), req.recursive());
-    }
-
-    /** Cadastra os itens como a UI os editou (staging → biblioteca; servidor → no lugar). */
-    @PostMapping("/import/confirm")
-    ImportReport confirmImport(@Valid @RequestBody ImportReport.Confirmation confirmation) {
-        return importer.confirm(confirmation);
-    }
-
-    /** Cancelou a pré-visualização de um upload: apaga o staging. */
-    @DeleteMapping("/import/stage/{stagingId}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    void discardStaging(@PathVariable String stagingId) {
-        importer.discardStaging(stagingId);
-    }
-
-    /** Atalho sem edição: upload de pasta importado inteiro. */
-
-    /** Atalho sem edição: pasta do servidor importada inteira. */
-
-    /** O arquivo de áudio da faixa, para o player da UI. Spring MVC responde a Range (206) para seek. */
-    @GetMapping("/{id}/audio")
-    @Transactional(readOnly = true)
-    ResponseEntity<Resource> audio(@PathVariable Long id) {
-        Track track = find(id);
-        Path path = library.resolve(track);
-        if (!Files.isRegularFile(path)) {
-            throw new NotFoundException("Audio of track", id);
-        }
-        return audioResponse(path);
-    }
-
-    public record BeatResponse(BigDecimal timeS, int beatNo, Integer barNo, boolean downbeat) {
-    }
-
-    /** Beats e downbeats do run canônico: a grade do metrônomo e das barras da timeline. */
-    /** kind só nas notas de voz ({@link VocalNoteKind}); null no baixo. */
-    public record NoteResponse(BigDecimal startS, BigDecimal endS, int midi, Integer velocity, VocalNoteKind kind) {
-    }
-
-    /** Linha de baixo nota a nota (basic-pitch no stem de baixo) do run canônico. */
-    @GetMapping("/{id}/bass-notes")
-    @Transactional(readOnly = true)
-    List<NoteResponse> bassNotes(@PathVariable Long id) {
-        AnalysisRun run = find(id).getCanonicalRun();
-        if (run == null) {
-            return List.of();
-        }
-        return bassNotes.findByRunIdOrderByStartS(run.getId()).stream()
-                .map(n -> new NoteResponse(n.getStartS(), n.getEndS(), n.getMidiPitch(), n.getVelocity(), null))
-                .toList();
-    }
-
-    /**
-     * Notas da voz (basic-pitch no stem de voz) do run canônico, classificadas pela letra: com texto, sem
-     * texto ou provável vazamento de outro instrumento. Vazio em runs anteriores ao extrator 0.5.0.
-     */
-    @GetMapping("/{id}/vocal-notes")
-    @Transactional(readOnly = true)
-    List<NoteResponse> vocalNotes(@PathVariable Long id) {
-        AnalysisRun run = find(id).getCanonicalRun();
-        if (run == null) {
-            return List.of();
-        }
-        return lyrics.classifiedVocalNotes(run).stream()
-                .map(n -> new NoteResponse(n.startS(), n.endS(), n.midi(), n.velocity(), n.kind()))
-                .toList();
-    }
-
-    @GetMapping("/{id}/beats")
-    @Transactional(readOnly = true)
-    List<BeatResponse> beats(@PathVariable Long id) {
-        AnalysisRun run = find(id).getCanonicalRun();
-        if (run == null) {
-            return List.of();
-        }
-        return beats.findByRunIdOrderByBeatNo(run.getId()).stream()
-                .map(b -> new BeatResponse(b.getTimeS(), b.getBeatNo(), b.getBarNo(), b.isDownbeat()))
-                .toList();
-    }
-
-    /** Nomes dos stems disponíveis no run canônico (vazio para runs anteriores ao extrator 0.3.0). */
-    @GetMapping("/{id}/stems")
-    @Transactional(readOnly = true)
-    List<String> stems(@PathVariable Long id) {
-        Map<String, String> stems = stemsOf(find(id));
-        return stems.keySet().stream().sorted().toList();
-    }
-
-    /** Um stem (wav) do run canônico, com Range para o player multi-stem. */
-    @GetMapping("/{id}/stems/{name}")
-    @Transactional(readOnly = true)
-    ResponseEntity<Resource> stem(@PathVariable Long id, @PathVariable String name) {
-        String containerPath = stemsOf(find(id)).get(name);
-        Path path = containerPath == null ? null : dataPaths.toHost(containerPath);
-        if (path == null || !Files.isRegularFile(path)) {
-            throw new NotFoundException("Stem " + name + " of track", id);
-        }
-        return audioResponse(path);
-    }
-
-    private static Map<String, String> stemsOf(Track track) {
-        AnalysisRun run = track.getCanonicalRun();
-        return run == null || run.getStems() == null ? Map.of() : run.getStems();
-    }
-
-    private static ResponseEntity<Resource> audioResponse(Path path) {
-        return ResponseEntity.ok()
-                .contentType(audioType(path))
-                .header(HttpHeaders.ACCEPT_RANGES, "bytes")
-                .body(new FileSystemResource(path));
-    }
-
-    private static MediaType audioType(Path path) {
-        String name = path.getFileName().toString().toLowerCase();
-        if (name.endsWith(".mp3")) {
-            return MediaType.parseMediaType("audio/mpeg");
-        }
-        if (name.endsWith(".wav")) {
-            return MediaType.parseMediaType("audio/wav");
-        }
-        if (name.endsWith(".flac")) {
-            return MediaType.parseMediaType("audio/flac");
-        }
-        if (name.endsWith(".ogg") || name.endsWith(".opus")) {
-            return MediaType.parseMediaType("audio/ogg");
-        }
-        if (name.endsWith(".m4a") || name.endsWith(".aac")) {
-            return MediaType.parseMediaType("audio/mp4");
-        }
-        return MediaType.APPLICATION_OCTET_STREAM;
-    }
-
-    public record CanonicalRunRequest(@jakarta.validation.constraints.NotNull Long runId) {
-    }
-
     /** Troca o run que responde pela faixa (comparar extratores/modelos sem sobrescrever nada). */
     @PutMapping("/{id}/canonical-run")
     @Transactional
@@ -264,12 +92,16 @@ public class TrackController {
         return response(service.setCanonicalRun(id, req.runId()));
     }
 
-    /** Só o administrador tira faixas do acervo; vai junto o áudio da biblioteca, os stems e as features. */
+    /** Só o administrador tira faixas do acervo; vão junto o áudio da biblioteca e os stems. */
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void delete(@PathVariable Long id, HttpServletRequest request) {
         admin.require(request, "exclui faixas do acervo");
         TrackRemoval.delete(service.remove(id));
+    }
+
+    private TrackResponse response(Track track) {
+        return TrackResponse.of(track, runs.findFirstByTrackIdOrderByIdDesc(track.getId()).orElse(null), library);
     }
 
     private Track find(Long id) {

@@ -4,16 +4,20 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
+import java.util.Set;
 
 /**
  * Onde os arquivos de áudio moram e como {@code track.audio_path} os referencia.
  * <p>
  * Arquivos dentro de {@code orelha.library.dir} são gravados como caminho relativo à biblioteca, com
  * {@code /} como separador ({@code 25/Evil Woman.mp3}): mover a pasta do projeto ou trocar de máquina
- * não quebra o acervo. Arquivos cadastrados por path fora da biblioteca continuam absolutos.
+ * não quebra o acervo. Arquivos importados de uma pasta do servidor ficam onde estão, com caminho absoluto.
  */
 @Component
 public class AudioLibrary {
+
+    /** Extensões que o acervo aceita (upload e importação de pasta). */
+    public static final Set<String> AUDIO_EXTENSIONS = Set.of("mp3", "wav", "flac", "ogg", "m4a", "aac", "aiff", "aif");
 
     private final Path dir;
 

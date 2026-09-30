@@ -189,7 +189,7 @@ class ImportIntegrationTest {
         Path b = wav(root.resolve("Radiohead - Creep (Remastered).wav"), 12);
 
         ImportReport.Preview preview = rest.postForEntity("/api/tracks/import-path/preview",
-                new TrackController.ImportPathRequest(root.toString(), false), ImportReport.Preview.class).getBody();
+                new ImportController.ImportPathRequest(root.toString(), false), ImportReport.Preview.class).getBody();
         assertThat(preview.stagingId()).isNull();
         assertThat(preview.items()).hasSize(2);
         ImportReport.Item creep = preview.items().get(0);
@@ -217,7 +217,7 @@ class ImportIntegrationTest {
 
         // Nova pré-visualização: Valerie agora é duplicata; confirmar mesmo assim é pulado.
         ImportReport.Preview again = rest.postForEntity("/api/tracks/import-path/preview",
-                new TrackController.ImportPathRequest(root.toString(), false), ImportReport.Preview.class).getBody();
+                new ImportController.ImportPathRequest(root.toString(), false), ImportReport.Preview.class).getBody();
         assertThat(again.items()).extracting(ImportReport.Item::duplicate).containsExactly(false, true);
         ImportReport forced = rest.postForEntity("/api/tracks/import/confirm",
                 new ImportReport.Confirmation(null, again.items()), ImportReport.class).getBody();
@@ -312,7 +312,7 @@ class ImportIntegrationTest {
     /** Pasta do servidor confirmada inteira, como vem na pré-visualização (duplicatas incluídas: são puladas). */
     private ImportReport importServerFolder(Path root) {
         ImportReport.Preview preview = rest.postForEntity("/api/tracks/import-path/preview",
-                new TrackController.ImportPathRequest(root.toString(), true), ImportReport.Preview.class).getBody();
+                new ImportController.ImportPathRequest(root.toString(), true), ImportReport.Preview.class).getBody();
         return rest.postForEntity("/api/tracks/import/confirm",
                 new ImportReport.Confirmation(null, preview.items()), ImportReport.class).getBody();
     }
