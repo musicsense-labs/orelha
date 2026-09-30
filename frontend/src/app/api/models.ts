@@ -166,7 +166,6 @@ export interface PedalPassage {
   bassPc: number;
 }
 
-/** Nota MIDI transcrita de um stem (voz). */
 /** Nota do stem de voz à luz da letra: com texto, sem texto (vocalise) ou provável vazamento de outro instrumento. */
 export type VocalNoteKind = 'LEXICAL' | 'NON_LEXICAL' | 'LIKELY_LEAK';
 
@@ -319,7 +318,7 @@ export interface Reference {
   updatedAt: string | null;
 }
 
-export interface ComparisonKey {
+export interface ReferenceKey {
   tonicPc: number | null;
   mode: string | null;
   source: string | null;
@@ -335,11 +334,12 @@ export interface SectionMatch {
   missingKeys: string[];
 }
 
-export interface Comparison {
+/** Nossa análise medida contra a referência humana (TheoryTab). */
+export interface ReferenceComparison {
   trackId: number;
   runId: number;
-  referenceKey: ComparisonKey | null;
-  ourKey: ComparisonKey | null;
+  referenceKey: ReferenceKey | null;
+  ourKey: ReferenceKey | null;
   tonicMatches: boolean;
   modeMatches: boolean;
   sequenceSimilarity: number;

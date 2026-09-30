@@ -56,7 +56,7 @@
                  [src]="'/api/tracks/' + t.id + '/stems/' + name"></audio>
         } @empty {
           @if (!stems.isLoading()) {
-            <span class="muted small-note">sem stems neste run — re-analise a faixa com o extrator 0.3.0</span>
+            <span class="muted small-note">sem stems neste run — reprocesse a faixa</span>
           }
         }
         <div class="channel metronome">
@@ -152,7 +152,7 @@
           </rect>
         }
       }
-      <!-- lane 3: voz (piano roll das notas do stem de voz; vazia em runs anteriores ao extrator 0.5.0) -->
+      <!-- lane 3: voz (piano roll das notas do stem de voz) -->
       @for (r of rowIndexes(); track r) {
         <rect x="0" [attr.y]="rowHeight * r + vocalTop" [attr.width]="width" [attr.height]="vocalLane" class="vocal-bg" />
       }

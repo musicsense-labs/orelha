@@ -1,7 +1,7 @@
 import { Component, computed, inject, input, signal } from '@angular/core';
 import { HttpClient, httpResource } from '@angular/common/http';
 import { SlicePipe } from '@angular/common';
-import { Comparison, Reference } from '../api/models';
+import { Reference, ReferenceComparison } from '../api/models';
 import { keyName, percent } from '../shared/music';
 import { fold } from '../shared/text';
 
@@ -30,7 +30,7 @@ export class ReferencePanel {
   private readonly http = inject(HttpClient);
 
   readonly reference = httpResource<Reference>(() => `/api/tracks/${this.trackId()}/reference`);
-  readonly comparison = httpResource<Comparison | null>(() => `/api/tracks/${this.trackId()}/reference/compare`);
+  readonly comparison = httpResource<ReferenceComparison | null>(() => `/api/tracks/${this.trackId()}/reference/compare`);
   readonly open = signal(false);
   readonly saving = signal(false);
   readonly error = signal<string | null>(null);

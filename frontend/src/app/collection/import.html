@@ -27,7 +27,7 @@
         {{ running() && !progress() ? 'lendo…' : 'revisar' }}
       </button>
     </div>
-    <p class="muted small-note">Pelo navegador os arquivos são copiados para <code>data/audio/</code> ao confirmar; pelo caminho do servidor ficam onde estão. Arquivos já importados (mesmo conteúdo) vêm marcados como duplicata.</p>
+    <p class="muted small-note">Pelo navegador os arquivos são copiados para a biblioteca do Orelha ao confirmar; pelo caminho do servidor ficam onde estão. Arquivos já importados (mesmo conteúdo) vêm marcados como duplicata.</p>
   }
 
   @if (error()) { <p class="error">{{ error() }}</p> }
