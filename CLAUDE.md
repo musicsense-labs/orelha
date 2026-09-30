@@ -2,579 +2,179 @@
 
 Responda e comente em **pt-BR**. Código, identificadores e mensagens de commit em inglês.
 
-**Orelha** é o produto (o app que se abre); **Music Sense Labs** é a organização: namespace
-`dev.musicsense`, GitHub, docs. Decidido em 2026-09-15. O mascote é o Orelha, inspirado na
-cachorra Kali do dono: sentado de frente, a orelha do lado direito da imagem em pé, vitrola
-quadrada aberta ao lado, sem caixas de som (homenagem ao Nipper da HMV/RCA, em outra pose e com
-outro aparelho; nunca usar "hound", já é o SoundHound). Marca em Claude Design ("Marca Orelha"): o
-canvas é a fonte; **v6 do mascote desde 2026-09-16** (menos infantil, olhos em amêndoa) aplicada em
-`frontend/public/brand/*.svg` e `favicon.svg`. Paleta: papel `#f6f1e8`, tinta `#1c1a17`, selo (accent)
-`#d9532b` (hover `#b8401f`), cinza quente `#8a8378`, linha `#d9d2c5`; tipografia Bricolage Grotesque
-(800 títulos, 500 texto) e IBM Plex Mono (rótulos, graus, tempos). Tokens em `frontend/src/styles.scss`
-(`--paper --surface --panel --ink --muted --line --accent --voice --bass`); links no accent, nunca azul do
-navegador; cores de dado (eixo A) ficam em `shared/music.ts`. Nunca inverter as cores do mascote. Não reintroduzir "riff-lab" nem
-"corpus" (hoje "Acervo" na UI e `collection` no código). Pasta do repositório, banco, usuário e
-volume do Postgres migraram para `orelha` em 2026-09-15.
+**Orelha** é o produto (o app que se abre); **Music Sense Labs** é a organização (namespace `dev.musicsense`,
+GitHub, docs). Nunca usar "hound" (é do SoundHound) nem reintroduzir "riff-lab" ou "corpus" (hoje "Acervo" na
+UI e `collection` no código). Marca: canvas "Marca Orelha" no Claude Design é a fonte; mascote v6 em
+`frontend/public/brand/*.svg` e `favicon.svg`, **nunca inverter as cores**. Paleta papel `#f6f1e8`, tinta
+`#1c1a17`, selo `#d9532b` (hover `#b8401f`), cinza quente `#8a8378`, linha `#d9d2c5`; Bricolage Grotesque (800
+títulos, 500 texto) e IBM Plex Mono (rótulos, graus, tempos). Tokens em `frontend/src/styles.scss`; links no accent,
+nunca azul do navegador; cores de dado (eixo A) em `shared/music.ts`. Detalhes: `docs/decisions/produto.md`.
 
-## Mapa de produto
+## O que é
 
-Music Sense Labs é o guarda-chuva; Orelha é o app, com módulos que são **lentes sobre o mesmo
-Acervo** (uma faixa, um run, stems, anotações). Módulo = pacote Java + grupo de rotas + seção do
-menu; nada de serviço ou repositório por módulo antes de um módulo ter ciclo de vida próprio
-(o extrator já tem, por ser Python).
+Plataforma de análise harmônica e tímbrica de música gravada. O objetivo não é detectar BPM ou acorde de uma
+faixa — isso já existe pronto. É **acumular um acervo e comparar vocabulário harmônico entre artistas, álbuns e
+eras**: que percentual dos acordes do Black Sabbath está fora do campo, a matriz de transição de graus do Deep
+Purple × Judas Priest, onde o baixo sustenta a fundamental enquanto a harmonia se move por mediante cromática,
+como o centroide das guitarras evolui entre álbuns.
 
-| Módulo | Pergunta que responde | Existe | Próximo |
+O dono é desenvolvedor Java sênior (Spring, Hibernate, PostgreSQL) e baixista, com estudo de harmonia funcional e
+modal: fale no nível técnico, sem simplificar.
+
+**Módulos são lentes sobre o mesmo Acervo** (faixa, run, stems, anotações). Módulo = pacote Java + grupo de rotas +
+seção do menu; nada de serviço ou repositório próprio antes de ter ciclo de vida próprio (o extrator já tem).
+
+| Módulo | Pergunta | Hoje | Próximo |
 |---|---|---|---|
-| Harmony | O que acontece harmonicamente e como artistas se comparam | `harmony`, `collection`, timeline, perfil, comparação, identidade e era pelo MusicBrainz (`metadata`) | tonalidade `DERIVED`, modo por I7/IV7, linha de baixo sob acorde |
+| Harmony | O que acontece harmonicamente, como artistas se comparam | `harmony`, `collection`, `metadata`; timeline, perfil, comparação | tonalidade `DERIVED`, modo por I7/IV7, linha de baixo sob acorde |
 | Stems | Que instrumento faz o quê | extrator (demucs), player multi-stem | — |
-| Practice | Como tocar junto | `practice`: tablatura e MIDI do baixo; mixer, volumes, balanço L/R, metrônomo, letra sincronizada, velocidade 0,5–1,25× sem mudar o tom, repetir uma parte | versão violão e voz; **Orelha no bolso** (Android, ver abaixo) |
-| Production | Como o som foi construído | `timbre_summary` por álbum e stem | análise de produção (estudo em andamento) |
-| Guide | O que é ouvir e entender isso | — | guia cultural e nerd na entrada; referência: Music Genome Project |
-
-**Orelha no bolso (Android, futuro — registrado em 2026-09-16).** O celular é o módulo Practice: player
-multi-stem com balanço e metrônomo, acorde/compasso/letra em execução, partes; as telas analíticas ficam
-na mesa. Plano em duas fases: (1) timeline responsiva + Capacitor sobre o Angular atual, plugin de áudio em
-segundo plano (tela apagada, controles na tela de bloqueio), backend alcançado por Tailscale, cache local
-dos stems (~20 MB/faixa em Opus); (2) só se o WebView não segurar os quatro `<audio>` sincronizados:
-player nativo Kotlin como plugin do mesmo app — MediaCodec decodifica os stems e um único AudioTrack
-mistura com ganho e pan por stem e o metrônomo na mesma mistura (sincronia por amostra). Descartado:
-quatro ExoPlayers (não sincronizam) e Flutter/React Native (o áudio exigiria plugin nativo do mesmo
-jeito). Pré-requisito em qualquer fase: token de acesso na API antes de expô-la fora da rede local.
-
-**Hospedagem (decidido em 2026-09-16).** Cloudflare Tunnel + Access a partir do PC do dono: o extrator
-não cabe em plano gratuito, o resto é leve. O backend serve o Angular compilado na mesma origem
-(`spring.web.resources.static-locations` → `frontend/dist/frontend/browser`, `SpaForwardController` faz
-o fallback das rotas), então o túnel aponta para `localhost:8081` só. **No ar desde 2026-09-17 em `https://orelha.app`**: domínio no Cloudflare Registrar, túnel `orelha`
-(id em `%USERPROFILE%\.cloudflared\config.yml`, serviço do Windows), Zero Trust Free com a aplicação
-"Orelha" e a política "usuarios" (Allow por e-mail, One-time PIN; id do túnel e nome da equipe ficam fora do
-repositório, em `CLAUDE.local.md` e na memória). Liberar
-alguém = adicionar o e-mail na política. Roteiro e limites (100 MB por upload no plano Free) em
-`deploy/README.md`. **Importar pasta é só no PC do acervo** (2026-09-17): `RemoteImportGuard` responde 403
-em `/api/tracks/import*` e `/import-path*` quando a requisição traz os cabeçalhos que o túnel e o Access
-injetam (`Cf-Connecting-Ip`, `Cf-Access-Authenticated-User-Email`; `RemoteAccess`); `GET /api/access` diz
-à UI se o acesso é remoto e o botão "+ importar pasta" fica desabilitado com a explicação no `title`.
-Upload de uma faixa continua liberado remotamente. **Quem está logado e o que fez** (2026-09-17): a barra
-mostra o e-mail do Access no canto direito ("local" sem túnel; `shared/access.ts` é o único `GET /api/access`
-por carga); `AuditFilter` grava em `audit_event` (V12) ENTER (`GET /api/access`), OPEN_TRACK
-(`GET /api/tracks/{id}/timeline`) e ACTION (POST/PUT/DELETE em /api) com ator, IP, status e duração, em
-transação própria (`AuditService`), nunca derrubando a requisição; leituras de apoio e polling não entram.
-Aba **administrador** (`/admin`, `admin/`) só para `orelha.admin.emails` (padrão dfcsantos@gmail.com) e para
-acesso local: resumo por usuário e eventos descritos em português (`GET /api/admin/audit[/users]`, 403 para
-os demais). `AdminProperties.isAdmin` decide; `/api/access` devolve `admin`. **Excluir faixa é só do administrador**
-(2026-09-17): `DELETE /api/tracks/{id}` responde 403 aos demais e 409 com run RUNNING; `TrackService.remove`
-trava os runs (`lockByTrackId`, FOR UPDATE — o SKIP LOCKED do worker pula o que está saindo), apaga runs e
-faixa pelo JPA (o resto vai por cascata, V5) e devolve os arquivos do host, que `TrackRemoval.delete` apaga
-**depois do commit**, sem nunca falhar a operação: áudio da biblioteca (não o cadastrado por path fora dela),
-`data/stems/<sha>/` e o Parquet. Stems e features são por SHA do áudio, então ficam se outra faixa tiver os
-mesmos bytes (`upload` e `POST /api/tracks` não deduplicam por SHA; só o import faz). Botão ✕ na lista do
-acervo só com `access.admin()`, com `confirm()`; erros das ações da lista aparecem acima do acervo
-(`actionError`), não dentro do formulário de upload — foi por isso que o ↻ postou em `/api/tracks//analyze`
-por dois dias sem ninguém ver (corrigido em 2026-09-17). Tarefa agendada "Orelha" (`deploy/install-task.ps1` → `start-orelha.ps1`) sobe Docker,
-compose e backend no logon; o backend de produção é dela, não de sessões de desenvolvimento. **Reiniciar é
-`Stop-ScheduledTask Orelha` + `Start-ScheduledTask Orelha`**: o Stop libera a tarefa mas **não alcança o java
-filho** (ela bloqueia no `run.ps1`), então desde 2026-09-24 o `start-orelha.ps1` encerra quem estiver
-escutando na porta antes de subir — e só se for `java`, para nunca encostar no que ocupa a 8080. Sem isso o
-backend novo morria com "Port 8081 was already in use" e o antigo seguia no ar, o que só aparece no
-`deploy/logs/backend.log`. Plano B
-com o PC desligado: Oracle Cloud Always Free para banco, backend e stems, extrator em casa.
-
-## Contexto
-
-Plataforma de análise harmônica e tímbrica de música gravada. O objetivo não é
-detectar BPM ou acorde de uma faixa — isso já existe pronto. O objetivo é
-**acumular um acervo e comparar vocabulário harmônico entre artistas, álbuns e eras**,
-respondendo perguntas como:
-
-- Que percentual dos acordes do Black Sabbath está fora do campo harmônico da tonalidade?
-- Qual a matriz de transição de graus do Deep Purple vs a do Judas Priest?
-- Em que passagens o baixo sustenta a fundamental enquanto a harmonia se move por mediante cromática?
-- Como o centroide espectral médio das guitarras de uma banda evolui entre álbuns?
-
-O dono do projeto é desenvolvedor Java sênior (Spring, Hibernate, PostgreSQL) e baixista,
-com estudo de harmonia funcional e modal: fale no nível técnico, sem simplificar.
+| Practice | Como tocar junto | `practice`: tab e MIDI do baixo; mixer, balanço, metrônomo, letra, velocidade, repetir parte | violão e voz; Orelha no bolso (Android) |
+| Production | Como o som foi construído | `timbre_summary` por álbum e stem | análise de produção |
+| Guide | O que é ouvir e entender isso | — | guia cultural; aba Genoma |
 
 ## Arquitetura (não negociável)
 
-Três camadas com fronteiras rígidas:
-
 ```
-[1] EXTRAÇÃO (Python, fora do nosso código)
-    Serviço externo já existente. Recebe áudio, devolve JSON.
-    Responsável por: separação de stems, beats/downbeats, acordes com timestamp,
-    tonalidade, descritores espectrais por frame, chroma por segmento, áudio→MIDI.
+[1] EXTRAÇÃO (Python, extractor/)  recebe áudio, devolve JSON: stems, beats, acordes, tonalidade,
+                                   chroma por segmento, timbre agregado, áudio→MIDI, letra por ASR
         ↓ HTTP, JSON
-[2] NÚCLEO (Spring Boot — o coração do projeto)
-    Orquestra jobs de análise, persiste, e faz TODA a interpretação musical:
-    normalização para graus, classificação funcional, matrizes de transição,
-    métricas do acervo.
+[2] NÚCLEO (Spring Boot)           orquestra a fila, persiste e faz TODA a interpretação musical:
+                                   graus, classificação funcional, matrizes, métricas do acervo
         ↓ REST
-[3] UI (Angular)
-    Visualização: timeline harmônica, heatmap de transições, comparação entre artistas.
+[3] UI (Angular)                   timeline, heatmap de transições, comparação entre artistas
 ```
 
-**Regra de fronteira:** nenhum modelo de ML, nenhuma DSP e nenhuma dependência
-Python entra no Spring Boot. Nenhuma lógica de teoria musical entra no Python.
-Se você se pegar querendo cruzar essa linha, pare e pergunte.
+**Fronteira:** nenhum modelo de ML, DSP ou dependência Python entra no Spring Boot; nenhuma teoria musical entra no
+Python. Se for preciso cruzar essa linha, pare e pergunte. Só `extraction/orelhaextractor/*` conhece o JSON do
+extrator; o domínio vê `ExtractionResult` (rótulos Harte traduzidos por `HarteLabel`). Um adapter por extrator.
 
-## Stack
+## Stack, layout e ambiente
 
-- **Backend:** Java 21, Spring Boot 3.5, Spring Web, Spring Data JPA, PostgreSQL 16,
-  Flyway, WebClient. Testes com JUnit 5 + Testcontainers. Build Maven.
-- **Frontend:** Angular 21 (LTS), standalone components, signals, zoneless, sem NgRx.
-  Gráficos: ECharts (heatmap, barras) + SVG em template para a timeline (ver "Frontend").
-- **Extração:** container Docker de terceiro, configurado por URL em `application.yml`.
-  Nunca acoplar o domínio ao formato de resposta de um extrator específico —
-  interfaces de extração com um adapter por implementação.
-
-## Layout do repositório
-
-```
-backend/    Maven, pacote raiz dev.musicsense.orelha (org: dev.musicsense)
-frontend/   Angular CLI
-docker-compose.yml   Postgres local (orelha/orelha@localhost:5432/orelha, projeto compose `orelha`, volume `orelha_pgdata`)
-```
-
-## Ambiente
-
-- Requisitos: JDK 21, Node 24 (Angular CLI não é global: `npx ng ...` em `frontend/`), Docker.
-- `backend/.mvn/maven.config` força `.mvn/settings.xml` (Maven Central), ignorando qualquer
-  mirror do `~/.m2/settings.xml`.
-- Testes do backend: `cd backend && mvn test` (sobe Postgres via Testcontainers, ~40 s).
-- Extrator: `docker compose build extractor` (~10 min na primeira vez, imagem de 4,2 GB: torch CPU
-  + demucs). WAV sintético para smoke test: `docker run --rm -v "$PWD/extractor/out:/out"
-  orelha-extractor python -m app.testaudio /out/progression.wav`. `extractor/out/` é ignorado pelo git.
-- Stack completo: `docker compose up -d` (Postgres + extractor em :8000) e `mvn spring-boot:run`
-  em `backend/` (API em :8080; o worker faz polling da fila a cada 5 s).
-- Particularidades da máquina do dono (portas ocupadas, JDK do sistema, caminhos) ficam em
-  `CLAUDE.local.md`, não versionado.
+- **Backend** Java 21, Spring Boot 3.5, Spring Data JPA, PostgreSQL 16, Flyway (V15), `RestClient`; JUnit 5 +
+  Testcontainers; Maven. Pacote raiz `dev.musicsense.orelha`.
+- **Frontend** Angular 21, standalone, signals, zoneless, sem NgRx, `httpResource` para toda leitura. ECharts
+  (tree-shaken) nos gráficos; timeline em SVG de template, sem D3. Perfil, comparação e admin carregam sob demanda.
+- **Extrator** `extractor/` (FastAPI, Python 3.10, CPU), versão **0.7.0**, contrato em `extractor/README.md`.
+- `backend/`, `frontend/` (`npx ng ...`, o CLI não é global), `extractor/`, `docker-compose.yml` (Postgres
+  `orelha/orelha@localhost:5432/orelha`, volume `orelha_pgdata`, e o extrator em :8000), `deploy/`, `docs/`.
+- Testes: `cd backend && mvn test` (Testcontainers). `backend/.mvn/maven.config` força o Maven Central.
+- Extrator: `docker compose build extractor` e `docker compose up -d extractor` para recriar. Smoke test com o WAV
+  sintético: `python -m app.testaudio` (ver README do extrator). Nunca gravar áudio com direitos autorais no repo.
+- **Produção é a tarefa agendada "Orelha"** (`deploy/start-orelha.ps1`: Docker, compose e backend na **8081**,
+  servindo o Angular compilado de `frontend/dist`). Reiniciar = `Stop-ScheduledTask Orelha` + `Start-ScheduledTask
+  Orelha` (o script encerra o java que estiver na porta). Frontend novo = `npx ng build`, sem reiniciar.
+- Particularidades da máquina (JDK, portas ocupadas, discos, caminhos, ids do túnel) ficam em `CLAUDE.local.md`.
+  Segredos num `.env` na raiz, fora do git (modelo em `.env.example`), carregado por `backend/run.ps1`.
 
 ## Regras de trabalho
 
-- **Trade-offs explícitos.** Toda decisão de arquitetura com mais de uma opção viável
-  vem como comparação, não como fato consumado.
+- **Trade-offs explícitos.** Decisão de arquitetura com mais de uma opção viável vem como comparação.
 - **Não invente teoria musical.** Se uma regra de classificação for ambígua, pergunte.
-- Ao editar código existente, preserve o estilo do trecho original.
-- Não crie abstração antes do segundo caso de uso concreto.
-- Nada de mock de dados na UI para "mostrar funcionando". Se o backend não devolve,
-  a tela mostra vazio.
-- Commits pequenos e descritivos, um por unidade lógica. Sem push automático.
-- Trabalhe uma onda por vez. Ao fim de cada onda, pare, mostre o resultado e espere
-  aprovação antes de seguir. Não adiante trabalho da onda seguinte.
+- Preserve o estilo do trecho que edita. Nada de abstração antes do segundo caso de uso concreto.
+- Nada de mock na UI: se o backend não devolve, a tela mostra vazio ou a mensagem do backend.
+- Commits pequenos, um por unidade lógica. Sem push automático.
+- Uma onda por vez: ao fim, pare, mostre o resultado e espere aprovação.
+- Registre decisões e medições novas em `docs/decisions/<tema>.md`; aqui fica só o que vale e o ponteiro.
 
-## Modelo de dados (decisões já tomadas)
+## Modelo de dados
 
-Revisado em relação ao esboço original; ver `backend/src/main/resources/db/migration/V1__schema.sql`.
+- **Bruto ≠ derivado.** `chord_segment` guarda só o que o extrator devolveu; o que o `HarmonicNormalizer` deriva
+  vai para `harmonic_annotation` com `normalizer_version` — re-derivar nunca exige re-extrair.
+- **Tonalidade é por segmento** (`key_segment`), `mode` é enum aberto (maior, menor, modos eclesiásticos). Leitura
+  prefere `MANUAL > DERIVED > EXTRACTOR`; `PUT /api/tracks/{id}/key` grava MANUAL e re-anota (ainda sem tela).
+- **`quality` é vocabulário nosso** (`ChordQuality`, com `NO_CHORD`, `UNKNOWN`, `POWER`); o adapter traduz.
+- **Power chord não é inferível pelo chroma** (medido: sob distorção a intermodulação imita a terça). Entra como o
+  maj/min que o BTC escolheu; `POWER`/`AMBIGUOUS` ficam para um extrator com classe "5". NUNCA inferir a terça pela
+  tonalidade.
+- **Baixo tem duas fontes:** `bass_pc` (rótulo do extrator) e `effective_bass_pc` (derivado do stem MIDI, o
+  confiável). Beats em tabela própria (`beat`, com `bar_no`, `is_downbeat`). Grau é inteiro (`degree_interval`,
+  0–11); o numeral romano é renderização.
+- **Um run canônico por faixa** (`track.canonical_run_id`; o primeiro DONE, trocável por `PUT …/canonical-run`).
+  Re-análise mantém o run anterior e **herda os overrides MANUAL** (tonalidade, partes, letra) do canônico.
+- **A fila é `analysis_run`** (`FOR UPDATE SKIP LOCKED`, sem Kafka/Redis): batimento a cada 30 s, reclamação dos
+  RUNNING abandonados, **pausa em execução** e **pausa automática depois de 3 falhas seguidas**, faxina de pastas de
+  stems órfãs, uma análise por vez. Detalhes: `docs/decisions/fila.md`.
+- Stems persistidos em Opus por SHA do áudio (`/data/stems/<sha>/`, `DataPaths` traduz para o host). `track.audio_path`
+  é relativo a `orelha.library.dir` (`AudioLibrary` é o único que conhece a raiz); absoluto só para o que foi
+  importado de uma pasta do servidor.
 
-- **Bruto ≠ derivado.** `chord_segment` guarda só o que o extrator devolveu.
-  Tudo que o `HarmonicNormalizer` deriva vai para `harmonic_annotation`, com
-  `normalizer_version` — re-derivar nunca exige re-extrair.
-- **Tonalidade é por segmento** (`key_segment`), não por faixa; tonalidade global =
-  um segmento cobrindo a faixa. `mode` é enum aberto (maior, menor e modos eclesiásticos).
-- **Vocabulário de `quality` é nosso** (enum `ChordQuality`); o adapter traduz o dialeto
-  do extrator. Inclui `NO_CHORD`, `UNKNOWN` e `POWER`.
-- **Acorde de potência é decidido em Java**, a partir do `chroma[12]` do segmento
-  (teste de ausência de terça). NUNCA inferir a terça pela tonalidade.
-- **Baixo tem duas fontes:** `bass_pc` (rótulo do extrator, nullable) e
-  `effective_bass_pc` (derivado de `bass_note`, o stem MIDI). O segundo é o confiável.
-- **Beats têm tabela própria** (`beat`), com `bar_no` e `is_downbeat`.
-- **Um run canônico por faixa** (`track.canonical_run_id`) para as queries do acervo.
-- **A fila é `analysis_run`** (`status`, `attempts`, `locked_at`), poller `@Scheduled`
-  com `SELECT … FOR UPDATE SKIP LOCKED`. Sem Kafka, sem Redis. **Batimento e reclamação (2026-09-23)**: enquanto
-  extrai (minutos), o worker atualiza `locked_at` a cada `orelha.worker.heartbeat` (30 s) numa thread própria;
-  todo ciclo do poller reclama os RUNNING cujo ponto parou há mais de `stale-after` (2 min) — de volta a QUEUED
-  até `max-attempts` (3), depois FAILED com a razão. É o conserto do run que ficava travado para sempre quando
-  o backend caía no meio da extração (aconteceu três vezes entre 18 e 23/09: a faixa não podia ser excluída,
-  respondia 409, e perdia o botão de reprocessar). O batimento é o que permite reclamar em minutos sem roubar
-  o run de outro worker vivo — a fila continua válida para vários processos. **Faxina de órfãos** (2026-09-23,
-  `OrphanSweeper`): a cada `orelha.data.orphan-sweep-interval` (6 h) apaga pasta de stems ou Parquet cujo SHA
-  não é de faixa nenhuma — sobra que o extrator deixa quando grava antes do run ser persistido e o run acaba
-  abandonado. Três travas, porque apaga sozinho: acervo vazio aborta (banco fora do ar não vira faxina geral),
-  só entra o que está parado há mais de `orphan-min-age` (1 h, nunca disputa com análise em andamento) e nada
-  fora de `stems`/`features` é olhado (um .txt na pasta fica). `POST /api/admin/orphans` (só administrador)
-  mostra o que há (`dryRun=true`, padrão) ou limpa na hora. **Pausar a fila sem derrubar o Orelha** (2026-09-24):
-  o extrator ocupa ~13 das 28 threads por horas e nem sempre é hora disso. `POST /api/admin/worker?enabled=false`
-  (`GET` devolve `{enabled, queued, running}`; painel "Fila de análise" na aba administrador) pausa o consumo
-  **em execução**: a flag é lida **dentro do laço de dreno**, não só na entrada do poller — com a fila grande
-  um único ciclo dura dias, e uma pausa que só olhasse a entrada não faria nada. Pausar não aborta a faixa que
-  já está no extrator: ela termina e é gravada. O reclaim de abandonados continua rodando pausado (um RUNNING
-  preso impediria até excluir a faixa). Vale só para o processo: reiniciar volta ao `orelha.worker.enabled`
-  (`ORELHA_WORKER_ENABLED` no `.env` é o padrão de quem quer subir pausado). Alívio sem reiniciar nada:
-  `docker update --cpus=3 orelha-extractor` limita o container em execução (`--cpus=0` solta; recriar o
-  container também).
-- **Grau é inteiro** (`degree_interval`, 0–11 semitons acima da tônica); o numeral
-  romano é renderização.
-- Séries por frame não vão para o Postgres: `analysis_run.features_path` (Parquet).
+## Regras do `HarmonicNormalizer` (P1/P2/P3, decididos em 2026-09-13)
 
-## Regras do `HarmonicNormalizer` (P1/P2/P3 decididos em 2026-09-13)
+Pacote `harmony`, Java puro. Mude `HarmonicNormalizer.VERSION` a cada alteração de regra.
 
-Pacote `dev.musicsense.orelha.harmony`, Java puro. Versão em `HarmonicNormalizer.VERSION`; mude a cada
-alteração de regra (vai para `harmonic_annotation.normalizer_version`).
+- **Dois eixos (P1).** Eixo A `KeyRelation` (acorde × tonalidade), precedência: `NONE` (sem fundamental) →
+  `AMBIGUOUS` (power chord cuja díade cabe na escala) → `DIATONIC` (todas as notas, inclusive 7ª, na escala) →
+  `BORROWED` (todas na escala paralela: maior ↔ menor natural; cobre "IV dórico" e "♭VII mixolídio") →
+  `SECONDARY_DOMINANT` (DOM7 fora do campo é dominante pela qualidade, resolva ou não; tríade MAJ só com o próximo
+  uma 5ª abaixo) → `CHROMATIC` (inclui ♭II frígio, III/VI maiores, ♭V blue note). Eixo B `Transition` (acorde ×
+  anterior, sobre tríades reduzidas; guarda `rootInterval` e `commonTones`): `PARALLEL`, `RELATIVE`,
+  `LEITTONWECHSEL`, `HEXATONIC_POLE` (maior r ↔ menor r+8), `CHROMATIC_MEDIANT` (terça, 1 comum),
+  `DOUBLY_CHROMATIC_MEDIANT` (0), `DIATONIC_MEDIANT`, `MEDIANT` (com sus/power), `FIFTH_DOWN`, `FIFTH_UP`,
+  `TRITONE`, `SEMITONE`, `WHOLE_TONE`, `SAME_ROOT`, `SAME`.
+- **Referência tonal (P2).** A tonalidade do `key_segment` vigente. Menores tonais (`MINOR`, `DORIAN`) = natural +
+  V, V7, vii°, vii°7 da harmônica como diatônicos; `AEOLIAN` e `PHRYGIAN` estritos; `PHRYGIAN_DOMINANT` (tônica
+  maior + ♭II) para flamenco/metal. Blues: `MIXOLYDIAN` (I7 diatônico) ou `DORIAN` (IV7). Numerais **sempre
+  relativos à escala maior da tônica** (♭III, ♭VI, ♭VII também em menor); trítono = `♯IV` em modos de terça maior,
+  `♭V` nos de terça menor; caixa pela tríade (`ii`, `vii°`, `iiø7`, `III+`, `IVsus4`); power chord neutro em caixa
+  alta (`I5`, `♭VI5`).
+- **Unidade (P3).** Segmentos idênticos consecutivos fundidos antes; matriz de transição sem diagonal; seções
+  repetidas contam cada vez; distribuições por contagem e por duração. Nas métricas do acervo `AMBIGUOUS` conta como
+  dentro do campo; `7sus4` reduz a `sus4`.
+- **Baixo.** `inverted = bass ≠ root`; `BassRole` ∈ {ROOT, THIRD, FIFTH, SEVENTH, SUSPENDED, NON_CHORD_TONE, UNKNOWN}.
+- **Partes (`SectionDeriver`)**: ciclos pela grade de compassos, letras A, B, C… por harmonia, **nunca
+  "verso"/"refrão"** — nome de função só vem de MANUAL ou de um modelo de estrutura. `docs/decisions/partes.md`.
 
-- **Dois eixos (P1).** Eixo A `KeyRelation` (acorde × tonalidade), precedência:
-  `NONE` (sem fundamental) → `AMBIGUOUS` (power chord cuja díade cabe na escala) → `DIATONIC`
-  (todas as notas, inclusive 7ª, na escala) → `BORROWED` (todas na escala paralela: maior ↔ menor
-  natural; cobre os "IV dórico" e "♭VII mixolídio") → `SECONDARY_DOMINANT` (DOM7 fora do campo é
-  dominante pela qualidade, resolva ou não — `E7 → F` em Dó é V/vi; tríade MAJ só com o próximo
-  acorde uma 5ª abaixo) → `CHROMATIC` (inclui ♭II frígio, III/VI maiores, ♭V blue note).
-  Eixo B `Transition` (acorde × anterior, sobre tríades reduzidas; guarda `rootInterval` e
-  `commonTones`): `PARALLEL`, `RELATIVE`, `LEITTONWECHSEL`, `HEXATONIC_POLE` (maior r ↔ menor r+8),
-  `CHROMATIC_MEDIANT` (terça, 1 comum), `DOUBLY_CHROMATIC_MEDIANT` (0), `DIATONIC_MEDIANT`,
-  `MEDIANT` (terça com sus/power), `FIFTH_DOWN` (G→C), `FIFTH_UP`, `TRITONE`, `SEMITONE`,
-  `WHOLE_TONE`, `SAME_ROOT`, `SAME`.
-- **Referência tonal (P2).** A tonalidade do `key_segment` vigente. Menores tonais (`MINOR`,
-  `DORIAN`) = escala natural + V, V7, vii°, vii°7 da harmônica como diatônicos; `AEOLIAN` e
-  `PHRYGIAN` são estritos. `PHRYGIAN_DOMINANT` (tônica maior + ♭II) existe para flamenco/metal.
-  Blues: `MIXOLYDIAN` (I7 diatônico) ou `DORIAN` (IV7 diatônico), conforme o caso.
-  Numerais **sempre relativos à escala maior da tônica** (♭III, ♭VI, ♭VII também em menor);
-  trítono = `♯IV` em modos de terça maior, `♭V` nos de terça menor; caixa pela tríade: `ii`,
-  `vii°`, `iiø7`, `III+`, `IVsus4`; power chord neutro em caixa alta: `I5`, `♭VI5`.
-- **Unidade (P3).** Segmentos idênticos consecutivos são fundidos antes da normalização; matriz de
-  transição sem diagonal; seções repetidas contam cada vez (música como ouvida); distribuições
-  por contagem de segmento e por duração — a Onda 3 expõe as duas.
-- **Baixo.** `inverted = bass ≠ root`; `BassRole` ∈ {ROOT, THIRD, FIFTH, SEVENTH, SUSPENDED,
-  NON_CHORD_TONE, UNKNOWN}. Pedal sob harmonia móvel é query sobre a sequência de
-  `effective_bass_pc` (Onda 3).
+## Letra
 
-## Extração (decidido em 2026-09-13)
+Pacote `lyrics`: tudo sobre letra mora aqui. O ASR (faster-whisper sobre o stem de voz) sabe *quando* se canta; o
+`.lrc` que vem ao lado do áudio sabe *o quê*. `LyricMerger` alinha a música inteira (Needleman–Wunsch com o carimbo
+de cada verso como restrição de tempo) e a fusão é **derivada na leitura**; a correção MANUAL do dono vence tudo.
+As notas de voz são classificadas (`LEXICAL`, `NON_LEXICAL`, `LIKELY_LEAK`) pela mesma letra que a tela mostra. O
+`.lrc` viaja com o áudio na importação de pasta. Medições e histórico: `docs/decisions/letra.md`.
 
-- O backend Python do ChordMiniApp foi descartado no spike: BTC desligado por constante, import
-  inexistente, checkpoint não publicado, Chord-CNN-LSTM sem pesos, sem tonalidade, > 6 GB.
-- **`extractor/` é nosso** (FastAPI, Python 3.10, CPU): executa o `src/evaluation/test.py` do
-  ChordMini (MIT, BTC 170 classes) e lê o `.lab`; madmom para beats/downbeats e tonalidade
-  (24 maior/menor); demucs `htdemucs` para stems; basic-pitch no stem de baixo; librosa para
-  chroma por segmento e descritores por stem (agregados no JSON, séries em Parquet); pyloudnorm.
-  Contrato em `extractor/README.md`. É cola: zero teoria musical no Python.
-- `POST /analyze` é síncrono (minutos); a assincronia é a fila do Spring (`analysis_run` +
-  `AnalysisWorker`). Cliente Java com `RestClient` (bloqueante por desenho; WebClient traria
-  reactor sem ganho).
-- **Onde o tempo vai, e por que não paralelizamos (medido em 2026-09-23)**: o `pipeline` loga a duração de cada
-  etapa. Faixa de 2:33 em 115 s: **letra/Whisper 49 s (43 %)**, **stems/demucs 36 s (31 %)**, beats/madmom 12 s,
-  encode opus 4 s, o resto 13 s. A CPU fica em ~30 % de média (pico de 14 das 28 threads lógicas), o que sugeria
-  folga — mas o A/B com as mesmas 4 faixas e aquecimento deu **255 s em série × 361 s com 3 processos**: paralelizar
-  **piorou 1,4×**. Dar mais threads ao torch é pior ainda (28 threads: 204 s por faixa contra 115 s com o padrão de
-  14) — o i7-14700 tem 8 núcleos rápidos e 12 lentos, e espalhar trabalho nos E-cores custa caro. As medições variam
-  bastante entre rodadas (provável limitação térmica depois de muitos lotes), então nenhum ganho de 10–20 % seria
-  confiável aqui. `EXTRACTOR_WORKERS` (compose) e `orelha.worker.concurrency` (backend) existem e são configuráveis,
-  **ambos 1 por padrão**; as alavancas reais para ganhar tempo são o Whisper (modelo menor, `beam_size`, ou não
-  transcrever quando a letra não interessa) e uma GPU, que acelera demucs e Whisper juntos.
-- Só aqui se conhece o JSON do extrator: `extraction/orelhaextractor/*`. O domínio vê
-  `ExtractionResult`; rótulos Harte são traduzidos por `HarteLabel`.
-- **Power chord não é inferível pelo chroma** (medido em 2026-09-14, três faixas reais): sob
-  distorção a intermodulação de fundamental e quinta gera 2,5f — a terça maior uma oitava acima,
-  no mesmo registro da pestana. Razão terça/quinta no `chroma_low` (stem de guitarra, C2–F4):
-  Teen Spirit (power chords) mediana 0,66 = Valerie (tríades limpas) 0,66; só tríades distorcidas
-  (Creep, 1,24) se destacam. `PowerChordDetector` fica **desligado** (`power-chord-third-ratio: 0`);
-  power chords entram como o maj/min que o BTC escolheu e `AMBIGUOUS` não ocorre com este extrator.
-  O `chroma_low` continua coletado para tentativas futuras (extrator com classe "5", outra evidência).
-- **Tonalidade corrigível sem re-extrair**: `PUT /api/tracks/{id}/key` grava `key_segment MANUAL`
-  (inclusive modos) e re-anota o run canônico; timeline e acervo preferem `MANUAL > DERIVED >
-  EXTRACTOR`. A leitura com a tonalidade do extrator permanece (unicidade da anotação inclui o
-  `key_segment`). Creep: madmom deu C maior com 0,31; a correção para G maior devolve I III IV iv.
-- **Run canônico é escolha do dono**: `PUT /api/tracks/{id}/canonical-run` (run DONE da faixa);
-  o padrão continua sendo o primeiro run concluído.
-- **Stems persistidos (0.4.0, Opus)**: o demucs grava WAV no diretório de trabalho — é o que
-  basic-pitch, `chroma_low` e timbre leem, sem perda — e o que fica em `/data/stems/<sha>/` é a
-  versão codificada por ffmpeg no formato `STEM_FORMAT` (compose: `opus` = Ogg/Opus 128 kbps,
-  ~11× menor que WAV; `aac`, `flac`, `wav` também valem). `models.stems_codec` registra o codec.
-  Stems antigos: `docker exec orelha-extractor python -m app.convert_stems` + `UPDATE
-  analysis_run SET stems = replace(stems::text, '.wav"', '.ogg"')::jsonb`. Tipos MIME servidos:
-  ogg/opus → `audio/ogg`, m4a/aac → `audio/mp4`, flac, wav, mp3. O extrator grava o upload como
-  `audio.<ext>` (nome neutro) porque títulos com pontos já derrubaram o ChordMini, e inclui a saída
-  do script na mensagem de erro quando não há `.lab`. O extrator devolve `stems` no JSON; o compose faz bind mount de `{features,stems}` no host (`ORELHA_DATA_DIR`
-  no `.env`, que o compose lê sozinho; vazio = `./data`) e `DataPaths` traduz `/data/...` → `orelha.data.host-root`
-  (`ORELHA_DATA_HOST_ROOT`, o mesmo caminho; default `../data`). Trocar de disco é copiar, apontar os dois,
-  recriar o extrator (`docker compose up -d extractor`) e conferir uma análise nova antes de apagar a origem. O backend serve
-  `GET /api/tracks/{id}/stems` e `/stems/{name}` (Range) a partir do run canônico; runs anteriores
-  a 0.3.0 não têm stems (a UI avisa e sugere re-análise). `data/` é ignorado pelo git.
-- **`track.audio_path`**: relativo a `orelha.library.dir` com `/` (`25/Evil Woman.mp3`) para arquivos
-  dentro da biblioteca; absoluto só para faixas cadastradas por path fora dela. `AudioLibrary` decide
-  (`store`/`resolve`) e é o único lugar que conhece a raiz; `TrackResponse.audioPath` devolve o caminho
-  resolvido. Decidido em 2026-09-15 depois que mover a pasta riff-lab → orelha quebrou o player em 235
-  faixas (V6 converteu o que já existia). Mover a pasta ou trocar de máquina agora é só apontar
-  `orelha.library.dir` (`ORELHA_LIBRARY_DIR` no `.env`; a biblioteca do dono saiu de `data/audio` para outro
-  disco em 2026-09-22 sem tocar no banco — copiar, apontar, conferir, só então apagar a origem).
-- **Upload pela UI**: `POST /api/tracks/upload` (multipart `file`, `albumId`, `title?`, `trackNo?`)
-  grava em `orelha.library.dir/<albumId>/<título>.<ext>` (sem sobrescrever) e enfileira;
-  `TrackResponse` traz o último run (`latestRunId/Status/Error`) numa query só para a lista.
-- **Importar pasta em dois passos**: preview → edição na UI → confirm. `POST /api/tracks/import/stage`
-  (multipart `files`, nome = caminho relativo da pasta) guarda em `orelha.staging.dir/<uuid>/` e
-  devolve `Preview{stagingId, items[]}`; `POST /api/tracks/import-path/preview {path, recursive}`
-  faz o mesmo para uma pasta do servidor (`stagingId` null, arquivos ficam no lugar). Nada entra no
-  catálogo no preview. `POST /api/tracks/import/confirm {stagingId, items[]}` cadastra os itens
-  **como a UI os editou** (staging → biblioteca por `move`; staging apagado); `DELETE
-  /api/tracks/import/stage/{id}` descarta. `/import` e `/import-path` são atalhos (preview +
-  confirmar tudo). Na UI: tabela editável, ↔ troca artista/título, ⇊ aplica artista/álbum/ano às
-  linhas selecionadas, duplicatas vêm desmarcadas. `AudioTags` (jaudiotagger) lê ID3/Vorbis/MP4/WAV: artista = album artist ou artist;
-  álbum; ano (4 dígitos); título; número (`3/12` → 3). Sem tags: convenção `Artista/Álbum/01
-  Título.ext`; nome `Artista - Título` separa o artista (a UI troca se a ordem for a outra);
-  sufixos `(youtube)`/`[Official Video]` no fim do nome são descartados. Artista/álbum reusados por nome (case-insensitive); mesmo SHA-256 é
-  pulado; número já ocupado no álbum vira null. Uma transação por faixa (`TransactionTemplate`).
-- **Voz → MIDI (0.5.0, 2026-09-15)**: basic-pitch também no stem de voz (80–1100 Hz), `vocal_notes` no
-  JSON, tabela `vocal_note` (V8), `GET /api/tracks/{id}/vocal-notes` do run canônico. Runs anteriores
-  não têm voz; o dono escolheu re-analisar o acervo inteiro em vez de um backfill só da voz.
-- **Letra por ASR (0.6.0, 2026-09-15)**: faster-whisper `small` (int8, CPU, pesos baixados no build da imagem,
-  `WHISPER_MODEL`/`WHISPER_LANGUAGE` no compose) sobre o stem de voz devolve `lyrics` — trechos com
-  `no_speech_prob` e palavras com tempo e confiança. Persistido bruto em `lyric_segment`/`lyric_word` (V9),
-  idioma em `track_analysis`. `GET /api/tracks/{id}/lyrics` devolve trechos e palavras com o compasso em que
-  começam. A classificação das notas de voz é derivada na leitura (`VocalNoteClassifier`, limiares em
-  `orelha.lyrics.*`): `LEXICAL` (sob palavra com probabilidade ≥ 0,3, folga 120 ms), `NON_LEXICAL` (dentro de
-  trecho devolvido, sem palavra: vocalise) ou `LIKELY_LEAK` (fora de qualquer trecho: solo ou teclado que
-  o demucs deixou no stem). **Medido no Creep (2026-09-15)**: `no_speech_prob` fica em 0,78–0,86 em canto
-  limpo e transcrito, então não serve de limiar (o do núcleo fica em 1,0 = desligado); o que separa é o
-  próprio Whisper devolver ou não o trecho, com `no_speech_threshold=0.95` no extrator para a ponte sob
-  guitarra distorcida não sumir — intro e solo continuam sem trecho. Trecho cujas palavras têm todas
-  probabilidade < 0,3 é alucinação ("You" a 0,06 no WAV sintético, "Oh" a 0,01 sob guitarra) e o
-  classificador o ignora. Notas de voz do Creep: 212 com texto, 210 vazamento (intro, solo 2:47–3:04 e a
-  distorção dos refrões). A ponte cantada sob distorção (2:22–2:47) sai numa execução e some noutra: o
-  Whisper não é determinístico ali; quando some, as notas dela viram vazamento — é o caso do botão
-  "mostrar vazamento" e da edição manual (próxima onda). Sem letra no run, tudo é `LEXICAL`. É classificação, não
-  descarte. Motivação: o dono viu solos de guitarra no piano roll da voz; a letra sincronizada também é
-  a base para forma por texto (backlog Stephenson, itens 5/15/16). **Correção manual (V10, 2026-09-16)**: `PUT /api/tracks/{id}/lyrics` com a lista inteira de
-  trechos e palavras grava `lyric_segment.source = MANUAL` (palavras sem probabilidade = o dono afirmou);
-  leitura prefere MANUAL; lista vazia volta à transcrição; a re-análise herda a letra MANUAL como herda
-  tonalidade e partes. Na UI, clicar numa palavra da célula LETRA pausa e abre a edição: vazio apaga,
-  espaços dividem o tempo da palavra entre as novas; "voltar à transcrição" desfaz tudo. **Alinhamento**
-  (`LyricAligner`): cada palavra recebe `noteStartS`/`midi` da nota de voz cujo ataque cai na folga de
-  120 ms (o ASR marca a consoante, o basic-pitch a vogal); o compasso da palavra e o negrito na UI usam esse
-  instante. Endpoints de letra vivem em `LyricsController`; `LyricsService` é o único lugar que decide a
-  fonte preferida e classifica as notas de voz.
-- **Letra sincronizada do arquivo (.lrc, 2026-09-23, pacote `lyrics`)**: o app do dono (yt-mp3) baixa um `.lrc`
-  ao lado de cada faixa — texto humano com carimbo por verso, sem fim de linha e sem tempo por palavra. Ele
-  **não substitui o ASR, corrige o texto dele**: o Whisper sabe *quando* se canta (tempo por palavra e, sobretudo,
-  os trechos sem canto, que separam voz de solo vazado no stem); o .lrc sabe *o quê*. `LrcFile` lê o arquivo,
-  `LrcImporter` grava os versos em `lrc_line` (V14, por faixa e não por run: a re-análise não perde) quando a
-  faixa entra no acervo, e `POST /api/admin/lrc-scan` varre o que já estava lá. `LyricMerger` (Java puro) casa
-  verso a verso — janela do carimbo até o próximo, folga de 1,5 s, Needleman–Wunsch sobre as palavras sem
-  acento/caixa/pontuação: igual mantém tempo do ASR, **diferente fica com o texto do .lrc e o tempo do ASR**,
-  o que o ASR não ouviu entra interpolado entre as vizinhas, e o que o ASR ouviu mas o verso não tem **cai fora**
-  (alucinação sobre instrumental). O tempo medido nunca é alterado: quando a ordem quebra, quem cede é a palavra
-  interpolada. A fusão é **derivada na leitura** (`LyricsService`), então MANUAL continua vencendo tudo e dá para
-  comparar com o bruto. Medido em 25 faixas (4778 palavras): 56 % o ASR já acertava, **19 % corrigidas**, 25 % ele
-  nem ouviu, e 1042 alucinações descartadas. Acervo em 2026-09-23: 269 das 326 faixas com .lrc (8536 versos);
-  16 arquivos vazios e 41 sem arquivo caem no ASR puro. Na timeline, o selo  na célula LETRA conta quanto mudou.
-  **O .lrc viaja com o áudio na importação (2026-09-24)**: a tela de importar pasta envia cada `.lrc` no mesmo
-  lote do áudio a que pertence (lote = um staging; noutro lote ele não estaria ao lado na hora de confirmar), o
-  `.lrc` não vira linha da pré-visualização, e `ImportService.moveIntoLibrary` o leva para a biblioteca com o
-  nome de destino (`03 Creep.lrc` → `Creep.lrc`). Antes disso a pasta entrava sem letra: a importação de 2229
-  faixas de 2026-09-23 trouxe só o áudio. Recuperação: casar **SHA-256 do áudio** entre a origem (`D:\yt-mp3`) e
-  a biblioteca — o nome não serve, o SHA garante a mesma edição e portanto a mesma sincronia — 1576 arquivos
-  copiados e `POST /api/admin/lrc-scan`, fechando em **1845 faixas com letra, 67660 versos** num acervo de 2498.
-- **Re-análise herda overrides**: ao concluir um run novo, a tonalidade MANUAL e as partes MANUAL do run
-  canônico anterior são copiadas para ele (a tonalidade re-anota). O canônico continua sendo escolha do
-  dono (`PUT /canonical-run`).
-- Fixture do contract test = resposta real do container sobre `app/testaudio.py` (WAV sintético,
-  Am F C G). Nunca gravar áudio com direitos autorais no repositório.
+## Operação
 
-## Partes da música (decidido em 2026-09-15)
+- `orelha.app` por Cloudflare Tunnel + Access (Allow por e-mail, One-time PIN); liberar alguém = e-mail na
+  política. Importar pasta só no PC do acervo (`RemoteImportGuard` barra `/api/tracks/import*` pelo túnel).
+- **Administrador** (`orelha.admin.emails` ou acesso local; `AdminProperties.require`): excluir faixa, editar ou
+  excluir artista/álbum, auditoria (`/admin`), fila (`GET/POST /api/admin/worker`, `…/worker/requeue-failed`),
+  órfãos (`POST /api/admin/orphans?dryRun=`), varredura de `.lrc` (`POST /api/admin/lrc-scan`).
+- Aliviar a CPU sem parar nada: pausar a fila no painel, ou `docker update --cpus=3 orelha-extractor` (recriar o
+  container desfaz).
+- Detalhes: `docs/decisions/hospedagem.md`, `docs/decisions/fila.md`, `deploy/README.md`.
 
-- **Tabela `section`** por run: `start_s`, `end_s`, `cycle_end_s` (fim da 1ª repetição do ciclo),
-  `repeats`, `label`, `source` ∈ {DERIVED, EXTRACTOR, MANUAL}; leitura prefere MANUAL > EXTRACTOR >
-  DERIVED (como `key_segment`). `GET /api/tracks/{id}/sections[?runId]` devolve cada parte com a
-  progressão de um ciclo anotada (cifra, grau, eixo A); `PUT` grava a edição do dono (lista vazia
-  volta à derivação; `cycleEndS`/`repeats` opcionais mantêm o "×N"); `POST …/sections/derive`
-  re-deriva sem tocar nas MANUAL. Como a tonalidade, a edição MANUAL vive no run: re-analisar exige
-  re-aplicar (backlog: carregar overrides para o novo run canônico).
-- **DERIVED = `SectionDeriver`** (Java puro, `harmony`): grade de compassos pelos downbeats; assinatura
-  do compasso = acordes que o ocupam (≥ 20%), identidade fundamental + família da tríade (Cmaj7, C7,
-  Csus2 e C5 contam como "C" só para o teste de repetição — não é classificação); ciclo = menor
-  período (≤ 16 compassos) que se repete ≥ 2× cobrindo ≥ 4 compassos, tolerando 1 compasso diferente a
-  cada 4 exceto nas bordas; um período maior só vence se cobrir 1,5× mais; sobras < 4 compassos ficam
-  na parte anterior; N.C. nas pontas não vira parte. Letras A, B, C… por harmonia (mesma tolerância),
-  em ordem de aparição — **nunca "verso"/"refrão"**: nome de função só vem de MANUAL ou de um modelo
-  de estrutura (EXTRACTOR; candidato allin1, bloqueado pelo NATTEN em 2026-09-15).
-- Medido em 2026-09-15 nas 236 faixas: 7,3 partes por faixa em média, 61% cíclicas. Let It Be e o
-  riff do Teen Spirit saem limpos; solos e trechos com rótulos ruidosos do BTC viram partes longas
-  sem ciclo — é onde o MANUAL entra.
+## Onde estão os detalhes
 
-## Frontend (decidido em 2026-09-14)
+| Tema | Arquivo |
+|---|---|
+| Marca, mascote, Orelha no bolso (Android) | `docs/decisions/produto.md` |
+| Túnel, Access, auditoria, admin, exclusão | `docs/decisions/hospedagem.md` |
+| Fila, batimento, órfãos, pausas | `docs/decisions/fila.md` |
+| Extrator, tempos, stems, power chord, 0.7.0 | `docs/decisions/extracao.md` |
+| Biblioteca, upload, importar pasta, tags | `docs/decisions/catalogo.md` |
+| Voz, ASR, `.lrc`, classificação das notas | `docs/decisions/letra.md` |
+| Partes da música | `docs/decisions/partes.md` |
+| Timeline, mixer, metrônomo, tab, círculo | `docs/decisions/frontend.md` |
+| MusicBrainz (era pelo release-group) | `docs/decisions/musicbrainz.md` |
+| TheoryTab e Hooktheory | `docs/decisions/referencia.md` |
+| Histórico das ondas | `docs/decisions/ondas.md` |
+| Backlog Stephenson, Genoma, Pandora | `docs/stephenson-backlog.md`, `docs/pandora-genome-2026-09-16.md` |
 
-- **ECharts** (`echarts/core`, tree-shaken: heatmap + bar) para a matriz de transição e as
-  distribuições; **timeline em SVG de template Angular** dirigida por signals, sem D3: cada segmento
-  é um `<rect>` num `@for`, o playhead é um `computed` sobre `currentTime`, e `<audio>` nativo faz o
-  playback (`GET /api/tracks/{id}/audio`, com `Range` para seek). Clicar num segmento faz seek.
-  Três lanes: acordes (44 px), baixo (36 px: piano roll de `bass-notes`, o stem nota a nota, sobre
-  um fundo por segmento que fica laranja quando o baixo da harmonia não é a fundamental) e voz (40 px,
-  piano roll de `vocal-notes`, com notas `NON_LEXICAL` translúcidas e `LIKELY_LEAK` escondidas por padrão —
-  botão "mostrar vazamento (N)" na legenda), ambas na tessitura p5–p95 da faixa, e uma quarta lane de
-  16 px com os trechos da letra (texto que couber; clique faz seek). O painel ganha a célula LETRA: o trecho atual com a palavra cantada em negrito e o
-  compasso. **Baixo da harmonia ≠ linha de
-  baixo**: o primeiro é `effectiveBassPc` (classe que mais soa sob o segmento, decide `inverted`) e vai
-  na cifra como `E♭/G`; a segunda é o stem transcrito e aparece no piano roll e na célula BAIXO do
-  painel. No painel, baixo e voz mostram a nota em execução em negrito e, quando ela termina, a
-  última nota fica leve (opacidade 0,4) até a próxima começar — para o nome não piscar. A timeline quebra em 1–4
-  **linhas** (seletor na legenda, preferência em `localStorage`): cada linha cobre `duration/N`
-  segundos com as mesmas lanes; segmentos e notas que cruzam a borda são recortados em pedaços,
-  downbeats, eixo de tempo e playhead caem na linha do seu instante.
-- `httpResource` para toda leitura; sem store, sem NgRx. Rotas: `/` (acervo), `/tracks/:id`
-  (timeline), `/artists/:id` e `/albums/:id` (perfil), `/compare`. Parâmetros e `data` de rota
-  viram inputs (`withComponentInputBinding`).
-- Sem mock: cada tela mostra vazio ou a mensagem do backend quando não há dados.
-- Dev: `npx ng serve` usa `proxy.conf.json` (→ :8080). Se o 8080 estiver ocupado, rode
-  `.\backend\run.ps1 -Port 8081` e `npx ng serve --proxy-config proxy.local.json` (arquivo local,
-  ignorado pelo git).
-- Só apresentação em TypeScript (`shared/music.ts`: nomes de nota, cifra, cores, e os textos das
-  relações — `KEY_RELATION_TEXT`/`CHORD_RELATION_TEXT` dão nome curto em pt-BR e explicação com
-  exemplo para cada código dos eixos A e B: "sensível (L)", "mediante cromático", "quinta abaixo
-  (V → I)"…; o código em inglês nunca aparece cru na tela, só no `title`); a teoria fica no backend.
-- **Player multi-stem** (timeline): a mixagem é o `<audio>` mestre (relógio); cada stem é um
-  `<audio>` escondido que segue play/pause/seek e é corrigido se derivar > 150 ms. **Mix e stems
-  são mutuamente exclusivos** (ligar o mix silencia os stems; ligar um stem silencia o mix);
-  stems se combinam entre si; duplo clique = solo; cada canal tem volume (`audio.volume`) e **balanço L/R**
-  (2026-09-16: `shared/panner.ts` liga cada `<audio>` a um `StereoPannerNode` via `MediaElementSource` —
-  o elemento continua fonte e relógio, nada é decodificado em memória; o grafo só é criado quando o
-  balanço sai do centro; duplo clique no slider volta ao centro; o metrônomo tem panner no próprio
-  grafo). Sem `AudioBufferSource` para os stems (decodificar 4 × 50 MB não vale a sincronia por amostra
-  num uso local).
-- **Metrônomo** (`shared/metronome.ts`): Web Audio, cliques sintetizados sobre os beats do run
-  (`GET /api/tracks/{id}/beats`, downbeat acentuado a 1400 Hz, beat a 950 Hz), agendados 250 ms à
-  frente do relógio do mestre a cada frame; `reset` em seek/pause. Independente do mix/stems: toca
-  por cima do que estiver soando. A timeline desenha os downbeats como linhas de compasso.
-- **Tablatura do baixo (2026-09-18, pacote `practice`)**: `TabArranger` (Java puro) escolhe corda e casa para cada
-  `bass_note` por Viterbi sobre a sequência — custo = deslocamento de casas entre notas fretadas (até 4 casas é
-  abertura de mão, meio custo; folga > 0,75 s alivia), 0,3 por corda trocada, 0,5 por casa acima da 12ª, e
-  **corda solta preferida** (−0,5; decisão do dono em 2026-09-18; `?open=false` penaliza +1). Entrar ou sair de
-  solta não move a mão (custo zero) — aproximação: depois da solta o algoritmo não lembra onde a mão estava.
-  Afinação 4 cordas E A D G (28 33 38 43), 24 casas; nota fora do braço sobe/desce de oitava e sai
-  `octaveShifted` (o basic-pitch erra a oitava em graves). `GET /api/tracks/{id}/bass-tab` (run canônico);
-  `GET …/bass.mid` = `BassMidiExporter` (`javax.sound.midi`, zero dependência): notas quantizadas na grade de
-  beats (tick = beat × 480 interpolado, semicolcheia), um andamento só (mediana dos beats), fórmula de compasso,
-  programa 33 — para o MuseScore/TuxGuitar gerarem a tab com ritmo. Na timeline, a lane de baixo tem
-  `notas | tab` (preferência no `localStorage`): quatro linhas (G em cima), casa no ataque quando cabe (≥ 9 px),
-  risquinho quando não; célula BAIXO mostra `corda A · casa 3`. Limite honesto: a tab é tão boa quanto a
-  transcrição — oitavas dobradas (G1+G2 no Creep) e notas curtas engolidas vêm do extrator, não do arranjo.
-  Referência humana candidata: Songsterr (tabs de pessoas), como o TheoryTab é para a harmonia.
-- **Ciclo das quintas** (`timeline/fifths.ts`, 2026-09-18): na célula ACORDE do painel, atrás do botão "círculo"
-  (desligado por padrão, preferência no `localStorage`). Anel de fora = maiores por quintas (C no topo), anel de
-  dentro = relativas menores na mesma posição; o acorde atual acende o setor da fundamental — fora se a tríade é
-  maior/sus/power/7, dentro se menor ou diminuta (Cm acende "c" sob E♭) — com a cor do eixo A, e a tônica ganha
-  contorno no anel do seu modo. Com o círculo, a coluna do acorde cresce e as outras cedem padding para a grade
-  continuar cabendo nos 1200 px; o painel de detalhe é uma grade de colunas fixas (2026-09-17) justamente para
-  não se mexer enquanto a música toca.
-- **Upload** (acervo): formulário cria artista/álbum se preciso, envia multipart e faz polling
-  de `/api/tracks` a cada 5 s enquanto houver run QUEUED/RUNNING; badges na fila/analisando…/falhou.
-  Cada faixa tem **reprocessar** (`POST /api/tracks/{id}/analyze`): destacado quando falhou, `↻`
-  nas demais; o run anterior é mantido e o canônico só muda por escolha do dono.
-- **Partes** (`timeline/sections`): abaixo do acorde atual, uma linha por parte com nome, tempo, a
-  progressão de um ciclo em cifras coloridas pelo eixo A e "×N"; clicar na cifra ou no tempo faz seek;
-  a parte em execução fica destacada. Clicar no nome renomeia, "juntar" funde com a anterior; toda
-  edição manda a lista inteira no PUT (vira MANUAL) e "voltar à derivação" manda lista vazia. Edição
-  manual (2026-09-15): "✂ dividir aqui" corta a parte em execução no downbeat mais próximo do
-  playhead; "zerar partes" vira uma parte A só, para marcar do zero; setas ◀ ▶ movem início/fim um
-  compasso (a borda é compartilhada com a vizinha; mínimo de um compasso por parte). **Repetir** (2026-09-18):
-  `⟳ repetir` numa parte faz a timeline voltar ao início dela ao cruzar o fim tocando (o laço de frames compara
-  o instante anterior com o atual; um seek para depois do fim não volta; `ended` com loop volta e segue);
-  ligar fora da parte leva ao início dela. **Velocidade** (2026-09-18): seletor 0,5–1,25× no transporte aplica
-  `playbackRate` (com `preservesPitch`) no mestre e nos stems; o metrônomo divide a distância até o beat pela
-  velocidade e escala o lookahead. Backlog: arrastar bordas na timeline; definir ciclo/×N à mão.
-- **Nomes de arquivo com `..`** ("N.I.B..mp3"): o guarda de path traversal do staging descarta
-  segmentos `..`, nunca substitui a sequência dentro de um nome (bug corrigido em 2026-09-15:
-  virava `N.I.B..b_mp3` e o ChordMini não reconhecia a extensão).
+## Pendências
 
-## Identidade no MusicBrainz (2026-09-22)
-
-- **Por que**: o acervo tinha 17 dos 30 álbuns com nome de box set e ano 2009 — os Beatles inteiros de 1963–70
-  datados pela remasterização. Como o projeto compara vocabulário **entre eras**, o eixo do tempo estava
-  errado em mais da metade do acervo. Dados do MusicBrainz são CC0.
-- **Ano que vale é o do release-group** (decisão do dono em 2026-09-22): `album.year` continua sendo o que as
-  tags disseram (a edição no disco), `album.first_released` é a primeira edição do release-group, e
-  `Album.effectiveYear()` = `first_released ?? year`. Ordenação do acervo e timbre por álbum usam
-  `COALESCE(first_released, year)`; a UI mostra o efetivo e explica a edição no `title`. V13 acrescenta
-  `mbid` em `artist`/`album`, `first_released` e `metadata_source` (TAGS/MUSICBRAINZ/MANUAL) — sem UNIQUE no
-  mbid de propósito, porque um box set partido em CD1/CD2 são dois álbuns nossos para um release-group.
-- **Pacote `metadata`**: `MusicBrainzClient` (ws/2, `User-Agent` com contato obrigatório — `ORELHA_MUSICBRAINZ_CONTACT`
-  no `.env`; 1 req/s serializada no processo; **URI pronta, nunca String**, senão o RestClient re-codifica o
-  `%3A` da query Lucene e a busca volta vazia; busca sem aspas quando a frase exata não acha nada, que é o caso
-  de "Sgt. Pepper's" × "Sgt. Peppers"). `AlbumMatcher` (Java puro) limpa o título do box set e pontua:
-  semelhança de título (peso 2) e de artista (peso 1), −0,15 fora de Album/EP, **−0,25 em secondary-type
-  Compilation/Live/Bootleg** (Soundtrack não penaliza: Help! e A Hard Day's Night são trilhas), −0,18 em
-  desambiguação de "live/demo/tribute", e o artista funciona como porta (abaixo de 0,85 multiplica o total —
-  "Beatles Tribute Band" contém "Beatles" e não passa por eles).
-- **Sempre sob demanda, o dono confirma**: `GET/PUT/DELETE /api/albums/{id}/musicbrainz[/candidates]`; painel
-  no perfil do álbum com a lista pontuada e "desfazer". `MANUAL` não é sobrescrito. Lote em
-  `docs/musicbrainz-sync.mjs` (`--apply`; sem isso só simula) aplica **só acima de 0,98 e sozinho** — a marca
-  "confiante" da tela é 0,85, mas gravar sem ninguém olhar exige mais: "The Beatles (White Album)" de 2000
-  aparece com 95 % e seria um erro silencioso. Medido em 2026-09-22: 22 dos 30 álbuns aplicados a 100 %
-  (12 com era corrigida, os Beatles de 2009 → 1963–70), 7 ambíguos para a tela (White Album, Past Masters,
-  Magical Mystery Tour Album × EP, Sgt. Pepper, Morning Glory) e 1 sem resultado ("CD1", nome irrecuperável).
-- **Próximo (onda B, não implementado)**: impressão digital de áudio (Chromaprint `fpcalc` no extrator, que é
-  DSP, + AcoustID no núcleo) para identificar faixa a faixa quando a tag não presta, `recording`/`work` MBID
-  por faixa, e daí comparar gravações da mesma obra (Valerie dos Zutons × Amy Winehouse).
-
-## Referência humana (2026-09-16)
-
-- **TheoryTab colado à mão**: o Hooktheory não tem API para a análise por música (só Trends), então o
-  dono abre a página (links "abrir no TheoryTab"/"artista" na timeline, exigem login) e cola tonalidade +
-  seções em numerais no painel "Referência humana". `PUT /api/tracks/{id}/reference {text, url}` grava
-  em `reference_analysis` (V11, texto bruto + seções JSON); `GET …/reference/compare` reduz cada numeral
-  (`RomanNumeralParser`: acidentes, caixa, °/+, V/x; 7ª/sus/inversão ignoradas) e cada acorde nosso a
-  "semitons acima da tônica:família" e mede por seção da referência a parte nossa mais parecida: similaridade
-  de sequência (1 − edição/tamanho, repetições consecutivas fundidas) e cobertura de vocabulário, mais
-  tônica/modo. **Medido em 24 faixas em 2026-09-16** (`docs/reference-theorytab-2026-09-16.md`; sincronização
-  por `docs/theorytab-sync.mjs` sobre `docs/theorytab-tracks.tsv` — as páginas de música do TheoryTab são
-  públicas, só as listas por artista pedem login): tônica bate em 23/24 (Lucy: Ré maior × Lá mixolídio),
-  vocabulário médio 93 %, sequência média 43 %. Conclusão: os acordes do BTC estão bons; o gargalo é o
-  `SectionDeriver` não fechar ciclos (partes longas), mais diminutos e acordes de passagem que o BTC perde.
-  Os numerais do TheoryTab são **relativos à escala do modo declarado** (III em Fá menor = Lá♭); o
-  `RomanNumeralParser` recebe o modo e faz essa leitura; "(no3)" reduz a maior como do nosso lado.
-- **Trends do Hooktheory sob demanda**: `orelha.hooktheory.activkey` (env `ORELHA_HOOKTHEORY_ACTIVKEY`,
-  token da conta do dono via `POST /v1/users/auth`; **segredos ficam num `.env` na raiz**, ignorado pelo
-  git, que `backend/run.ps1` carrega antes do Maven — modelo em `.env.example`; sem token os endpoints respondem 409 e o botão fica
-  desabilitado). `GET /api/reference/hooktheory/trends?cp=1,5,6` e `/songs?cp=` com cache de 1 dia
-  (limite deles: 10 pedidos/10 s). Na UI, botão "no pop ↗" em cada parte cuja progressão é só de
-  tríades diatônicas da escala maior (ids 1–7 do Hooktheory).
-
-## Decisões pendentes
-
-- **Backlog Stephenson** (`docs/stephenson-backlog.md`): Parte I = 17 conceitos pedidos (2026-09-15),
-  Parte II = os demais 15 do livro (2026-09-16), Parte III = tabela gene do Pandora ↔ Stephenson ↔ métrica
-  do Orelha e a proposta da **aba Genoma** (ficha por faixa ao estilo do musicólogo do Pandora, notas
-  0–5 MANUAL guiadas por evidência automática DERIVED; módulo Guide), Parte IV = ecossistema Hooktheory
-  (notação relativa colorida por grau, empréstimo com modo de origem, pré-refrão, API Trends como
-  população de referência, TheoryTab como verdade humana para medir o extrator). Fundações F1–F3 e
-  ondas A–F; 15 perguntas abertas ao dono no fim do documento. Só a letra por ASR (item 5b) está implementada.
-
-## Ondas
-
-- [x] Onda 0 — esqueleto (entregue e aprovado em 2026-09-13)
-- [x] Onda 1 — `HarmonicNormalizer`: validado contra as 30 progressões do dono
-  (`ProgressionClassificationTest`); portão aprovado em 2026-09-13 com estas convenções:
-  power chord em caixa alta neutra (`I5`); `AMBIGUOUS` conta como *dentro* do campo nas métricas
-  do acervo; `7sus4` reduz a `sus4`; modos (mixolídio/dórico de blues, frígio) só existem se
-  atribuídos — `key_segment.source = MANUAL` ou heurística futura (backlog Onda 3).
-- [x] Onda 2 — extrator próprio em `extractor/` (0.2.0), adapter, fila, worker, pipeline até
-  `harmonic_annotation`, endpoints de run/timeline/key/canonical-run; contract test com a resposta
-  real do container. Portão aprovado em 2026-09-14 com Valerie, Smells Like Teen Spirit e Creep:
-  acordes e transições batem com o ouvido do dono; power chord não é inferível (ver Extração);
-  tonalidade de baixa confiança corrigida por override manual.
-- [ ] Onda 3 — analítica do acervo, entregue em 2026-09-14 (portão pendente): `GET
-  /api/collection/artists/{id}/profile`, `/albums/{id}/profile`, `/compare?a&b`,
-  `/artists/{id}/pedal-passages?relation=`. Perfil = eixo A por contagem e duração, fração fora do
-  campo (`AMBIGUOUS` conta como dentro), distribuição de graus (12 bins, grafia neutra `♯IV/♭V`) +
-  entropia de Shannon em bits, matriz de transição 12×12 (`counts`, `rowNormalized`), relações do
-  eixo B, timbre médio por álbum e stem. Comparação = JS divergence (bits, base 2) das matrizes
-  normalizadas globalmente + L1 de graus e do eixo A. Uma query nativa (`CollectionQueries`) sobre run
-  canônico + tonalidade preferida; métricas em Java puro (`CollectionMetrics`). A diagonal da matriz
-  existe e significa troca de qualidade/baixo sobre a mesma fundamental (`IV → iv` do Creep).
-  (+ backlog: tonalidade `DERIVED` por perfil de fundamentais
-  quando a confiança do madmom for baixa; heurística de modo por I7/IV7 recorrentes; query de
-  linha de baixo sob acorde sustentado — Valerie 3:18, Kashmir; `min_segment_duration` do BTC
-  vs segmentos de < 1 s)
-- [x] Onda 4 — Angular, entregue e aprovada em 2026-09-14: acervo, timeline com playback
-  sincronizado e lane de baixo efetivo, perfil com heatmap/barras/timbre/pedais, comparação com
-  distâncias. Verificado ao vivo contra os runs reais (Creep, Nirvana × Radiohead).
+- **Onda 3** (analítica do acervo): entregue em 2026-09-14, portão ainda pendente.
+- Backlog: tonalidade `DERIVED` quando a confiança do madmom é baixa; modo por I7/IV7 recorrentes; linha de baixo
+  sob acorde sustentado; tela para corrigir a tonalidade; impressão digital de áudio (AcoustID) por faixa;
+  backlog Stephenson (15 perguntas abertas ao dono no fim do documento).
 
 ## Glossário
 
 - **pc** (pitch class): inteiro 0–11, C=0. Perde a grafia enarmônica; a grafia é derivada do grau.
 - **degree_interval**: `(root_pc − tonic_pc) mod 12`. O numeral romano (`♭VI`, `iv`, `vii°`) é render.
-- **FunctionClass**: classificação do acorde em relação à tonalidade (diatônico, empréstimo modal,
-  dominante secundária, mediante cromático, acorde de potência, outro) — definição em revisão (P1).
-- **Mediante cromático**: acordes com fundamentais a uma terça de distância compartilhando
-  0 ou 1 nota. A classe mais importante do projeto (rock/metal).
-- **P / L / R**: transformações neo-riemannianas (Parallel, Leittonwechsel, Relative) entre
-  tríades consecutivas; **hexatonic pole** = L+P+L (0 notas comuns, ex.: C → A♭m).
+- **Mediante cromático**: fundamentais a uma terça, compartilhando 0 ou 1 nota. A classe mais importante do
+  projeto (rock/metal).
+- **P / L / R**: transformações neo-riemannianas (Parallel, Leittonwechsel, Relative) entre tríades consecutivas;
+  **hexatonic pole** = L+P+L (0 notas comuns, ex.: C → A♭m).
 - **Acorde de potência**: sem terça; modo indeterminado. Registrado como ambiguidade.
-- **Run** (`analysis_run`): uma execução de extração sobre uma faixa, com proveniência
-  (extrator, versão, modelos). Uma faixa pode ter vários; um é o canônico.
-- **Stem**: pista separada por modelo (drums/bass/vocals/other; guitar/piano só no 6-stem).
-- **Chroma**: vetor de 12 energias por classe de altura; dado bruto de DSP, base do teste de terça.
+- **Run** (`analysis_run`): uma execução de extração sobre uma faixa, com proveniência; um é o canônico.
+- **Stem**: pista separada (drums/bass/vocals/other). **Chroma**: 12 energias por classe de altura.
