@@ -24,12 +24,14 @@ export class DegreeBars {
   private chart?: echarts.ECharts;
 
   constructor() {
+    // inject só vale aqui no construtor: dentro do afterNextRender lança NG0203, e o listener de resize vazava.
+    const destroyRef = inject(DestroyRef);
     afterNextRender(() => {
       this.chart = echarts.init(this.host().nativeElement);
       this.render();
       const onResize = () => this.chart?.resize();
       window.addEventListener('resize', onResize);
-      inject(DestroyRef).onDestroy(() => window.removeEventListener('resize', onResize));
+      destroyRef.onDestroy(() => window.removeEventListener('resize', onResize));
     });
     effect(() => {
       this.series();
@@ -37,7 +39,7 @@ export class DegreeBars {
       this.title();
       this.render();
     });
-    inject(DestroyRef).onDestroy(() => this.chart?.dispose());
+    destroyRef.onDestroy(() => this.chart?.dispose());
   }
 
   private render(): void {
