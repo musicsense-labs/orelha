@@ -12,7 +12,6 @@ import dev.musicsense.orelha.harmony.HarmonicNormalizer;
 import dev.musicsense.orelha.harmony.Key;
 import dev.musicsense.orelha.harmony.KeyMode;
 import dev.musicsense.orelha.harmony.NormalizedChord;
-import dev.musicsense.orelha.harmony.PowerChordDetector;
 import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,20 +33,18 @@ public class AnalysisPipeline {
     private final AnalysisRunRepository runs;
     private final EntityManager em;
     private final HarmonicNormalizer normalizer = new HarmonicNormalizer();
-    private final PowerChordDetector powerChords;
     private final AudioLibrary library;
     private final SectionService sections;
     private final SectionRepository sectionRepository;
     private final KeySegmentRepository keys;
     private final LyricsService lyrics;
 
-    AnalysisPipeline(AnalysisRunRepository runs, EntityManager em, PowerChordDetector powerChords, AudioLibrary library,
+    AnalysisPipeline(AnalysisRunRepository runs, EntityManager em, AudioLibrary library,
                      SectionService sections, SectionRepository sectionRepository, KeySegmentRepository keys,
                      LyricsService lyrics) {
         this.lyrics = lyrics;
         this.runs = runs;
         this.em = em;
-        this.powerChords = powerChords;
         this.library = library;
         this.sections = sections;
         this.sectionRepository = sectionRepository;
@@ -70,7 +67,6 @@ public class AnalysisPipeline {
         Track track = run.getTrack();
         run.setExtractorVersion(result.provenance().version());
         run.setModelNames(result.provenance().models());
-        run.setFeaturesPath(result.featuresPath());
         run.setStems(result.stems() == null || result.stems().isEmpty() ? null : result.stems());
         track.setDurationS(result.audio().durationS());
         track.setSampleRate(result.audio().sampleRate());
@@ -97,16 +93,12 @@ public class AnalysisPipeline {
         result.timbre().forEach(t -> em.persist(new TimbreSummary(run, t.stemModel(), t.stem(), t.centroidMean(),
                 t.centroidStd(), t.flatnessMean(), t.rolloffP95(), t.rmsMean())));
 
-        // POWER é decidido antes da fusão: dois E5 rotulados E e Em pelo modelo viram um segmento só.
-        List<ChordEvent> events = ChordEvents.mergeConsecutive(result.chords().stream()
-                .map(e -> new ChordEvent(e.startS(), e.endS(), powerChords.reclassify(e.chord(), e.chromaLow()),
-                        e.chroma(), e.chromaLow(), e.confidence()))
-                .toList());
+        List<ChordEvent> events = ChordEvents.mergeConsecutive(result.chords());
         List<ChordSegment> segments = new ArrayList<>(events.size());
         for (int i = 0; i < events.size(); i++) {
             ChordEvent e = events.get(i);
             ChordSegment segment = new ChordSegment(run, i, e.startS(), e.endS(), e.chord().rootPc(),
-                    e.chord().quality(), e.chord().bassPc(), e.confidence(), e.chroma(), e.chromaLow());
+                    e.chord().quality(), e.chord().bassPc(), e.confidence(), e.chroma());
             em.persist(segment);
             segments.add(segment);
         }

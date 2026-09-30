@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * A faxina do disco: o que não pertence a faixa nenhuma sai, o resto fica. Os testes montam a árvore que o
- * extrator cria ({@code stems/<sha>/*.ogg} e {@code features/<sha>.parquet}) num diretório temporário.
+ * extrator cria ({@code stems/<sha>/*.ogg}) num diretório temporário.
  */
 class OrphanSweeperTest {
 
@@ -36,8 +36,6 @@ class OrphanSweeperTest {
         tracks = Mockito.mock(TrackRepository.class);
         stems(VIVO);
         stems(ORFAO);
-        parquet(VIVO);
-        parquet(ORFAO);
     }
 
     private OrphanSweeper sweeper(Duration minAge) {
@@ -49,12 +47,6 @@ class OrphanSweeperTest {
         Files.writeString(dir.resolve("bass.ogg"), "bass");
         Files.writeString(dir.resolve("vocals.ogg"), "vocals");
         age(dir, Duration.ofHours(6));
-    }
-
-    private void parquet(String sha) throws IOException {
-        Files.createDirectories(root.resolve("features"));
-        Path file = Files.writeString(root.resolve("features").resolve(sha + ".parquet"), "parquet");
-        age(file, Duration.ofHours(6));
     }
 
     /** Envelhece a entrada (e o que ela contém) para além da idade mínima. */
@@ -78,12 +70,9 @@ class OrphanSweeperTest {
         OrphanSweeper.Report report = sweeper(Duration.ofHours(1)).sweep(false);
 
         assertThat(report.stemFolders()).isEqualTo(1);
-        assertThat(report.featureFiles()).isEqualTo(1);
         assertThat(report.bytes()).isGreaterThan(0);
         assertThat(Files.exists(root.resolve("stems").resolve(VIVO))).isTrue();
-        assertThat(Files.exists(root.resolve("features").resolve(VIVO + ".parquet"))).isTrue();
         assertThat(Files.exists(root.resolve("stems").resolve(ORFAO))).isFalse();
-        assertThat(Files.exists(root.resolve("features").resolve(ORFAO + ".parquet"))).isFalse();
     }
 
     @Test
@@ -123,9 +112,9 @@ class OrphanSweeperTest {
     }
 
     @Test
-    void foreignFilesInTheFeaturesFolderAreNotTouched() throws IOException {
+    void looseFilesInTheStemsFolderAreNotTouched() throws IOException {
         Mockito.when(tracks.findAllAudioSha256()).thenReturn(Set.of(VIVO));
-        Path foreign = Files.writeString(root.resolve("features").resolve("anotacoes.txt"), "não é nosso");
+        Path foreign = Files.writeString(root.resolve("stems").resolve("anotacoes.txt"), "não é nosso");
         age(foreign, Duration.ofDays(30));
 
         sweeper(Duration.ofHours(1)).sweep(false);

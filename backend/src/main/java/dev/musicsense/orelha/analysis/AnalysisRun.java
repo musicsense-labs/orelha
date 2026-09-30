@@ -57,10 +57,6 @@ public class AnalysisRun {
 
     private String error;
 
-    /** Caminho do Parquet com as séries por frame; nunca vão para o banco. */
-    @Column(name = "features_path")
-    private String featuresPath;
-
     /** Stems persistidos pelo extrator, por nome: caminhos do container (traduzidos por DataPaths). */
     @JdbcTypeCode(SqlTypes.JSON)
     private Map<String, String> stems;
@@ -143,14 +139,6 @@ public class AnalysisRun {
 
     public void setError(String error) {
         this.error = error;
-    }
-
-    public String getFeaturesPath() {
-        return featuresPath;
-    }
-
-    public void setFeaturesPath(String featuresPath) {
-        this.featuresPath = featuresPath;
     }
 
     public Map<String, String> getStems() {

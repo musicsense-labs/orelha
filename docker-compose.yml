@@ -31,7 +31,6 @@ services:
     volumes:
       # Bind mounts no host: o backend lê os stems (player multi-stem) e o Parquet daqui. A raiz vem do .env
       # (ORELHA_DATA_DIR), que o compose carrega sozinho; vazio = ./data, dentro do repositório.
-      - ${ORELHA_DATA_DIR:-./data}/features:/data/features
       - ${ORELHA_DATA_DIR:-./data}/stems:/data/stems
 
 volumes:

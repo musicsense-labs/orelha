@@ -11,7 +11,7 @@ from . import MODELS, VERSION
 from .notes import transcribe_bass, transcribe_vocals
 from .beats import track_beats
 from .chords import recognize_chords
-from .chroma import chroma_low_per_segment, chroma_per_segment
+from .chroma import chroma_per_segment
 from .key import estimate_key
 from .lyrics import transcribe_lyrics
 from .stems import STEM_FORMAT, codec_label, persist_stems, separate_stems
@@ -30,7 +30,6 @@ def step(name: str, timings: dict):
         timings[name] = round(time.monotonic() - started, 1)
         log.info("%s: %.1fs", name, timings[name])
 
-FEATURES_DIR = Path(os.environ.get("FEATURES_DIR", "/data/features"))
 STEMS_DIR = Path(os.environ.get("STEMS_DIR", "/data/stems"))
 
 
@@ -46,11 +45,8 @@ def analyze(audio_path: Path, audio_sha256: str, work_dir: Path) -> dict:
         chords = recognize_chords(audio_path, work_dir / "chords")
     with step("chroma", timings):
         spans = [(c["start_s"], c["end_s"]) for c in chords]
-        guitars, guitars_sr = librosa.load(stems["other"], sr=None, mono=True)
-        for chord, chroma, chroma_low in zip(chords, chroma_per_segment(y, sr, spans),
-                                             chroma_low_per_segment(guitars, guitars_sr, spans)):
+        for chord, chroma in zip(chords, chroma_per_segment(y, sr, spans)):
             chord["chroma"] = chroma
-            chord["chroma_low"] = chroma_low
     with step("beats", timings):
         beats, bpm, time_signature = track_beats(audio_path)
     with step("key", timings):
@@ -64,9 +60,7 @@ def analyze(audio_path: Path, audio_sha256: str, work_dir: Path) -> dict:
     with step(f"encode-{STEM_FORMAT}", timings):
         persisted = persist_stems(stems, STEMS_DIR / audio_sha256)  # o que a UI toca
     with step("timbre", timings):
-        FEATURES_DIR.mkdir(parents=True, exist_ok=True)
-        features_path = FEATURES_DIR / f"{audio_sha256}.parquet"
-        timbre = timbre_summaries(stems, "htdemucs", features_path)
+        timbre = timbre_summaries(stems, "htdemucs")
     log.info("tempos por etapa: %s", timings)
 
     return {
@@ -81,6 +75,5 @@ def analyze(audio_path: Path, audio_sha256: str, work_dir: Path) -> dict:
         "vocal_notes": vocal_notes,
         "lyrics": lyrics,
         "timbre": timbre,
-        "features_path": str(features_path),
         "stems": {name: str(path) for name, path in sorted(persisted.items())},
     }

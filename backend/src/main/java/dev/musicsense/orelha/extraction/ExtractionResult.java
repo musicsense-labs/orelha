@@ -14,7 +14,7 @@ import java.util.Map;
 public record ExtractionResult(Provenance provenance, AudioInfo audio, KeyEstimate key, Tempo tempo,
                                List<BeatEvent> beats, List<ChordEvent> chords, List<NoteEvent> bassNotes,
                                List<NoteEvent> vocalNotes, Lyrics lyrics, List<TimbreStat> timbre,
-                               String featuresPath, Map<String, String> stems) {
+                               Map<String, String> stems) {
 
     public record Provenance(String name, String version, Map<String, String> models) {
     }
@@ -32,12 +32,8 @@ public record ExtractionResult(Provenance provenance, AudioInfo audio, KeyEstima
     public record BeatEvent(BigDecimal timeS, int position) {
     }
 
-    /**
-     * chroma = 12 energias por classe de altura (C = 0) na mixagem; chromaLow = idem no stem de guitarra,
-     * registro C2–C4 (evidência de power chord). null quando o extrator não fornece.
-     */
-    public record ChordEvent(BigDecimal startS, BigDecimal endS, Chord chord, float[] chroma, float[] chromaLow,
-                             Float confidence) {
+    /** chroma = 12 energias por classe de altura (C = 0) na mixagem; null quando o extrator não fornece. */
+    public record ChordEvent(BigDecimal startS, BigDecimal endS, Chord chord, float[] chroma, Float confidence) {
     }
 
     /** Nota MIDI transcrita de um stem (baixo ou voz). */

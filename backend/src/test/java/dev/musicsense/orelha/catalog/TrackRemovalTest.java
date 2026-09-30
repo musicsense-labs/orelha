@@ -18,26 +18,24 @@ class TrackRemovalTest {
     @TempDir
     Path tmp;
 
-    private AnalysisRun run(Map<String, String> stems, String features) {
+    private AnalysisRun run(Map<String, String> stems) {
         AnalysisRun run = new AnalysisRun(null, "orelha-extractor", null, Map.of());
         run.setStems(stems);
-        run.setFeaturesPath(features);
         return run;
     }
 
     @Test
-    void audioStemsFolderAndFeaturesAreListedOnce() {
+    void audioAndStemsFolderAreListedOnce() {
         DataPaths data = new DataPaths("/data", tmp.resolve("data").toString());
         Path audio = tmp.resolve("audio/4/Creep.mp3");
         List<AnalysisRun> runs = List.of(
-                run(Map.of("bass", "/data/stems/sha/bass.ogg", "vocals", "/data/stems/sha/vocals.ogg"), "/data/features/sha.parquet"),
-                run(Map.of("bass", "/data/stems/sha/bass.ogg"), "/data/features/sha.parquet"),   // re-análise: mesma pasta
-                run(null, null));                                                                   // run antigo, sem stems
+                run(Map.of("bass", "/data/stems/sha/bass.ogg", "vocals", "/data/stems/sha/vocals.ogg")),
+                run(Map.of("bass", "/data/stems/sha/bass.ogg")),   // re-análise: mesma pasta
+                run(null));                                         // run antigo, sem stems
 
         assertThat(TrackRemoval.filesOf(audio, runs, data)).containsExactly(
                 audio,
-                tmp.resolve("data/stems/sha").normalize(),
-                tmp.resolve("data/features/sha.parquet").normalize());
+                tmp.resolve("data/stems/sha").normalize());
 
         // Sem áudio (fora da biblioteca ou de outra faixa) e sem runs (bytes compartilhados): nada a apagar.
         assertThat(TrackRemoval.filesOf(null, List.of(), data)).isEmpty();
@@ -48,7 +46,7 @@ class TrackRemovalTest {
         Path stems = Files.createDirectories(tmp.resolve("stems/sha"));
         Files.writeString(stems.resolve("bass.ogg"), "x");
         Path audio = Files.writeString(tmp.resolve("Creep.mp3"), "y");
-        TrackRemoval.delete(Set.of(audio, stems, tmp.resolve("nao-existe.parquet")));
+        TrackRemoval.delete(Set.of(audio, stems, tmp.resolve("nao-existe.ogg")));
         assertThat(Files.exists(audio)).isFalse();
         assertThat(Files.exists(stems)).isFalse();
     }

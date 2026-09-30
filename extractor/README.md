@@ -27,7 +27,7 @@ teoria musical** — rótulos Harte, tempos, vetores. O Spring Boot interpreta.
   "tempo": {"bpm": 120.0, "time_signature": "4/4"},
   "beats": [{"time_s": 0.5, "position": 1}],
   "chords": [{"start_s": 0.0, "end_s": 2.0, "label": "A:min",
-              "chroma": [0.9, 0.1, "..."], "chroma_low": [0.8, 0.05, "..."]}],
+              "chroma": [0.9, 0.1, "..."]}],
   "bass_notes": [{"start_s": 0.0, "end_s": 0.5, "midi": 45, "velocity": 90}],
   "vocal_notes": [{"start_s": 1.2, "end_s": 1.7, "midi": 64, "velocity": 80}],
   "lyrics": {"language": "en", "language_probability": 0.98,
@@ -35,7 +35,6 @@ teoria musical** — rótulos Harte, tempos, vetores. O Spring Boot interpreta.
                            "words": [{"start_s": 1.1, "end_s": 1.4, "text": "let", "probability": 0.93}]}]},
   "timbre": [{"stem_model": "htdemucs", "stem": "bass", "centroid_mean": 412.5, "centroid_std": 88.1,
               "flatness_mean": 0.02, "rolloff_p95": 1800.0, "rms_mean": 0.12}],
-  "features_path": "/data/features/<sha256>.parquet",
   "stems": {"bass": "/data/stems/<sha256>/bass.ogg", "drums": "...", "other": "...", "vocals": "..."}
 }
 ```
@@ -46,17 +45,16 @@ trecho **não** é fala — alto em solo de guitarra que vazou para o stem) e pa
 confiança. Trechos que o modelo descarta como não-fala não aparecem. O que fazer com isso (voz
 cantada × vazamento, repetição de linhas, forma) é decisão do núcleo.
 
-`chroma` é a mixagem inteira; `chroma_low` é o stem de guitarra (`other`) restrito a C2–F4 — a
-evidência para decidir power chord sem o 5º harmônico da distorção.
+`chroma` é a mixagem inteira, todas as oitavas. Até a 0.6.0 havia também `chroma_low` (stem de
+guitarra, C2–F4) para o núcleo decidir power chord, e `features_path` (Parquet com as séries de timbre por
+frame); saíram na 0.7.0 porque nada os lia — o teste de terça não separa power chord sob distorção, e o
+timbre agregado já vem em `timbre`.
 
-`features_path` e `stems` apontam para os volumes do container (`/data/features`, `/data/stems`),
-bind-mounted no host pelo compose (`./data`): o backend guarda os caminhos e serve os stems para o
-player multi-stem. Os stems persistidos são codificados com ffmpeg no formato `STEM_FORMAT`
+`stems` aponta para o volume do container (`/data/stems`), bind-mounted no host pelo compose
+(`ORELHA_DATA_DIR`): o backend guarda os caminhos e serve os stems para o player multi-stem. Os stems persistidos são codificados com ffmpeg no formato `STEM_FORMAT`
 (`opus` a 128 kbps em Ogg por padrão, ~11× menor que WAV; `aac`, `flac` e `wav` também valem);
-as análises por stem (baixo→MIDI, chroma_low, timbre) usam o WAV temporário, sem perda. A
-proveniência registra `models.stems_codec`. Para converter stems antigos sem reanalisar:
-`docker exec orelha-extractor python -m app.convert_stems` e atualize `analysis_run.stems`
-com o mapeamento impresso.
+as análises por stem (baixo e voz → MIDI, letra, timbre) usam o WAV temporário, sem perda. A
+proveniência registra `models.stems_codec`.
 
 ## Build e smoke test
 

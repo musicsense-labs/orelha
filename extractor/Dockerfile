@@ -3,7 +3,7 @@
 FROM python:3.10-slim
 
 ENV PIP_NO_CACHE_DIR=1 PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 \
-    CHORDMINI_DIR=/opt/chordmini FEATURES_DIR=/data/features STEMS_DIR=/data/stems WORK_DIR=/tmp/orelha-extractor \
+    CHORDMINI_DIR=/opt/chordmini STEMS_DIR=/data/stems WORK_DIR=/tmp/orelha-extractor \
     HF_HOME=/opt/hf WHISPER_MODEL=small
 
 RUN apt-get update \
@@ -37,8 +37,8 @@ RUN python -c "from demucs.pretrained import get_model; get_model('htdemucs')" \
 
 COPY app /opt/extractor/app
 WORKDIR /opt/extractor
-RUN mkdir -p ${FEATURES_DIR} ${STEMS_DIR} ${WORK_DIR}
-VOLUME ["/data/features", "/data/stems"]
+RUN mkdir -p ${STEMS_DIR} ${WORK_DIR}
+VOLUME ["/data/stems"]
 EXPOSE 8000
 
 # Um processo, uma análise por vez: medido em 2026-09-23, paralelizar nesta máquina deixou tudo 1,4× mais lento.

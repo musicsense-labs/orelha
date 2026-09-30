@@ -11,7 +11,7 @@ import java.util.Map;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 record OrelhaExtractorResponse(Extractor extractor, Audio audio, Key key, Tempo tempo, List<Beat> beats,
                              List<ChordSegment> chords, List<BassNote> bassNotes, List<BassNote> vocalNotes, Lyrics lyrics,
-                             List<Timbre> timbre, String featuresPath, Map<String, String> stems) {
+                             List<Timbre> timbre, Map<String, String> stems) {
 
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     record Extractor(String name, String version, Map<String, String> models) {
@@ -34,7 +34,7 @@ record OrelhaExtractorResponse(Extractor extractor, Audio audio, Key key, Tempo 
     }
 
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-    record ChordSegment(BigDecimal startS, BigDecimal endS, String label, float[] chroma, float[] chromaLow) {
+    record ChordSegment(BigDecimal startS, BigDecimal endS, String label, float[] chroma) {
     }
 
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)

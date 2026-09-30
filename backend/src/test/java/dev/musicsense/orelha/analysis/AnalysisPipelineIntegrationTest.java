@@ -48,7 +48,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * resultado conhecido (Am F G E7 em Lá menor, com o E7 tocado como power chord segundo o chroma).
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = {"orelha.worker.enabled=false", "orelha.harmony.power-chord-third-ratio=0.35"})
+        properties = "orelha.worker.enabled=false")
 @Testcontainers
 class AnalysisPipelineIntegrationTest {
 
@@ -100,11 +100,11 @@ class AnalysisPipelineIntegrationTest {
             List.of(new BeatEvent(bd(0.0), 1), new BeatEvent(bd(0.5), 2), new BeatEvent(bd(1.0), 3),
                     new BeatEvent(bd(1.5), 4), new BeatEvent(bd(2.0), 1)),
             List.of(
-                    chord(0.0, 1.0, 9, ChordQuality.MIN, 9, 0, 4),      // Am
-                    chord(1.0, 2.0, 9, ChordQuality.MIN, 9, 0, 4),      // Am de novo: funde
-                    chord(2.0, 4.0, 5, ChordQuality.MAJ, 5, 9, 0),      // F
-                    chord(4.0, 6.0, 7, ChordQuality.MAJ, 7, 11, 2),     // G
-                    chord(6.0, 8.0, 4, ChordQuality.MAJ, 4, 11)),       // "E" sem terça no chroma → E5
+                    chord(0.0, 1.0, 9, ChordQuality.MIN),      // Am
+                    chord(1.0, 2.0, 9, ChordQuality.MIN),      // Am de novo: funde
+                    chord(2.0, 4.0, 5, ChordQuality.MAJ),      // F
+                    chord(4.0, 6.0, 7, ChordQuality.MAJ),      // G
+                    chord(6.0, 8.0, 4, ChordQuality.POWER)),   // E5 pronto, como viria de um extrator com classe "5"
             List.of(new NoteEvent(bd(0.0), bd(2.0), 45, 100),        // A sob Am
                     new NoteEvent(bd(2.0), bd(4.0), 41, 100),        // F sob F
                     new NoteEvent(bd(4.0), bd(6.0), 43, 100),        // G sob G
@@ -116,22 +116,16 @@ class AnalysisPipelineIntegrationTest {
                     "let it", 0.1f, List.of(new ExtractionResult.LyricWordEvent(bd(0.4), bd(1.4), "let", 0.9f),
                             new ExtractionResult.LyricWordEvent(bd(1.6), bd(2.2), "it", 0.8f))))),
             List.of(new TimbreStat("htdemucs", "bass", 400f, 50f, 0.02f, 1800f, 0.1f)),
-            "/data/features/stub.parquet",
             Map.of("bass", "/data/stems/stub/bass.wav", "drums", "/data/stems/stub/drums.wav"));
 
     private static BigDecimal bd(double v) {
         return BigDecimal.valueOf(v).setScale(3);
     }
 
-    /** strongPcs alimenta o chroma grave (o que decide POWER); o chroma da mixagem é neutro. */
-    private static ChordEvent chord(double start, double end, int root, ChordQuality quality, int... strongPcs) {
-        float[] chromaLow = new float[12];
-        for (int pc : strongPcs) {
-            chromaLow[pc] = 1f;
-        }
+    private static ChordEvent chord(double start, double end, int root, ChordQuality quality) {
         float[] chroma = new float[12];
         java.util.Arrays.fill(chroma, 0.5f);
-        return new ChordEvent(bd(start), bd(end), Chord.of(root, quality), chroma, chromaLow, null);
+        return new ChordEvent(bd(start), bd(end), Chord.of(root, quality), chroma, null);
     }
 
     @Autowired
@@ -463,7 +457,7 @@ class AnalysisPipelineIntegrationTest {
                 new org.springframework.http.HttpEntity<>(friend), String.class).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
         assertThat(rest.getForEntity("/api/tracks/" + trackId, String.class).getStatusCode()).isEqualTo(HttpStatus.OK);
 
-        // Uma segunda faixa sobre o mesmo arquivo (mesmos bytes → mesma pasta de stems e mesmo Parquet, que
+        // Uma segunda faixa sobre o mesmo arquivo (mesmos bytes → mesma pasta de stems, que o exrquet, que
         // o extrator chaveia por SHA): excluir uma delas não pode levar os arquivos da outra.
         Long twinId = Uploads.upload(rest, albumId, "Stub 2 (cópia)", 2, audio).getBody().id();
         worker.pollOnce();

@@ -16,8 +16,8 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * O que apagar do disco quando uma faixa sai do acervo: o áudio (quando o chamador decidiu que é só dela),
- * a pasta de stems de cada run e o Parquet de features. Os caminhos são decididos na transação; a exclusão
+ * O que apagar do disco quando uma faixa sai do acervo: o áudio (quando o chamador decidiu que é só dela)
+ * e a pasta de stems de cada run. Os caminhos são decididos na transação; a exclusão
  * em disco acontece depois do commit e nunca falha a operação — só avisa no log.
  */
 public final class TrackRemoval {
@@ -28,8 +28,8 @@ public final class TrackRemoval {
     }
 
     /**
-     * Caminhos no host, sem repetição, na ordem: áudio (se houver), stems (pasta /data/stems/&lt;sha&gt;/ inteira),
-     * features. {@code audio} null = o arquivo fica (fora da biblioteca, ou ainda de outra faixa).
+     * Caminhos no host, sem repetição, na ordem: áudio (se houver), stems (pasta /data/stems/&lt;sha&gt;/ inteira).
+     * {@code audio} null = o arquivo fica (fora da biblioteca, ou ainda de outra faixa).
      */
     public static Set<Path> filesOf(Path audio, List<AnalysisRun> runs, DataPaths dataPaths) {
         Set<Path> out = new LinkedHashSet<>();
@@ -44,10 +44,6 @@ public final class TrackRemoval {
                         out.add(host.getParent());
                     }
                 }
-            }
-            Path features = dataPaths.toHost(run.getFeaturesPath());
-            if (features != null) {
-                out.add(features);
             }
         }
         return out;

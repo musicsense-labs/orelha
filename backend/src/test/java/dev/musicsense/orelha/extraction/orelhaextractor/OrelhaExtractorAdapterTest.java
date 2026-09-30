@@ -7,7 +7,6 @@ import dev.musicsense.orelha.extraction.ExtractionResult.ChordEvent;
 import dev.musicsense.orelha.harmony.Chord;
 import dev.musicsense.orelha.harmony.ChordQuality;
 import dev.musicsense.orelha.harmony.KeyMode;
-import dev.musicsense.orelha.harmony.PowerChordDetector;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -19,7 +18,7 @@ import java.util.stream.IntStream;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Contract test: a fixture é a resposta real do container orelha-extractor 0.6.0 sobre o WAV sintético
+ * Contract test: a fixture é a resposta real do container orelha-extractor 0.7.0 sobre o WAV sintético
  * de {@code extractor/app/testaudio.py} (Am F C G × 2, 120 BPM, baixo na fundamental). Nada de
  * container em teste; se o contrato mudar, regrave a fixture e este teste conta o que mudou.
  */
@@ -37,14 +36,13 @@ class OrelhaExtractorAdapterTest {
     @Test
     void provenanceNamesEveryModel() {
         assertThat(result.provenance().name()).isEqualTo("orelha-extractor");
-        assertThat(result.provenance().version()).isEqualTo("0.6.0");
+        assertThat(result.provenance().version()).isEqualTo("0.7.0");
         assertThat(result.stems()).containsOnlyKeys("bass", "drums", "other", "vocals");
         assertThat(result.stems().get("bass")).startsWith("/data/stems/").endsWith("/bass.ogg");   // Opus em Ogg
         assertThat(result.provenance().models()).containsEntry("stems_codec", "opus@128k");
         assertThat(result.provenance().models()).containsKeys("chords", "beats", "key", "stems", "bass", "lyrics", "timbre");
         assertThat(result.provenance().models().get("lyrics")).startsWith("faster-whisper/");
         assertThat(result.provenance().models().get("chords")).startsWith("chordmini/btc_model_best.pth");
-        assertThat(result.featuresPath()).endsWith(".parquet");
     }
 
     @Test
@@ -83,30 +81,12 @@ class OrelhaExtractorAdapterTest {
     }
 
     @Test
-    void mixChromaPeaksAtTheRootAndLowChromaIsDominatedByTheTriad() {
+    void mixChromaPeaksAtTheRoot() {
         for (ChordEvent e : result.chords()) {
             float[] chroma = e.chroma();
             assertThat(chroma).hasSize(12);
             int peak = IntStream.range(0, 12).reduce((a, b) -> chroma[a] >= chroma[b] ? a : b).getAsInt();
             assertThat(peak).as("pico do chroma em %s", e.chord()).isEqualTo(e.chord().rootPc());
-
-            float[] low = e.chromaLow();
-            assertThat(low).hasSize(12);
-            List<Integer> top3 = IntStream.range(0, 12).boxed()
-                    .sorted((a, b) -> Float.compare(low[b], low[a])).limit(3).toList();
-            List<Integer> triad = IntStream.range(0, 12)
-                    .filter(pc -> (e.chord().triad() & (1 << pc)) != 0).boxed().toList();
-            assertThat(top3).as("chroma_low de %s", e.chord()).containsExactlyInAnyOrderElementsOf(triad);
-        }
-    }
-
-    @Test
-    void fullTriadsInRealLowChromaAreNotMistakenForPowerChords() {
-        PowerChordDetector detector = new PowerChordDetector(PowerChordDetector.DEFAULT_THIRD_RATIO);
-        for (ChordEvent e : result.chords()) {
-            assertThat(detector.reclassify(e.chord(), e.chromaLow()))
-                    .as("%s at %s", e.chord(), e.startS())
-                    .isEqualTo(e.chord());
         }
     }
 

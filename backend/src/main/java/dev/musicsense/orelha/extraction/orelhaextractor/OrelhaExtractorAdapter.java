@@ -51,8 +51,7 @@ public class OrelhaExtractorAdapter implements AudioExtractor {
                 r.tempo() == null ? null : new Tempo(r.tempo().bpm(), r.tempo().timeSignature()),
                 orEmpty(r.beats()).stream().map(b -> new BeatEvent(b.timeS(), b.position())).toList(),
                 orEmpty(r.chords()).stream()
-                        .map(c -> new ChordEvent(c.startS(), c.endS(), HarteLabel.parse(c.label()), c.chroma(),
-                                c.chromaLow(), null))
+                        .map(c -> new ChordEvent(c.startS(), c.endS(), HarteLabel.parse(c.label()), c.chroma(), null))
                         .toList(),
                 orEmpty(r.bassNotes()).stream()
                         .map(n -> new NoteEvent(n.startS(), n.endS(), n.midi(), n.velocity())).toList(),
@@ -63,7 +62,6 @@ public class OrelhaExtractorAdapter implements AudioExtractor {
                         .map(t -> new TimbreStat(t.stemModel(), t.stem(), t.centroidMean(), t.centroidStd(),
                                 t.flatnessMean(), t.rolloffP95(), t.rmsMean()))
                         .toList(),
-                r.featuresPath(),
                 r.stems() == null ? Map.of() : r.stems());
     }
 

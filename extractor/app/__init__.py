@@ -1,7 +1,7 @@
 """orelha-extractor: extração de features de áudio para o Orelha. Sem teoria musical aqui."""
 import os
 
-VERSION = "0.6.0"
+VERSION = "0.7.0"
 
 MODELS = {
     "chords": "chordmini/btc_model_best.pth@aa6e3a8",

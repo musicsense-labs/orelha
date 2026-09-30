@@ -22,13 +22,12 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * Varre {@code <host>/stems/<sha>/} e {@code <host>/features/<sha>.parquet} e apaga o que não pertence a
- * faixa nenhuma. Sobra desse tipo aparece quando o extrator grava antes do run ser persistido e o run acaba
+ * Varre {@code <host>/stems/<sha>/} e apaga o que não pertence a faixa nenhuma. Sobra desse tipo aparece quando o extrator grava antes do run ser persistido e o run acaba
  * abandonado ou falho — o {@code TrackRemoval} só sabe apagar o que está registrado no banco.
  *
  * <p>Três travas, porque isto apaga arquivo sozinho: (1) acervo vazio aborta a varredura — banco fora do ar
  * não pode virar faxina geral; (2) só entra o que não foi tocado há mais de {@code orelha.data.orphan-min-age},
- * para nunca disputar com uma análise em andamento; (3) nada fora de {@code stems}/{@code features} é olhado.
+ * para nunca disputar com uma análise em andamento; (3) nada fora de {@code stems} é olhado, e lá só pastas.
  * O identificador é o SHA do áudio, o mesmo que o extrator usa para nomear.
  */
 @Component
@@ -37,14 +36,14 @@ public class OrphanSweeper {
     private static final Logger log = LoggerFactory.getLogger(OrphanSweeper.class);
 
     /** O que a varredura achou (e apagou, quando não é ensaio). */
-    public record Report(int stemFolders, int featureFiles, long bytes, boolean dryRun, String skippedReason) {
+    public record Report(int stemFolders, long bytes, boolean dryRun, String skippedReason) {
 
         public boolean skipped() {
             return skippedReason != null;
         }
 
         static Report skipped(String reason) {
-            return new Report(0, 0, 0, false, reason);
+            return new Report(0, 0, false, reason);
         }
     }
 
@@ -71,9 +70,8 @@ public class OrphanSweeper {
         Report report = sweep(false);
         if (report.skipped()) {
             log.warn("varredura de órfãos pulada: {}", report.skippedReason());
-        } else if (report.stemFolders() > 0 || report.featureFiles() > 0) {
-            log.info("órfãos apagados: {} pastas de stems, {} parquets, {} MB",
-                    report.stemFolders(), report.featureFiles(), report.bytes() / (1024 * 1024));
+        } else if (report.stemFolders() > 0) {
+            log.info("órfãos apagados: {} pastas de stems, {} MB", report.stemFolders(), report.bytes() / (1024 * 1024));
         }
     }
 
@@ -85,37 +83,29 @@ public class OrphanSweeper {
             return Report.skipped("o acervo está vazio; nada é apagado enquanto não houver faixa alguma");
         }
         Instant deadline = Instant.now().minus(minAge);
-        List<Path> stems = orphans(dataPaths.hostRoot().resolve("stems"), alive, deadline, true);
-        List<Path> features = orphans(dataPaths.hostRoot().resolve("features"), alive, deadline, false);
-        long bytes = stems.stream().mapToLong(OrphanSweeper::sizeOf).sum()
-                + features.stream().mapToLong(OrphanSweeper::sizeOf).sum();
+        List<Path> stems = orphans(dataPaths.hostRoot().resolve("stems"), alive, deadline);
+        long bytes = stems.stream().mapToLong(OrphanSweeper::sizeOf).sum();
         if (!dryRun) {
             stems.forEach(OrphanSweeper::delete);
-            features.forEach(OrphanSweeper::delete);
         }
-        return new Report(stems.size(), features.size(), bytes, dryRun, null);
+        return new Report(stems.size(), bytes, dryRun, null);
     }
 
     /**
-     * Entradas de um diretório cujo nome (sem {@code .parquet}) não é o SHA de nenhuma faixa e que estão
-     * paradas há tempo suficiente. Diretório inexistente devolve lista vazia.
+     * Pastas cujo nome não é o SHA de nenhuma faixa e que estão paradas há tempo suficiente. Arquivo solto
+     * não é nosso e fica. Diretório inexistente devolve lista vazia.
      */
-    private static List<Path> orphans(Path dir, Set<String> alive, Instant deadline, boolean directories) {
+    private static List<Path> orphans(Path dir, Set<String> alive, Instant deadline) {
         if (!Files.isDirectory(dir)) {
             return List.of();
         }
         List<Path> out = new ArrayList<>();
         try (Stream<Path> entries = Files.list(dir)) {
             for (Path entry : entries.toList()) {
-                if (Files.isDirectory(entry) != directories) {
-                    continue;
-                }
-                String name = entry.getFileName().toString();
-                if (!directories && !name.endsWith(".parquet")) {
+                if (!Files.isDirectory(entry)) {
                     continue;   // arquivo que não é nosso: não é a varredura que decide sobre ele
                 }
-                String sha = directories ? name : name.substring(0, name.length() - ".parquet".length());
-                if (alive.contains(sha)) {
+                if (alive.contains(entry.getFileName().toString())) {
                     continue;
                 }
                 if (lastTouched(entry).isAfter(deadline)) {

@@ -8,4 +8,3 @@ demucs==4.1.0
 basic-pitch==0.4.0
 faster-whisper==1.1.1
 pyloudnorm==0.1.1
-pyarrow==18.1.0

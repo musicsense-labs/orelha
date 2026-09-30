@@ -36,7 +36,6 @@ public final class ChordEvents {
                 : Math.min(a.confidence(), b.confidence());
         return new ChordEvent(a.startS(), b.endS(), a.chord(),
                 weighted(a.chroma(), da, b.chroma(), db),
-                weighted(a.chromaLow(), da, b.chromaLow(), db),
                 confidence);
     }
 

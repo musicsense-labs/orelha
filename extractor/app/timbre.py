@@ -1,18 +1,15 @@
-"""Descritores espectrais por stem: agregados no JSON, séries por frame em Parquet."""
+"""Descritores espectrais por stem, agregados por faixa (as séries por frame não saem daqui desde a 0.7.0)."""
 from pathlib import Path
 
 import librosa
 import numpy as np
-import pyarrow as pa
-import pyarrow.parquet as pq
 
 N_FFT = 2048
 HOP = 512
 
 
-def timbre_summaries(stems: dict[str, Path], stem_model: str, features_path: Path) -> list[dict]:
+def timbre_summaries(stems: dict[str, Path], stem_model: str) -> list[dict]:
     summaries = []
-    columns = {"stem": [], "time_s": [], "centroid": [], "flatness": [], "rolloff": [], "rms": []}
     for name, path in sorted(stems.items()):
         y, sr = librosa.load(path, sr=None, mono=True)
         S = np.abs(librosa.stft(y, n_fft=N_FFT, hop_length=HOP))
@@ -20,14 +17,6 @@ def timbre_summaries(stems: dict[str, Path], stem_model: str, features_path: Pat
         flatness = librosa.feature.spectral_flatness(S=S)[0]
         rolloff = librosa.feature.spectral_rolloff(S=S, sr=sr, roll_percent=0.95)[0]
         rms = librosa.feature.rms(S=S)[0]
-        times = librosa.frames_to_time(np.arange(len(rms)), sr=sr, hop_length=HOP)
-
-        columns["stem"].extend([name] * len(rms))
-        columns["time_s"].extend(times.astype(np.float32))
-        columns["centroid"].extend(centroid.astype(np.float32))
-        columns["flatness"].extend(flatness.astype(np.float32))
-        columns["rolloff"].extend(rolloff.astype(np.float32))
-        columns["rms"].extend(rms.astype(np.float32))
 
         # Frames quase silenciosos distorcem centroide/rolloff; agrega só onde há sinal.
         active = rms > 0.01 * rms.max() if rms.max() > 0 else np.zeros_like(rms, dtype=bool)
@@ -40,9 +29,6 @@ def timbre_summaries(stems: dict[str, Path], stem_model: str, features_path: Pat
             "rolloff_p95": _stat(lambda v: np.percentile(v, 95), rolloff[active]),
             "rms_mean": _stat(np.mean, rms),
         })
-
-    features_path.parent.mkdir(parents=True, exist_ok=True)
-    pq.write_table(pa.table(columns), features_path, compression="zstd")
     return summaries
 
 
