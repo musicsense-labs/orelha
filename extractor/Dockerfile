@@ -41,7 +41,5 @@ RUN mkdir -p ${FEATURES_DIR} ${STEMS_DIR} ${WORK_DIR}
 VOLUME ["/data/features", "/data/stems"]
 EXPOSE 8000
 
-# Um worker por análise simultânea (EXTRACTOR_WORKERS no compose; 1 = como sempre foi). Cada worker é um
-# processo com seus próprios modelos na memória (~3 GB durante a análise), e app.main divide as threads do
-# torch entre eles. Forma shell de propósito: é o shell que expande a variável.
-CMD uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers ${EXTRACTOR_WORKERS:-1}
+# Um processo, uma análise por vez: medido em 2026-09-23, paralelizar nesta máquina deixou tudo 1,4× mais lento.
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

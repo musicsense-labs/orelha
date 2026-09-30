@@ -30,7 +30,7 @@ class AnalysisWorkerPauseTest {
 
     private AnalysisWorker worker(boolean enabled) {
         return new AnalysisWorker(queue, pipeline, extractor, enabled,
-                Duration.ofSeconds(30), Duration.ofMinutes(2), 3, 3, 1);
+                Duration.ofSeconds(30), Duration.ofMinutes(2), 3, 3);
     }
 
     @Test

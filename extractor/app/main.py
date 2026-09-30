@@ -17,30 +17,6 @@ log = logging.getLogger("orelha-extractor")
 
 WORK_DIR = Path(os.environ.get("WORK_DIR", "/tmp/orelha-extractor"))
 
-# Quantas threads o torch pode usar neste processo. Com vários workers do uvicorn (EXTRACTOR_WORKERS), cada
-# um pediria por padrão metade dos núcleos lógicos e os processos brigariam pela mesma CPU; dividir o total
-# pelo número de workers mantém a soma no tamanho da máquina. TORCH_THREADS manda, quando definido.
-def _torch_threads() -> int | None:
-    explicit = os.environ.get("TORCH_THREADS")
-    if explicit:
-        return max(1, int(explicit))
-    workers = max(1, int(os.environ.get("EXTRACTOR_WORKERS", "1")))
-    if workers == 1:
-        return None   # um processo só: o torch e o CTranslate2 escolhem melhor que nós (medido em 2026-09-23)
-    return max(2, (os.cpu_count() or 4) // workers)
-
-
-_threads = _torch_threads()
-if _threads:
-    os.environ.setdefault("OMP_NUM_THREADS", str(_threads))   # madmom/numpy/ctranslate2 leem daqui
-    try:
-        import torch
-
-        torch.set_num_threads(_threads)
-        log.info("torch com %d threads (EXTRACTOR_WORKERS=%s)", _threads, os.environ.get("EXTRACTOR_WORKERS", "1"))
-    except Exception as exc:   # pragma: no cover - torch sempre existe na imagem
-        log.warning("não deu para limitar as threads do torch: %s", exc)
-
 app = FastAPI(title="orelha-extractor", version=VERSION)
 
 

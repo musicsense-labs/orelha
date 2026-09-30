@@ -49,9 +49,6 @@ orelha:
     poll-ms: 5000
     # Enquanto extrai (minutos), o worker bate o ponto no run; quem parou de bater há mais que stale-after
     # foi abandonado (backend derrubado no meio) e volta para a fila, até max-attempts vezes.
-    # Análises simultâneas: precisa de EXTRACTOR_WORKERS igual ou maior no compose, senão as requisições
-    # esperam fila no extrator e não se ganha nada. 1 = uma faixa por vez, como sempre foi.
-    concurrency: ${ORELHA_WORKER_CONCURRENCY:1}
     heartbeat: 30s
     stale-after: 2m
     max-attempts: 3
