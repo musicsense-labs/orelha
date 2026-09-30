@@ -103,6 +103,46 @@ class LyricMergerTest {
     }
 
     @Test
+    void theTailOfAVerseIsNotStolenByTheNextOne() {
+        // Let It Be, medido em 2026-09-30: com janelas rígidas por verso (carimbo − 1,5 s), "times of trouble"
+        // caía na janela de "Mother Mary comes to me", e o alinhamento trocava palavra por palavra — "Mother"
+        // ficava com o tempo de "times", e "comes to me" viravam notas de vazamento no piano roll.
+        List<Segment> asr = List.of(
+                seg(12.46, "When I find myself in times of trouble Mother Mary comes to me",
+                        w(12.46, "When"), w(13.42, "I"), w(13.62, "find"), w(14.00, "myself"), w(14.44, "in"),
+                        w(15.00, "times"), w(15.44, "of"), w(15.94, "trouble"), w(16.36, "Mother"), w(17.22, "Mary"),
+                        w(18.02, "comes"), w(18.50, "to"), w(18.82, "me")),
+                seg(19.84, "Speaking words of wisdom, let it be",
+                        w(19.84, "Speaking"), w(20.32, "words"), w(21.22, "of"), w(21.44, "wisdom,"), w(22.54, "let"),
+                        w(22.74, "it"), w(22.90, "be")));
+        List<LrcFile.Line> lrc = List.of(
+                new LrcFile.Line(12.59, "When I find myself in times of trouble"),
+                new LrcFile.Line(16.41, "Mother Mary comes to me"),
+                new LrcFile.Line(19.30, "Speaking words of wisdom, let it be"));
+
+        LyricMerger.Result r = LyricMerger.merge(asr, lrc);
+
+        assertThat(r.segments().get(0).words()).extracting(Word::startS).endsWith(15.00, 15.44, 15.94);
+        assertThat(r.segments().get(1).words()).extracting(Word::startS).containsExactly(16.36, 17.22, 18.02, 18.50, 18.82);
+        assertThat(r.corrected()).isZero();
+        assertThat(r.inserted()).isZero();
+        assertThat(r.dropped()).isZero();
+    }
+
+    @Test
+    void aRepeatedLineOnlyMatchesTheSingingNearItsOwnStamp() {
+        // O refrão se repete igual: a palavra ouvida aos 40 s não pode ir para o verso de 10 s.
+        List<Segment> asr = List.of(seg(40, "let it be", w(40.0, "let"), w(40.3, "it"), w(40.6, "be")));
+        List<LrcFile.Line> lrc = List.of(new LrcFile.Line(10, "let it be"), new LrcFile.Line(40, "let it be"));
+
+        LyricMerger.Result r = LyricMerger.merge(asr, lrc);
+
+        assertThat(r.segments().get(1).words()).extracting(Word::startS).containsExactly(40.0, 40.3, 40.6);
+        assertThat(r.segments().get(0).words()).allSatisfy(word -> assertThat(word.startS()).isLessThan(13.0));
+        assertThat(r.inserted()).isEqualTo(3);
+    }
+
+    @Test
     void withoutLrcNothingChanges() {
         List<Segment> asr = List.of(seg(0, "as it came", w(0.0, "as"), w(0.4, "it"), w(0.8, "came")));
 
