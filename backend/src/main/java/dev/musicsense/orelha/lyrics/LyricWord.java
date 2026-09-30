@@ -1,4 +1,4 @@
-package dev.musicsense.orelha.analysis;
+package dev.musicsense.orelha.lyrics;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

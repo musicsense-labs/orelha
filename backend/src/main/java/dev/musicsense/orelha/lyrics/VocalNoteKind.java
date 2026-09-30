@@ -1,4 +1,4 @@
-package dev.musicsense.orelha.analysis;
+package dev.musicsense.orelha.lyrics;
 
 /** O que uma nota transcrita do stem de voz provavelmente é, à luz da letra (ver {@link VocalNoteClassifier}). */
 public enum VocalNoteKind {

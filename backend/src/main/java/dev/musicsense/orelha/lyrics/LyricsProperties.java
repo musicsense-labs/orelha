@@ -1,4 +1,4 @@
-package dev.musicsense.orelha.analysis;
+package dev.musicsense.orelha.lyrics;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;

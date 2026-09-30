@@ -1,4 +1,4 @@
-package dev.musicsense.orelha.analysis;
+package dev.musicsense.orelha.lyrics;
 
 import java.math.BigDecimal;
 import java.util.List;

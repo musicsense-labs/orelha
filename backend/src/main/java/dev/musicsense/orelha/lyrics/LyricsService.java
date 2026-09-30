@@ -1,8 +1,11 @@
-package dev.musicsense.orelha.analysis;
+package dev.musicsense.orelha.lyrics;
 
-import dev.musicsense.orelha.lyrics.LrcFile;
-import dev.musicsense.orelha.lyrics.LrcLineRepository;
-import dev.musicsense.orelha.lyrics.LyricMerger;
+import dev.musicsense.orelha.analysis.AnalysisRun;
+import dev.musicsense.orelha.analysis.Beat;
+import dev.musicsense.orelha.analysis.BeatRepository;
+import dev.musicsense.orelha.analysis.TrackAnalysisRepository;
+import dev.musicsense.orelha.analysis.VocalNote;
+import dev.musicsense.orelha.analysis.VocalNoteRepository;
 import jakarta.persistence.EntityManager;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Service;

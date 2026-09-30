@@ -2,6 +2,8 @@ package dev.musicsense.orelha.analysis;
 
 import dev.musicsense.orelha.catalog.TrackRepository;
 import dev.musicsense.orelha.common.NotFoundException;
+import dev.musicsense.orelha.lyrics.LyricsService;
+import dev.musicsense.orelha.lyrics.VocalNoteKind;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

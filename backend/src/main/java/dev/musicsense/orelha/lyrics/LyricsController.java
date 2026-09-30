@@ -1,5 +1,7 @@
-package dev.musicsense.orelha.analysis;
+package dev.musicsense.orelha.lyrics;
 
+import dev.musicsense.orelha.analysis.AnalysisRun;
+import dev.musicsense.orelha.analysis.AnalysisRunRepository;
 import dev.musicsense.orelha.catalog.Track;
 import dev.musicsense.orelha.catalog.TrackRepository;
 import dev.musicsense.orelha.common.NotFoundException;

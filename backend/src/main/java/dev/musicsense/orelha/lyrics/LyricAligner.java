@@ -1,5 +1,6 @@
-package dev.musicsense.orelha.analysis;
+package dev.musicsense.orelha.lyrics;
 
+import dev.musicsense.orelha.analysis.VocalNote;
 import java.math.BigDecimal;
 import java.util.List;
 
