@@ -16,8 +16,7 @@ public record LyricsResponse(Long runId, LyricSource source, String language, Fl
     public record LrcMerge(int corrected, int inserted, int dropped, int kept) {
     }
 
-    public record Segment(BigDecimal startS, BigDecimal endS, String text, Float noSpeechProb, Integer barNo,
-                          List<Word> words) {
+    public record Segment(BigDecimal startS, BigDecimal endS, String text, Integer barNo, List<Word> words) {
     }
 
     public record Word(BigDecimal startS, BigDecimal endS, String text, Float probability, Integer barNo,

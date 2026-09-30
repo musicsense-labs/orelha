@@ -195,8 +195,6 @@ export interface LyricSegment {
   startS: number;
   endS: number;
   text: string;
-  /** Probabilidade que o ASR dá a "não é fala" neste trecho. */
-  noSpeechProb: number | null;
   barNo: number | null;
   words: LyricWord[];
 }

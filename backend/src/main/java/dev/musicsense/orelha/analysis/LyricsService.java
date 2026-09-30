@@ -100,10 +100,29 @@ public class LyricsService {
                 .toList());
     }
 
-    /** Notas de voz do run classificadas pela letra preferida. */
+    /**
+     * Notas de voz do run classificadas pela mesma letra que a tela mostra — a fundida com o .lrc. Com a
+     * transcrição crua, as notas sob as palavras que o ASR não ouviu (e o .lrc trouxe) sumiam como vazamento.
+     */
     @Transactional(readOnly = true)
     public List<VocalNoteClassifier.Classified> classifiedVocalNotes(AnalysisRun run) {
-        return classifier.classify(vocalNotes.findByRunIdOrderByStartS(run.getId()), read(run));
+        return classifier.classify(vocalNotes.findByRunIdOrderByStartS(run.getId()), merged(run, read(run)).segments());
+    }
+
+    /**
+     * A letra que vale: o ASR diz quando se canta, o .lrc da faixa diz o quê, e a correção do dono (MANUAL)
+     * vence os dois — sobre ela nada é fundido.
+     */
+    private LyricMerger.Result merged(AnalysisRun run, List<LyricSegment> found) {
+        List<LyricMerger.Segment> heard = found.stream()
+                .map(s -> new LyricMerger.Segment(s.getStartS().doubleValue(), s.getEndS().doubleValue(), s.getText(),
+                        s.getWords().stream()
+                                .map(w -> new LyricMerger.Word(w.getStartS().doubleValue(), w.getEndS().doubleValue(),
+                                        w.getText(), w.getProbability() == null ? null : w.getProbability().doubleValue()))
+                                .toList()))
+                .toList();
+        boolean fromAsr = !found.isEmpty() && found.get(0).getSource() == LyricSource.EXTRACTOR;
+        return fromAsr ? LyricMerger.merge(heard, lrcLines(run)) : new LyricMerger.Result(heard, 0, 0, 0, 0);
     }
 
     /** A letra preferida com compasso e ataque de nota por palavra. */
@@ -114,21 +133,10 @@ public class LyricsService {
         List<VocalNote> notes = vocalNotes.findByRunIdOrderByStartS(run.getId());
         double tolerance = properties.wordToleranceS();
         LyricSource source = found.isEmpty() ? null : found.get(0).getSource();
-
-        // O ASR diz quando se canta; o .lrc da faixa diz o quê. A correção do dono (MANUAL) vence os dois.
-        List<LyricMerger.Segment> heard = found.stream()
-                .map(s -> new LyricMerger.Segment(s.getStartS().doubleValue(), s.getEndS().doubleValue(), s.getText(),
-                        s.getWords().stream()
-                                .map(w -> new LyricMerger.Word(w.getStartS().doubleValue(), w.getEndS().doubleValue(),
-                                        w.getText(), w.getProbability() == null ? null : w.getProbability().doubleValue()))
-                                .toList()))
-                .toList();
-        LyricMerger.Result merged = source == LyricSource.EXTRACTOR
-                ? LyricMerger.merge(heard, lrcLines(run))
-                : new LyricMerger.Result(heard, 0, 0, 0, 0);
+        LyricMerger.Result merged = merged(run, found);
 
         List<LyricsResponse.Segment> segments = merged.segments().stream()
-                .map(s -> new LyricsResponse.Segment(decimal(s.startS()), decimal(s.endS()), s.text(), noSpeechOf(found, s),
+                .map(s -> new LyricsResponse.Segment(decimal(s.startS()), decimal(s.endS()), s.text(),
                         barAt(grid, decimal(s.startS())), s.words().stream()
                         .map(w -> {
                             BigDecimal start = decimal(w.startS());
@@ -155,16 +163,6 @@ public class LyricsService {
         return lrcLines.findByTrackIdOrderByLineNo(run.getTrack().getId()).stream()
                 .map(l -> new LrcFile.Line(l.getStartS().doubleValue(), l.getText()))
                 .toList();
-    }
-
-    /** O no_speech_prob do trecho do ASR que cobre este verso, quando houver: é evidência do ASR, não do .lrc. */
-    private static Float noSpeechOf(List<LyricSegment> asr, LyricMerger.Segment segment) {
-        for (LyricSegment s : asr) {
-            if (s.getStartS().doubleValue() <= segment.startS() && segment.startS() < s.getEndS().doubleValue()) {
-                return s.getNoSpeechProb();
-            }
-        }
-        return null;
     }
 
     private static BigDecimal decimal(double seconds) {
