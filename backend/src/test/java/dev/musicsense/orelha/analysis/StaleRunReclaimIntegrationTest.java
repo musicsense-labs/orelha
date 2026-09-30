@@ -81,6 +81,27 @@ class StaleRunReclaimIntegrationTest {
     }
 
     @Test
+    void requeueingFailuresTakesOnlyTheLatestRunOfEachTrack() {
+        AnalysisRun failed = runningSince(Instant.now(), 3);
+        queue.fail(failed.getId(), new IllegalStateException("No such device"));
+        // Uma faixa cujo run falho é antigo e já tem um run mais novo: não volta.
+        AnalysisRun oldFailure = runningSince(Instant.now(), 1);
+        queue.fail(oldFailure.getId(), new IllegalStateException("antigo"));
+        AnalysisRun newer = tx.execute(status -> runs.save(new AnalysisRun(
+                tracks.findById(oldFailure.getTrack().getId()).orElseThrow(), "stub", null, java.util.Map.of())));
+
+        assertThat(runs.countLatestFailed()).isGreaterThanOrEqualTo(1);
+        queue.requeueFailed();
+
+        AnalysisRun back = runs.findById(failed.getId()).orElseThrow();
+        assertThat(back.getStatus()).isEqualTo(RunStatus.QUEUED);
+        assertThat(back.getAttempts()).isZero();
+        assertThat(back.getError()).isNull();
+        assertThat(runs.findById(oldFailure.getId()).orElseThrow().getStatus()).isEqualTo(RunStatus.FAILED);
+        assertThat(runs.findById(newer.getId()).orElseThrow().getStatus()).isEqualTo(RunStatus.QUEUED);
+    }
+
+    @Test
     void aRunStillBeatingIsLeftAlone() {
         AnalysisRun working = runningSince(Instant.now().minus(Duration.ofSeconds(20)), 1);
 

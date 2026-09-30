@@ -11,15 +11,25 @@
     @if (worker.hasValue()) {
       <p class="queue">
         <strong>{{ worker.value().enabled ? 'consumindo a fila' : 'pausada' }}</strong>
-        <span class="muted">{{ worker.value().queued }} na fila · {{ worker.value().running }} em análise</span>
+        <span class="muted">{{ worker.value().queued }} na fila · {{ worker.value().running }} em análise · {{ worker.value().failed }} falharam</span>
         <button type="button" [class.primary]="!worker.value().enabled" [disabled]="workerBusy()"
                 (click)="setWorker(!worker.value().enabled)">
           {{ worker.value().enabled ? 'pausar' : 'retomar' }}
         </button>
+        @if (worker.value().failed > 0) {
+          <button type="button" [disabled]="workerBusy()" (click)="requeueFailed()"
+                  title="Devolve à fila as faixas cujo último run falhou — o conserto depois de uma queda do disco ou do extrator">
+            reenfileirar {{ worker.value().failed }} falha(s)
+          </button>
+        }
       </p>
+      @if (worker.value().pausedBecause; as reason) {
+        <p class="error">Pausado sozinho: {{ reason }}. Confira o disco e o extrator antes de retomar.</p>
+      }
       <p class="muted small-note">
         Pausar não aborta a faixa que já está no extrator: ela termina e é gravada, e o worker não puxa a
-        próxima. Vale enquanto este backend estiver de pé — ao reiniciar volta ao padrão do ambiente.
+        próxima. Vale enquanto este backend estiver de pé — ao reiniciar volta ao padrão do ambiente. Três
+        falhas seguidas pausam sozinhas: é sinal de disco ou extrator fora, não de faixa ruim.
       </p>
     } @else if (worker.isLoading()) {
       <p class="muted">Carregando…</p>

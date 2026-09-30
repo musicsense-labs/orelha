@@ -70,6 +70,24 @@ export class Admin {
     }
   }
 
+  /** Devolve à fila as faixas cujo último run falhou; a análise volta a ocupar a CPU, então pergunta antes. */
+  async requeueFailed(): Promise<void> {
+    const failed = this.worker.value()?.failed ?? 0;
+    if (failed === 0 || !confirm(`Devolver ${failed} faixa(s) à fila? A análise volta a ocupar a CPU da máquina.`)) {
+      return;
+    }
+    this.workerBusy.set(true);
+    this.workerError.set(null);
+    try {
+      await firstValueFrom(this.http.post<WorkerState>('/api/admin/worker/requeue-failed', null));
+      this.worker.reload();
+    } catch (e: unknown) {
+      this.workerError.set(errorText(e));
+    } finally {
+      this.workerBusy.set(false);
+    }
+  }
+
   filter(actor: string): void {
     this.actor.set(actor);
     this.page.set(0);

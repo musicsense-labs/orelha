@@ -55,6 +55,9 @@ orelha:
     heartbeat: 30s
     stale-after: 2m
     max-attempts: 3
+    # Falhas seguidas são da máquina (disco fora, extrator caído), não da faixa: o worker se pausa em vez de
+    # esvaziar a fila em FAILED, como aconteceu com 1581 faixas em 2026-09-26. 0 desliga.
+    pause-after-failures: 3
   admin:
     emails: dfcsantos@gmail.com   # quem vê a aba administrador (auditoria); acesso local é sempre admin
   hooktheory:

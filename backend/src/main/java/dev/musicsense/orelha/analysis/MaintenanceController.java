@@ -20,8 +20,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/admin")
 public class MaintenanceController {
 
-    /** Se a fila está sendo consumida e o que falta nela. */
-    public record WorkerState(boolean enabled, long queued, long running) {
+    /**
+     * Se a fila está sendo consumida, o que falta nela, quantas faixas terminaram falhando e, quando o worker
+     * se pausou sozinho, por quê.
+     */
+    public record WorkerState(boolean enabled, long queued, long running, long failed, String pausedBecause) {
     }
 
     private final OrphanSweeper sweeper;
@@ -29,14 +32,16 @@ public class MaintenanceController {
     private final LrcImporter lrc;
     private final AnalysisWorker worker;
     private final AnalysisRunRepository runs;
+    private final AnalysisQueue queue;
 
     MaintenanceController(OrphanSweeper sweeper, AdminProperties admin, LrcImporter lrc,
-                          AnalysisWorker worker, AnalysisRunRepository runs) {
+                          AnalysisWorker worker, AnalysisRunRepository runs, AnalysisQueue queue) {
         this.sweeper = sweeper;
         this.admin = admin;
         this.lrc = lrc;
         this.worker = worker;
         this.runs = runs;
+        this.queue = queue;
     }
 
     @GetMapping("/worker")
@@ -57,8 +62,17 @@ public class MaintenanceController {
         return state();
     }
 
+    /** Devolve à fila as faixas cujo último run falhou (queda do disco, extrator fora do ar). */
+    @PostMapping("/worker/requeue-failed")
+    WorkerState requeueFailed(HttpServletRequest request) {
+        admin.require(request, "mexe na fila de análise");
+        queue.requeueFailed();
+        return state();
+    }
+
     private WorkerState state() {
-        return new WorkerState(worker.enabled(), runs.countByStatus(RunStatus.QUEUED), runs.countByStatus(RunStatus.RUNNING));
+        return new WorkerState(worker.enabled(), runs.countByStatus(RunStatus.QUEUED), runs.countByStatus(RunStatus.RUNNING),
+                runs.countLatestFailed(), worker.pausedBecause());
     }
 
     /**

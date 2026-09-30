@@ -232,6 +232,10 @@ export interface WorkerState {
   enabled: boolean;
   queued: number;
   running: number;
+  /** Faixas cujo run mais recente falhou. */
+  failed: number;
+  /** Quando o worker se pausou sozinho (falhas seguidas), o motivo; null nos outros casos. */
+  pausedBecause: string | null;
 }
 
 /** Auditoria (só o administrador lê). */

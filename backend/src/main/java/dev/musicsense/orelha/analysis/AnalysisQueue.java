@@ -100,6 +100,17 @@ public class AnalysisQueue {
         run.setError(message.length() > 2000 ? message.substring(0, 2000) : message);
     }
 
+    /**
+     * Devolve à fila as faixas cujo run mais recente falhou — o conserto depois de uma queda do disco ou do
+     * extrator. Zera as tentativas e mantém a ordem original de pedido. Devolve quantas voltaram.
+     */
+    @Transactional
+    public int requeueFailed() {
+        int count = runs.requeueLatestFailed();
+        log.info("{} faixas com o último run falho voltaram à fila", count);
+        return count;
+    }
+
     public AnalysisRun find(long runId) {
         return runs.findById(runId).orElseThrow(() -> new NotFoundException("AnalysisRun", runId));
     }
