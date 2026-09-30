@@ -1,6 +1,8 @@
 package dev.musicsense.orelha.catalog;
 
+import dev.musicsense.orelha.common.AdminProperties;
 import dev.musicsense.orelha.common.NotFoundException;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,10 +25,12 @@ public class AlbumController {
 
     private final AlbumRepository albums;
     private final ArtistRepository artists;
+    private final AdminProperties admin;
 
-    AlbumController(AlbumRepository albums, ArtistRepository artists) {
+    AlbumController(AlbumRepository albums, ArtistRepository artists, AdminProperties admin) {
         this.albums = albums;
         this.artists = artists;
+        this.admin = admin;
     }
 
     @GetMapping
@@ -53,7 +57,8 @@ public class AlbumController {
 
     @PutMapping("/{id}")
     @Transactional
-    AlbumResponse update(@PathVariable Long id, @Valid @RequestBody AlbumRequest req) {
+    AlbumResponse update(@PathVariable Long id, @Valid @RequestBody AlbumRequest req, HttpServletRequest request) {
+        admin.require(request, "edita álbuns");
         Album album = find(id);
         if (!album.getArtist().getId().equals(req.artistId())) {
             throw new IllegalArgumentException("An album cannot be moved to another artist");
@@ -65,7 +70,8 @@ public class AlbumController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    void delete(@PathVariable Long id) {
+    void delete(@PathVariable Long id, HttpServletRequest request) {
+        admin.require(request, "exclui álbuns");
         albums.delete(find(id));
     }
 

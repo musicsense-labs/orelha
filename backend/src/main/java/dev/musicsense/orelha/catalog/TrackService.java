@@ -86,14 +86,6 @@ public class TrackService {
     }
 
     /** Cadastra uma faixa a partir de um arquivo já no disco, fixa a identidade dos bytes e enfileira a análise. */
-    @Transactional
-    public Track register(TrackRequest req) {
-        Path audio = Path.of(req.audioPath());
-        if (!Files.isRegularFile(audio)) {
-            throw new IllegalArgumentException("Audio file not found: " + req.audioPath());
-        }
-        return register(findAlbum(req.albumId()), req.title(), req.trackNo(), audio);
-    }
 
     /** Upload pela UI: grava em orelha.library.dir/<albumId>/ e segue o mesmo caminho do cadastro. */
     @Transactional

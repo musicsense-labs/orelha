@@ -64,8 +64,7 @@ class CatalogIntegrationTest {
         assertThat(album.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(album.getBody().artistId()).isEqualTo(artist.getBody().id());
 
-        ResponseEntity<TrackResponse> track = rest.postForEntity("/api/tracks",
-                new TrackRequest(album.getBody().id(), "War Pigs", 1, audio.toString()), TrackResponse.class);
+        ResponseEntity<TrackResponse> track = Uploads.upload(rest, album.getBody().id(), "War Pigs", 1, audio);
         assertThat(track.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         TrackResponse created = track.getBody();
         assertThat(created.audioSha256()).isEqualTo(expectedSha);
@@ -147,18 +146,47 @@ class CatalogIntegrationTest {
     }
 
     @Test
-    void rejectsTrackWhoseAudioFileDoesNotExist() {
+    void aTrackCannotBeRegisteredByAServerPath() {
+        // Era o cadastro por caminho: qualquer usuário do Access registrava um arquivo da máquina (a chave do
+        // túnel, por exemplo) e o baixava por /audio. Removido em 2026-09-30; o upload copia o arquivo e o
+        // importar pasta do servidor só roda localmente.
         ResponseEntity<ArtistResponse> artist = rest.postForEntity("/api/artists",
                 new ArtistRequest("Deep Purple", "UK", 1968), ArtistResponse.class);
         ResponseEntity<AlbumResponse> album = rest.postForEntity("/api/albums",
                 new AlbumRequest(artist.getBody().id(), "Machine Head", 1972), AlbumResponse.class);
 
-        ResponseEntity<ProblemDetail> response = rest.postForEntity("/api/tracks",
-                new TrackRequest(album.getBody().id(), "Highway Star", 1, tempDir.resolve("missing.wav").toString()),
-                ProblemDetail.class);
+        ResponseEntity<String> response = rest.postForEntity("/api/tracks",
+                java.util.Map.of("albumId", album.getBody().id(), "title", "Highway Star",
+                        "audioPath", tempDir.resolve("secret.txt").toString()), String.class);
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(response.getBody().getDetail()).contains("missing.wav");
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.METHOD_NOT_ALLOWED);
+    }
+
+    @Test
+    void onlyTheAdminRenamesOrDeletesArtistsAndAlbums() {
+        long artistId = rest.postForEntity("/api/artists", new ArtistRequest("Rainbow", "UK", 1975), ArtistResponse.class)
+                .getBody().id();
+        long albumId = rest.postForEntity("/api/albums", new AlbumRequest(artistId, "Rising", 1976), AlbumResponse.class)
+                .getBody().id();
+        org.springframework.http.HttpHeaders friend = new org.springframework.http.HttpHeaders();
+        friend.set(dev.musicsense.orelha.common.RemoteAccess.EMAIL_HEADER, "amigo@example.com");
+        friend.set(dev.musicsense.orelha.common.RemoteAccess.ORIGIN_IP_HEADER, "203.0.113.9");
+
+        assertThat(rest.exchange("/api/artists/" + artistId, HttpMethod.PUT,
+                new org.springframework.http.HttpEntity<>(new ArtistRequest("Deep Purple", null, null), friend), String.class)
+                .getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(rest.exchange("/api/albums/" + albumId, HttpMethod.PUT,
+                new org.springframework.http.HttpEntity<>(new AlbumRequest(artistId, "Machine Head", 1972), friend), String.class)
+                .getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(rest.exchange("/api/albums/" + albumId, HttpMethod.DELETE,
+                new org.springframework.http.HttpEntity<>(friend), String.class).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(rest.exchange("/api/artists/" + artistId, HttpMethod.DELETE,
+                new org.springframework.http.HttpEntity<>(friend), String.class).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(rest.getForObject("/api/artists/" + artistId, ArtistResponse.class).name()).isEqualTo("Rainbow");
+
+        // O dono (acesso local) continua podendo.
+        assertThat(rest.exchange("/api/albums/" + albumId, HttpMethod.DELETE, null, String.class).getStatusCode())
+                .isEqualTo(HttpStatus.NO_CONTENT);
     }
 
     @Test

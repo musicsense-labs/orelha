@@ -5,7 +5,7 @@ import dev.musicsense.orelha.catalog.AlbumRequest;
 import dev.musicsense.orelha.catalog.AlbumResponse;
 import dev.musicsense.orelha.catalog.ArtistRequest;
 import dev.musicsense.orelha.catalog.ArtistResponse;
-import dev.musicsense.orelha.catalog.TrackRequest;
+import dev.musicsense.orelha.catalog.Uploads;
 import dev.musicsense.orelha.catalog.TrackResponse;
 import dev.musicsense.orelha.collection.CollectionMetrics.PedalPassage;
 import dev.musicsense.orelha.collection.CollectionService.Comparison;
@@ -60,6 +60,13 @@ class CollectionIntegrationTest {
     @Container
     @ServiceConnection
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
+
+    /** O upload grava na biblioteca: num diretório temporário, nunca no data/ do repositório. */
+    @org.springframework.test.context.DynamicPropertySource
+    static void library(org.springframework.test.context.DynamicPropertyRegistry registry) throws IOException {
+        Path dir = Files.createTempDirectory("orelha-library");
+        registry.add("orelha.library.dir", dir::toString);
+    }
 
     @TestConfiguration
     static class StubExtractor {
@@ -132,7 +139,7 @@ class CollectionIntegrationTest {
         for (String audioName : audioNames) {
             Path audio = tempDir.resolve(audioName);
             Files.writeString(audio, audioName);
-            rest.postForEntity("/api/tracks", new TrackRequest(albumId, audioName, no++, audio.toString()), TrackResponse.class);
+            Uploads.upload(rest, albumId, audioName, no++, audio);
             worker.pollOnce();
         }
         return artistId;

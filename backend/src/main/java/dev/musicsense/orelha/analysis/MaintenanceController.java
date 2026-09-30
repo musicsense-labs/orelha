@@ -4,13 +4,11 @@ import dev.musicsense.orelha.common.AdminProperties;
 import dev.musicsense.orelha.lyrics.LrcImporter;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Manutenção pelo administrador: o consumo da fila e o disco. A varredura de órfãos roda sozinha de tempos em tempos; aqui ela
@@ -43,7 +41,7 @@ public class MaintenanceController {
 
     @GetMapping("/worker")
     WorkerState worker(HttpServletRequest request) {
-        requireAdmin(request);
+        admin.require(request, "mexe na fila de análise");
         return state();
     }
 
@@ -54,7 +52,7 @@ public class MaintenanceController {
      */
     @PostMapping("/worker")
     WorkerState worker(HttpServletRequest request, @RequestParam boolean enabled) {
-        requireAdmin(request);
+        admin.require(request, "mexe na fila de análise");
         worker.enabled(enabled);
         return state();
     }
@@ -63,29 +61,19 @@ public class MaintenanceController {
         return new WorkerState(worker.enabled(), runs.countByStatus(RunStatus.QUEUED), runs.countByStatus(RunStatus.RUNNING));
     }
 
-    private void requireAdmin(HttpServletRequest request) {
-        if (!admin.isAdmin(request)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Só o administrador mexe na fila de análise.");
-        }
-    }
-
     /**
      * Procura o .lrc ao lado do áudio de cada faixa e grava os versos. Faixas novas já fazem isso ao entrar;
      * isto é para o acervo que veio antes (ou para quando o arquivo aparece depois).
      */
     @PostMapping("/lrc-scan")
     LrcImporter.Report lrcScan(HttpServletRequest request, @RequestParam(defaultValue = "true") boolean onlyMissing) {
-        if (!admin.isAdmin(request)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Só o administrador varre o acervo.");
-        }
+        admin.require(request, "varre o acervo");
         return lrc.scan(onlyMissing);
     }
 
     @PostMapping("/orphans")
     OrphanSweeper.Report orphans(HttpServletRequest request, @RequestParam(defaultValue = "true") boolean dryRun) {
-        if (!admin.isAdmin(request)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Só o administrador faz a faxina do disco.");
-        }
+        admin.require(request, "faz a faxina do disco");
         return sweeper.sweep(dryRun);
     }
 }

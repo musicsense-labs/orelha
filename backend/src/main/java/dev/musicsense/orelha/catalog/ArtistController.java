@@ -1,6 +1,8 @@
 package dev.musicsense.orelha.catalog;
 
+import dev.musicsense.orelha.common.AdminProperties;
 import dev.musicsense.orelha.common.NotFoundException;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,9 +23,11 @@ import java.util.List;
 public class ArtistController {
 
     private final ArtistRepository artists;
+    private final AdminProperties admin;
 
-    ArtistController(ArtistRepository artists) {
+    ArtistController(ArtistRepository artists, AdminProperties admin) {
         this.artists = artists;
+        this.admin = admin;
     }
 
     @GetMapping
@@ -44,7 +48,8 @@ public class ArtistController {
 
     @PutMapping("/{id}")
     @Transactional
-    ArtistResponse update(@PathVariable Long id, @Valid @RequestBody ArtistRequest req) {
+    ArtistResponse update(@PathVariable Long id, @Valid @RequestBody ArtistRequest req, HttpServletRequest request) {
+        admin.require(request, "renomeia artistas");
         Artist artist = find(id);
         artist.setName(req.name());
         artist.setCountry(req.country());
@@ -54,7 +59,8 @@ public class ArtistController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    void delete(@PathVariable Long id) {
+    void delete(@PathVariable Long id, HttpServletRequest request) {
+        admin.require(request, "exclui artistas");
         artists.delete(find(id));
     }
 

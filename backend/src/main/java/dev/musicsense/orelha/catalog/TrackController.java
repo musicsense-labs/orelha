@@ -30,7 +30,6 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.math.BigDecimal;
@@ -91,12 +90,6 @@ public class TrackController {
         return response(find(id));
     }
 
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    @Transactional
-    TrackResponse create(@Valid @RequestBody TrackRequest req) {
-        return response(service.register(req));
-    }
 
     /** Enfileira um novo run para a faixa; devolve o id do run para polling em /api/analysis/runs/{id}. */
     @PostMapping("/{id}/analyze")
@@ -283,9 +276,7 @@ public class TrackController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void delete(@PathVariable Long id, HttpServletRequest request) {
-        if (!admin.isAdmin(request)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Só o administrador exclui faixas do acervo.");
-        }
+        admin.require(request, "exclui faixas do acervo");
         TrackRemoval.delete(service.remove(id));
     }
 

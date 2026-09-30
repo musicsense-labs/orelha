@@ -4,7 +4,7 @@ import dev.musicsense.orelha.catalog.AlbumRequest;
 import dev.musicsense.orelha.catalog.AlbumResponse;
 import dev.musicsense.orelha.catalog.ArtistRequest;
 import dev.musicsense.orelha.catalog.ArtistResponse;
-import dev.musicsense.orelha.catalog.TrackRequest;
+import dev.musicsense.orelha.catalog.Uploads;
 import dev.musicsense.orelha.catalog.TrackResponse;
 import dev.musicsense.orelha.extraction.AudioExtractor;
 import dev.musicsense.orelha.extraction.ExtractionResult;
@@ -63,6 +63,7 @@ class AnalysisPipelineIntegrationTest {
     static void dataRoot(org.springframework.test.context.DynamicPropertyRegistry registry) throws IOException {
         dataRoot = Files.createTempDirectory("orelha-data");
         registry.add("orelha.data.host-root", () -> dataRoot.toString());
+        registry.add("orelha.library.dir", () -> dataRoot.resolve("library").toString());
     }
 
     /** O stub declara sempre /data/stems/stub/; recriado a cada teste porque excluir uma faixa apaga a pasta. */
@@ -150,8 +151,7 @@ class AnalysisPipelineIntegrationTest {
                 .getBody().id();
         Long albumId = rest.postForEntity("/api/albums", new AlbumRequest(artistId, "Stub", 2026), AlbumResponse.class)
                 .getBody().id();
-        TrackResponse track = rest.postForEntity("/api/tracks",
-                new TrackRequest(albumId, "Stub", 1, audio.toString()), TrackResponse.class).getBody();
+        TrackResponse track = Uploads.upload(rest, albumId, "Stub", 1, audio).getBody();
 
         // O cadastro enfileirou; antes do worker a timeline é vazia (nada de mock na UI).
         TimelineResponse empty = rest.getForObject("/api/tracks/" + track.id() + "/timeline", TimelineResponse.class);
@@ -376,8 +376,7 @@ class AnalysisPipelineIntegrationTest {
                 .getBody().id();
         Long albumId = rest.postForEntity("/api/albums", new AlbumRequest(artistId, "Stub 3", 2026), AlbumResponse.class)
                 .getBody().id();
-        Long trackId = rest.postForEntity("/api/tracks",
-                new TrackRequest(albumId, "Stub 3", 1, audio.toString()), TrackResponse.class).getBody().id();
+        Long trackId = Uploads.upload(rest, albumId, "Stub 3", 1, audio).getBody().id();
 
         ResponseEntity<org.springframework.http.ProblemDetail> response = rest.exchange("/api/tracks/" + trackId + "/key",
                 org.springframework.http.HttpMethod.PUT,
@@ -429,8 +428,7 @@ class AnalysisPipelineIntegrationTest {
                 .getBody().id();
         Long albumId = rest.postForEntity("/api/albums", new AlbumRequest(artistId, "Stub 2", 2026), AlbumResponse.class)
                 .getBody().id();
-        Long trackId = rest.postForEntity("/api/tracks",
-                new TrackRequest(albumId, "Stub 2", 1, audio.toString()), TrackResponse.class).getBody().id();
+        Long trackId = Uploads.upload(rest, albumId, "Stub 2", 1, audio).getBody().id();
         worker.pollOnce();
         Long canonical = rest.getForObject("/api/tracks/" + trackId, TrackResponse.class).canonicalRunId();
 
@@ -467,8 +465,7 @@ class AnalysisPipelineIntegrationTest {
 
         // Uma segunda faixa sobre o mesmo arquivo (mesmos bytes → mesma pasta de stems e mesmo Parquet, que
         // o extrator chaveia por SHA): excluir uma delas não pode levar os arquivos da outra.
-        Long twinId = rest.postForEntity("/api/tracks",
-                new TrackRequest(albumId, "Stub 2 (cópia)", 2, audio.toString()), TrackResponse.class).getBody().id();
+        Long twinId = Uploads.upload(rest, albumId, "Stub 2 (cópia)", 2, audio).getBody().id();
         worker.pollOnce();
         ResponseEntity<String> twinDeleted = rest.exchange("/api/tracks/" + twinId, org.springframework.http.HttpMethod.DELETE,
                 null, String.class);
