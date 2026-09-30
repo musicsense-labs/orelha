@@ -1,58 +1,26 @@
-import {
-  Component, DestroyRef, ElementRef, computed, effect, inject, input, signal, viewChild, viewChildren,
-} from '@angular/core';
-import { HttpClient, httpResource } from '@angular/common/http';
+import { Component, DestroyRef, ElementRef, computed, inject, input, signal, viewChild } from '@angular/core';
+import { httpResource } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
-import { Album, Artist, BassTab, Beat, LyricSegment, Note, Segment, Timeline as TimelineDto, Track } from '../api/models';
-import { Lyrics } from '../api/models';
-import { Metronome } from '../shared/metronome';
+import { Album, Artist, BassTab, Beat, LyricSegment, Lyrics, Note, Segment, Timeline as TimelineDto, Track } from '../api/models';
 import { Device } from '../shared/device';
-import { StemPanner } from '../shared/panner';
+import { readFlag, readNumber, save, saveFlag } from '../shared/prefs';
 import { Sections } from './sections';
 import { ReferencePanel } from './reference';
-import { Fifths } from './fifths';
+import { Mixer } from './mixer';
+import { DetailPanel } from './detail';
 import {
   KEY_RELATION_COLORS, KEY_RELATION_ORDER, chordName, formatTime, keyName, noteName, percent, relationHint, relationLabel,
 } from '../shared/music';
 
 /**
- * Timeline harmônica em SVG dirigido por signals, sincronizada com o <audio> nativo.
- * O playhead é um computed sobre currentTime; clicar num segmento faz seek.
- *
- * Player: a mixagem é o relógio-mestre; cada stem é um <audio> escondido que segue play/pause/seek
- * e é corrigido quando deriva mais de 150 ms. Mix e stems são mutuamente exclusivos (ligar o mix
- * silencia os stems; ligar um stem silencia o mix); stems se combinam entre si; cada canal tem
- * volume. O metrônomo (Web Audio sobre os beats do run) é independente e toca por cima.
+ * Timeline harmônica em SVG dirigido por signals, sincronizada com o `<audio>` nativo da mixagem, que é o
+ * relógio: o playhead é um computed sobre currentTime e clicar num segmento faz seek. Esta tela decide
+ * <em>quando</em> (tocar, pausar, pular, repetir uma parte, a velocidade); o {@link Mixer} decide <em>como
+ * soa</em> (mix × stems, volume, balanço, metrônomo) e o {@link DetailPanel} mostra o instante.
  */
-/** Linhas da timeline: a escolha guardada no navegador vence; sem escolha, 4 em tela estreita e 2 no PC. */
-function readRows(fallback: number): number {
-  try {
-    const n = Number(localStorage.getItem('orelha.timeline.rows'));
-    return n >= 1 && n <= 4 ? n : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function readFlag(key: string): boolean {
-  try {
-    return localStorage.getItem(key) === '1';
-  } catch {
-    return false;
-  }
-}
-
-function saveFlag(key: string, on: boolean): void {
-  try {
-    localStorage.setItem(key, on ? '1' : '0');
-  } catch {
-    // sem storage: a escolha vale só nesta visita
-  }
-}
-
 @Component({
   selector: 'app-timeline',
-  imports: [RouterLink, Sections, ReferencePanel, Fifths],
+  imports: [RouterLink, Sections, ReferencePanel, Mixer, DetailPanel],
   templateUrl: './timeline.html',
   styleUrl: './timeline.scss',
 })
@@ -75,47 +43,34 @@ export class Timeline {
   readonly bassNotes = httpResource<Note[]>(() => `/api/tracks/${this.id()}/bass-notes`);
   /** Só é pedida no modo tab (Practice: TabArranger no núcleo). */
   readonly bassTab = httpResource<BassTab>(() => (this.tabMode() ? `/api/tracks/${this.id()}/bass-tab` : undefined));
-  /** Listas seguras: um recurso em erro (404 num backend antigo, rede) vale como "sem notas", não como falha da tela. */
+  readonly lyrics = httpResource<Lyrics>(() => `/api/tracks/${this.id()}/lyrics`);
+  /** Listas seguras: um recurso em erro (404, rede) vale como "sem dados", não como falha da tela. */
+  readonly beatList = computed(() => (this.beats.hasValue() ? this.beats.value() : []));
   readonly bassNoteList = computed(() => (this.bassNotes.hasValue() ? this.bassNotes.value() : []));
   readonly vocalNoteList = computed(() => (this.vocalNotes.hasValue() ? this.vocalNotes.value() : []));
-  readonly lyrics = httpResource<Lyrics>(() => `/api/tracks/${this.id()}/lyrics`);
-  private readonly http = inject(HttpClient);
-  /** Palavra da linha atual em edição (índice do trecho e da palavra); a edição pausa o áudio. */
-  readonly editingWord = signal<{ seg: number; word: number } | null>(null);
-  readonly savingLyrics = signal(false);
-  readonly lyricsError = signal<string | null>(null);
-  private readonly wordInput = viewChild<ElementRef<HTMLInputElement>>('wordInput');
   readonly lyricSegments = computed(() => (this.lyrics.hasValue() ? this.lyrics.value().segments : []));
-  /** Notas que o ASR sugere serem outro instrumento no stem de voz ficam escondidas, salvo pedido. */
+  readonly shownTab = computed(() => (this.tabMode() && this.bassTab.hasValue() ? this.bassTab.value() : null));
+
+  /** Notas que a letra aponta como outro instrumento no stem de voz ficam escondidas, salvo pedido. */
   readonly showLeak = signal(false);
   /** Lane de baixo como tablatura (corda e casa por nota) em vez de piano roll; preferência guardada no navegador. */
   readonly tabMode = signal(readFlag('orelha.timeline.bassTab'));
-  /** Ciclo das quintas na célula ACORDE (desligado por padrão; preferência guardada no navegador). */
-  readonly showCircle = signal(readFlag('orelha.timeline.circle'));
   /** Velocidade de reprodução (1 = normal), mestre e stems juntos, sem mudar o tom; volta a 1 a cada visita. */
   readonly rate = signal(1);
+  readonly rates = [0.5, 0.6, 0.7, 0.75, 0.8, 0.9, 1, 1.1, 1.25];
   /** Parte em repetição: ao cruzar o fim, volta ao início (só quando chega lá tocando — um seek para depois não volta). */
   readonly loop = signal<{ partId: number; startS: number; endS: number } | null>(null);
   private lastTickS = 0;
-  readonly rates = [0.5, 0.6, 0.7, 0.75, 0.8, 0.9, 1, 1.1, 1.25];
   readonly leakCount = computed(() => this.vocalNoteList().filter((n) => n.kind === 'LIKELY_LEAK').length);
   readonly vocalShown = computed(() =>
     this.showLeak() ? this.vocalNoteList() : this.vocalNoteList().filter((n) => n.kind !== 'LIKELY_LEAK'));
 
   private readonly audio = viewChild<ElementRef<HTMLAudioElement>>('audio');
-  private readonly stemAudios = viewChildren<ElementRef<HTMLAudioElement>>('stemAudio');
+  private readonly mixer = viewChild(Mixer);
 
   readonly currentTime = signal(0);
   readonly playing = signal(false);
   readonly hovered = signal<Segment | null>(null);
-
-  /** O que está audível: 'mix' ou um conjunto de stems — nunca os dois. */
-  readonly audible = signal<ReadonlySet<string>>(new Set(['mix']));
-  /** Volume por canal (0–1), inclusive 'mix' e 'metronome'. */
-  readonly volumes = signal<Record<string, number>>({ mix: 1, drums: 1, bass: 1, other: 1, vocals: 1, metronome: 0.8 });
-  /** Balanço L/R por canal (-1 esquerda … +1 direita), inclusive 'mix' e 'metronome'. */
-  readonly pans = signal<Record<string, number>>({ mix: 0, drums: 0, bass: 0, other: 0, vocals: 0, metronome: 0 });
-  readonly metronomeOn = signal(false);
 
   /** Largura lógica do SVG; o viewBox escala para a largura real. */
   readonly width = 1200;
@@ -125,7 +80,7 @@ export class Timeline {
   readonly vocalLane = 40;
   readonly bassTop = this.laneHeight + 2;
   readonly vocalTop = this.bassTop + this.bassLane + 2;
-  /** Lane da letra: trechos transcritos pelo ASR, sob a voz. */
+  /** Lane da letra, sob a voz. */
   readonly lyricLane = 16;
   readonly lyricTop = this.vocalTop + this.vocalLane + 2;
   readonly lanesBottom = this.lyricTop + this.lyricLane;
@@ -133,9 +88,7 @@ export class Timeline {
   readonly rowHeight = this.lanesBottom + 30;
   readonly device = inject(Device);
   /** Em quantas linhas a timeline quebra (preferência do visitante, guardada no navegador; 4 no celular, 2 no PC). */
-  readonly rows = signal(readRows(this.device.narrow() ? 4 : 2));
-
-  readonly stemLabels: Record<string, string> = { drums: 'bateria', bass: 'baixo', other: 'guitarras/teclados', vocals: 'voz' };
+  readonly rows = signal(readNumber('orelha.timeline.rows', this.device.narrow() ? 4 : 2, (n) => n >= 1 && n <= 4));
 
   readonly duration = computed(() => {
     const segments = this.timeline.value()?.segments ?? [];
@@ -144,25 +97,12 @@ export class Timeline {
   });
 
   readonly segments = computed(() => this.timeline.value()?.segments ?? []);
-  readonly downbeats = computed(() => (this.beats.value() ?? []).filter((b) => b.downbeat));
+  readonly downbeats = computed(() => this.beatList().filter((b) => b.downbeat));
   readonly downbeatTimes = computed(() => this.downbeats().map((b) => b.timeS));
 
   readonly current = computed(() => {
     const t = this.currentTime();
     return this.segments().find((s) => s.startS <= t && t < s.endS) ?? null;
-  });
-
-  readonly currentBar = computed(() => {
-    const t = this.currentTime();
-    const beats = this.beats.value() ?? [];
-    let bar: number | null = null;
-    for (const b of beats) {
-      if (b.timeS > t) {
-        break;
-      }
-      bar = b.barNo;
-    }
-    return bar;
   });
 
   readonly focus = computed(() => this.hovered() ?? this.current());
@@ -200,20 +140,21 @@ export class Timeline {
 
   /** y de cada corda dentro da lane de baixo (G em cima, E embaixo), como numa tab impressa. */
   readonly stringYs = computed(() => {
-    const n = this.bassTab.hasValue() ? this.bassTab.value().tuning.length : 4;
+    const n = this.shownTab()?.tuning.length ?? 4;
     const step = this.bassLane / n;
     return Array.from({ length: n }, (_, s) => this.bassTop + this.bassLane - step * (s + 0.5));
   });
 
   /** Casas na lane de baixo, uma por nota, na linha da sua corda; nota que cruza a borda vai à linha do ataque. */
   readonly tabMarks = computed(() => {
-    if (!this.tabMode() || !this.bassTab.hasValue()) {
+    const tab = this.shownTab();
+    if (!tab) {
       return [];
     }
     const span = this.rowSpan();
     const rows = this.rows();
     const ys = this.stringYs();
-    return this.bassTab.value().notes.map((n, i) => {
+    return tab.notes.map((n, i) => {
       const row = Math.min(rows - 1, Math.floor(n.startS / span));
       return {
         key: 't' + i, row, fret: n.fret, shifted: n.octaveShifted, midi: n.midi, string: n.string,
@@ -224,22 +165,6 @@ export class Timeline {
     });
   });
 
-  /** Corda e casa da nota de baixo que soa agora (ou da última), para a célula BAIXO do painel. */
-  readonly tabNow = computed(() => {
-    if (!this.tabMode() || !this.bassTab.hasValue()) {
-      return null;
-    }
-    const t = this.currentTime();
-    const tab = this.bassTab.value();
-    let last: (typeof tab.notes)[number] | null = null;
-    for (const n of tab.notes) {
-      if (n.startS > t) {
-        break;
-      }
-      last = n;
-    }
-    return last ? { string: tab.strings[last.string], fret: last.fret, shifted: last.octaveShifted } : null;
-  });
   /** Piano roll da voz, na lane da voz. */
   readonly vocalRoll = computed(() => this.roll(this.vocalShown(), this.vocalTop, this.vocalLane, 'v'));
 
@@ -268,90 +193,27 @@ export class Timeline {
     return out;
   });
 
-  /**
-   * Trecho da letra no instante e as palavras dele, com a que está sendo cantada marcada — pelo ataque da nota
-   * de voz alinhada, quando há (o ASR marca a consoante; a nota, a vogal).
-   */
-  readonly currentLine = computed(() => {
-    const t = this.currentTime();
-    const segments = this.lyricSegments();
-    const index = segments.findIndex((s) => s.startS <= t && t < s.endS);
-    if (index < 0) {
-      return null;
+  /** Marcas de tempo a cada 30 s, cada uma na sua linha. */
+  readonly ticks = computed(() => {
+    const out: { seconds: number; row: number; x: number }[] = [];
+    for (let seconds = 0; seconds < this.duration(); seconds += 30) {
+      out.push({ seconds, row: this.rowOf(seconds), x: this.xIn(seconds) });
     }
-    const seg = segments[index];
-    const words = seg.words.map((w) => ({ text: w.text, on: (w.noteStartS ?? w.startS) <= t && t < w.endS + 0.12 }));
-    return { index, seg, words };
+    return out;
   });
 
-  /** Abre a correção de uma palavra da linha atual; pausa para a linha não mudar debaixo do cursor. */
-  startEditWord(seg: number, word: number): void {
-    this.audio()?.nativeElement.pause();
-    this.editingWord.set({ seg, word });
-  }
+  readonly keyLabel = computed(() => {
+    const k = this.timeline.value()?.key;
+    return k ? `${keyName(k.tonicPc, k.mode)} (${k.source.toLowerCase()}${k.confidence != null ? ', ' + percent(k.confidence) : ''})` : '—';
+  });
 
-  /** Grava a palavra corrigida: vazia remove; com espaços divide o tempo dela entre as novas palavras. */
-  commitWord(seg: number, word: number, raw: string): void {
-    if (!this.editingWord()) {
-      return;   // o blur depois do Enter/Escape
-    }
-    this.editingWord.set(null);
-    const segments = this.lyricSegments();
-    const target = segments[seg]?.words[word];
-    if (!target) {
-      return;
-    }
-    const parts = raw.trim().split(/\s+/).filter(Boolean);
-    if (parts.length === 1 && parts[0] === target.text) {
-      return;
-    }
-    const span = (target.endS - target.startS) / Math.max(parts.length, 1);
-    const replacement = parts.map((text, i) => ({
-      startS: target.startS + i * span, endS: target.startS + (i + 1) * span, text,
-    }));
-    const edited = segments
-      .map((s, i) => {
-        if (i !== seg) {
-          return s;
-        }
-        const words = [...s.words.slice(0, word), ...replacement, ...s.words.slice(word + 1)];
-        return { ...s, words, text: words.map((w) => w.text).join(' ') };
-      })
-      .filter((s) => s.words.length > 0);
-    this.saveLyrics(edited);
-  }
+  readonly legend = KEY_RELATION_ORDER.map((r) => ({ relation: r, color: KEY_RELATION_COLORS[r] }));
 
-  /** Descarta a correção: volta à transcrição do extrator. */
-  revertLyrics(): void {
-    this.saveLyrics([]);
-  }
+  private frame = 0;
 
-  private saveLyrics(segments: { startS: number; endS: number; text: string; words: { startS: number; endS: number; text: string }[] }[]): void {
-    const body = segments.map((s) => ({
-      startS: s.startS, endS: s.endS, text: s.text,
-      words: s.words.map((w) => ({ startS: w.startS, endS: w.endS, text: w.text })),
-    }));
-    this.savingLyrics.set(true);
-    this.lyricsError.set(null);
-    this.http.put(`/api/tracks/${this.id()}/lyrics`, body).subscribe({
-      next: () => {
-        this.savingLyrics.set(false);
-        this.lyrics.reload();
-        this.vocalNotes.reload();   // a classificação das notas segue a letra
-      },
-      error: (e) => {
-        this.savingLyrics.set(false);
-        this.lyricsError.set(e?.error?.detail ?? e?.message ?? 'falha ao salvar');
-      },
-    });
+  constructor() {
+    inject(DestroyRef).onDestroy(() => cancelAnimationFrame(this.frame));
   }
-
-  /**
-   * Nota do baixo (stem) no instante: em execução ("on") ou a última que soou ("off"), até a próxima
-   * começar — a UI mostra a primeira em negrito e a segunda leve, para o nome não piscar.
-   */
-  readonly bassNow = computed(() => this.noteAt(this.bassNoteList(), this.currentTime()));
-  readonly vocalNow = computed(() => this.noteAt(this.vocalShown(), this.currentTime()));
 
   /** Tessitura (p5–p95) das notas, para o piano roll ocupar a lane inteira; ao menos uma oitava. */
   private static range(notes: Note[]): { low: number; high: number } {
@@ -393,94 +255,6 @@ export class Timeline {
     return out;
   }
 
-  /** A nota que soa em t (a mais forte, se várias) ou, sem nenhuma, a última que terminou antes de t. */
-  private noteAt(notes: Note[], t: number): { name: string; state: 'on' | 'off' } | null {
-    let sounding: Note | null = null;
-    let last: Note | null = null;
-    for (const n of notes) {
-      if (n.startS > t) {
-        break;
-      }
-      if (t < n.endS) {
-        if (sounding == null || (n.velocity ?? 0) > (sounding.velocity ?? 0)) {
-          sounding = n;
-        }
-      } else if (last == null || n.endS > last.endS) {
-        last = n;
-      }
-    }
-    const n = sounding ?? last;
-    return n ? { name: noteName(n.midi % 12) + (Math.floor(n.midi / 12) - 1), state: sounding ? 'on' : 'off' } : null;
-  }
-
-  /** Marcas de tempo a cada 30 s, cada uma na sua linha. */
-  readonly ticks = computed(() => {
-    const out: { seconds: number; row: number; x: number }[] = [];
-    for (let seconds = 0; seconds < this.duration(); seconds += 30) {
-      out.push({ seconds, row: this.rowOf(seconds), x: this.xIn(seconds) });
-    }
-    return out;
-  });
-
-  readonly keyLabel = computed(() => {
-    const k = this.timeline.value()?.key;
-    return k ? `${keyName(k.tonicPc, k.mode)} (${k.source.toLowerCase()}${k.confidence != null ? ', ' + percent(k.confidence) : ''})` : '—';
-  });
-
-  readonly legend = KEY_RELATION_ORDER.map((r) => ({ relation: r, color: KEY_RELATION_COLORS[r] }));
-
-  private readonly metronome = new Metronome();
-  private readonly panner = new StemPanner();
-  private frame = 0;
-
-  constructor() {
-    effect(() => {
-      const el = this.wordInput()?.nativeElement;
-      if (this.editingWord() && el) {
-        el.focus();
-        el.select();
-      }
-    });
-    inject(DestroyRef).onDestroy(() => {
-      cancelAnimationFrame(this.frame);
-      this.metronome.dispose();
-      this.panner.dispose();
-    });
-    // Mudo e volume seguem os signals; o mestre continua tocando mesmo mudo para manter o relógio.
-    effect(() => {
-      const audible = this.audible();
-      const volumes = this.volumes();
-      const master = this.audio()?.nativeElement;
-      if (master) {
-        master.muted = !audible.has('mix');
-        master.volume = volumes['mix'] ?? 1;
-      }
-      for (const ref of this.stemAudios()) {
-        const el = ref.nativeElement;
-        const name = el.dataset['stem'] ?? '';
-        el.muted = !audible.has(name);
-        el.volume = volumes[name] ?? 1;
-      }
-      this.metronome.setVolume(volumes['metronome'] ?? 0.8);
-    });
-    // Balanço: mix e stems pelo grafo Web Audio (o elemento continua fonte e relógio); metrônomo no dele.
-    effect(() => {
-      const pans = this.pans();
-      const master = this.audio()?.nativeElement;
-      if (master) {
-        this.panner.setPan(master, pans['mix'] ?? 0);
-      }
-      for (const ref of this.stemAudios()) {
-        const el = ref.nativeElement;
-        this.panner.setPan(el, pans[el.dataset['stem'] ?? ''] ?? 0);
-      }
-      this.metronome.setPan(pans['metronome'] ?? 0);
-    });
-    effect(() => {
-      this.metronome.setBeats(this.beats.value() ?? []);
-    });
-  }
-
   /** Linha em que cai um instante. */
   rowOf(seconds: number): number {
     return Math.min(this.rows() - 1, Math.max(0, Math.floor(seconds / this.rowSpan())));
@@ -497,18 +271,9 @@ export class Timeline {
     saveFlag('orelha.timeline.bassTab', on);
   }
 
-  setShowCircle(on: boolean): void {
-    this.showCircle.set(on);
-    saveFlag('orelha.timeline.circle', on);
-  }
-
   setRows(n: number): void {
     this.rows.set(n);
-    try {
-      localStorage.setItem('orelha.timeline.rows', String(n));
-    } catch {
-      // sem storage: a escolha vale só nesta visita
-    }
+    save('orelha.timeline.rows', String(n));
   }
 
   color(s: Segment): string {
@@ -519,75 +284,10 @@ export class Timeline {
     return chordName(s.rootPc, s.quality, s.bassPc);
   }
 
-  /** Cifra com o baixo da harmonia na notação acorde/baixo, quando o baixo efetivo não é a fundamental. */
-  labelWithBass(s: Segment): string {
-    const slash = s.effectiveBassPc != null && s.effectiveBassPc !== s.rootPc ? s.effectiveBassPc : null;
-    return chordName(s.rootPc, s.quality, slash);
-  }
-
-
-  // --- mixer ----------------------------------------------------------------------------------
-
-  isAudible(name: string): boolean {
-    return this.audible().has(name);
-  }
-
-  /** Mix e stems são exclusivos: ligar o mix desliga os stems; ligar um stem desliga o mix. */
-  toggle(name: string): void {
-    const current = this.audible();
-    if (name === 'mix') {
-      this.audible.set(current.has('mix') ? new Set() : new Set(['mix']));
-      return;
-    }
-    const next = new Set([...current].filter((n) => n !== 'mix'));
-    if (current.has(name)) {
-      next.delete(name);
-    } else {
-      next.add(name);
-    }
-    this.audible.set(next);
-  }
-
-  /** Só este canal. */
-  solo(name: string): void {
-    this.audible.set(new Set([name]));
-  }
-
-  setVolume(name: string, value: number): void {
-    this.volumes.update((v) => ({ ...v, [name]: Math.min(1, Math.max(0, value)) }));
-  }
-
-  volume(name: string): number {
-    return this.volumes()[name] ?? 1;
-  }
-
-  /**
-   * Perto do centro (±0,15) o balanço gruda em 0: achar o meio no slider de 46 px é difícil a olho. Vindo do
-   * próprio slider, o valor grudado é reescrito nele — o binding [value] não reescreve quando o sinal já era 0.
-   */
-  setPan(name: string, value: number | HTMLInputElement): void {
-    const el = typeof value === 'number' ? null : value;
-    const raw = typeof value === 'number' ? value : +value.value;
-    const snapped = Math.min(1, Math.max(-1, Math.abs(raw) < 0.15 ? 0 : raw));
-    this.pans.update((p) => ({ ...p, [name]: snapped }));
-    if (el) {
-      el.value = String(snapped);
-    }
-  }
-
-  pan(name: string): number {
-    return this.pans()[name] ?? 0;
-  }
-
-  panLabel(name: string): string {
-    const v = this.pan(name);
-    return v === 0 ? 'centro' : `${Math.round(Math.abs(v) * 100)}% ${v < 0 ? 'esquerda' : 'direita'}`;
-  }
-
-  toggleMetronome(): void {
-    this.metronomeOn.update((on) => !on);
-    const el = this.audio()?.nativeElement;
-    this.metronome.reset(el ? el.currentTime : 0);
+  /** A letra mudou (correção do dono): a classificação das notas de voz segue a letra. */
+  onLyricsSaved(): void {
+    this.lyrics.reload();
+    this.vocalNotes.reload();
   }
 
   // --- transporte -----------------------------------------------------------------------------
@@ -608,15 +308,14 @@ export class Timeline {
     }
   }
 
+  pause(): void {
+    this.audio()?.nativeElement.pause();
+  }
+
   onPlay(): void {
     this.playing.set(true);
-    this.panner.resume();
-    this.applyRate();
-    for (const ref of this.stemAudios()) {
-      void ref.nativeElement.play().catch(() => undefined);
-    }
-    const el0 = this.audio()?.nativeElement;
-    this.metronome.reset(el0 ? el0.currentTime : 0);
+    const master = this.audio()?.nativeElement;
+    this.mixer()?.started(master?.currentTime ?? 0);
     const tick = () => {
       const el = this.audio()?.nativeElement;
       if (el) {
@@ -626,10 +325,7 @@ export class Timeline {
         }
         this.lastTickS = el.currentTime;
         this.currentTime.set(el.currentTime);
-        this.keepStemsInSync(el.currentTime);
-        if (this.metronomeOn()) {
-          this.metronome.schedule(el.currentTime, this.rate());
-        }
+        this.mixer()?.tick(el.currentTime);
       }
       if (this.playing()) {
         this.frame = requestAnimationFrame(tick);
@@ -641,14 +337,10 @@ export class Timeline {
   onPause(): void {
     this.playing.set(false);
     cancelAnimationFrame(this.frame);
-    for (const ref of this.stemAudios()) {
-      ref.nativeElement.pause();
-    }
     const el = this.audio()?.nativeElement;
-    if (el) {
-      this.currentTime.set(el.currentTime);
-      this.metronome.reset(el.currentTime);
-    }
+    const t = el?.currentTime ?? this.currentTime();
+    this.currentTime.set(t);
+    this.mixer()?.stopped(t);
   }
 
   onSeeked(): void {
@@ -656,10 +348,7 @@ export class Timeline {
     if (el) {
       this.lastTickS = el.currentTime;
       this.currentTime.set(el.currentTime);
-      for (const ref of this.stemAudios()) {
-        ref.nativeElement.currentTime = el.currentTime;
-      }
-      this.metronome.reset(el.currentTime);
+      this.mixer()?.seeked(el.currentTime);
     }
   }
 
@@ -685,22 +374,7 @@ export class Timeline {
 
   setRate(rate: number): void {
     this.rate.set(rate);
-    this.applyRate();
-    const el = this.audio()?.nativeElement;
-    this.metronome.reset(el ? el.currentTime : 0);   // os cliques já agendados foram calculados na velocidade antiga
-  }
-
-  /** playbackRate no mestre e em cada stem (os stems podem chegar depois: onPlay reaplica). */
-  private applyRate(): void {
-    const rate = this.rate();
-    const master = this.audio()?.nativeElement;
-    const all = [master, ...this.stemAudios().map((r) => r.nativeElement)].filter((el): el is HTMLAudioElement => !!el);
-    for (const el of all) {
-      el.preservesPitch = true;
-      if (el.playbackRate !== rate) {
-        el.playbackRate = rate;
-      }
-    }
+    this.mixer()?.setRate(rate, this.audio()?.nativeElement.currentTime ?? 0);
   }
 
   seekTo(seconds: number): void {
@@ -711,19 +385,9 @@ export class Timeline {
     }
   }
 
-  private keepStemsInSync(masterTime: number): void {
-    for (const ref of this.stemAudios()) {
-      const el = ref.nativeElement;
-      if (Math.abs(el.currentTime - masterTime) > 0.15) {
-        el.currentTime = masterTime;
-      }
-    }
-  }
-
   protected readonly formatTime = formatTime;
   protected readonly relationLabel = relationLabel;
   protected readonly relationHint = relationHint;
   protected readonly Math = Math;
   protected readonly noteName = noteName;
-  protected readonly percent = percent;
 }

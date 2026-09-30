@@ -36,42 +36,6 @@
   gap: 0.4rem;
 }
 
-.mixer {
-  display: flex;
-  gap: 0.6rem;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-
-  .channel { display: flex; align-items: center; gap: 0.3rem; }
-  .channel input[type="range"] { width: 70px; accent-color: var(--ink); }
-  /* balanço L/R: mais curto; o centro (= sem grafo Web Audio ligado) é uma marca que passa por cima e por
-     baixo do cursor, e vira accent quando o valor é exatamente 0 — o setPan já puxa para 0 quando chega perto */
-  .pan-wrap { position: relative; display: inline-flex; align-items: center; isolation: isolate; }
-  .pan-wrap::before {
-    content: ''; position: absolute; z-index: -1; left: 50%; top: -3px; bottom: -3px; width: 2px; margin-left: -1px;
-    background: var(--line); border-radius: 1px; pointer-events: none;
-  }
-  .pan-wrap.centered::before { background: var(--accent); }
-  .pan-wrap.centered input[type="range"].pan { accent-color: var(--ink); }
-  .channel input[type="range"].pan { width: 46px; accent-color: var(--muted); }
-  .channel.metronome { margin-left: 0.6rem; padding-left: 0.6rem; border-left: 1px solid var(--line); }
-  .channel.metronome button.on { background: var(--accent); border-color: var(--accent); }
-
-  button {
-    font: inherit;
-    font-size: 0.8rem;
-    padding: 0.2rem 0.6rem;
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    background: var(--surface);
-    color: var(--muted);
-    cursor: pointer;
-    user-select: none;
-  }
-  button.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
-  .small-note { font-size: 0.8rem; }
-}
-
 .legend {
   display: flex;
   gap: 1rem;
@@ -157,132 +121,14 @@
   .downbeat { stroke: rgba(0, 0, 0, 0.28); stroke-width: 0.6; pointer-events: none; }
 }
 
-/* Grade de colunas fixas: acorde | tempo | compasso | baixo | voz | letra. Larguras e alturas não dependem do
-   conteúdo (cifra longa, badge, nota em negrito ou leve, linha da letra), para o painel não se mexer enquanto a
-   música toca; o que não couber é cortado com reticências. A letra tem largura fixa e altura para duas linhas. */
-.detail {
-  display: grid;
-  grid-template-columns: 16rem 6.5rem 6.5rem 9rem 9rem 28rem;   /* baixo/voz cabem "melodia do stem"; letra na largura de antes */
-  justify-content: start;
-  align-items: stretch;
-  padding: 0.4rem 0.6rem;
-
-  .cell {
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
-    padding: 0.3rem 1.1rem;
-    border-right: 1px solid var(--line);
-    min-width: 0;
-    overflow: hidden;
-  }
-  .cell:last-child { border-right: none; }
-  .cell .val, .cell .sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .cell .val { height: 1.65rem; }
-  .cell .sub { height: 1.05rem; }
-  .vocal-cell .val { color: var(--voice-strong); }
-  .lyric-cell .val.line {
-    font-size: 0.95rem; font-weight: 400; line-height: 1.3;
-    height: 3.9rem;                                   /* três linhas reservadas, mesmo com uma ou nenhuma */
-    white-space: normal; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
-  }
-  .lyric-cell .word {
-    font: inherit;
-    background: none;
-    border: 0;
-    padding: 0 0.1rem;
-    margin: 0 0.3rem 0 0;   /* os botões vêm colados (o template não preserva espaços) */
-    cursor: text;
-    color: var(--muted);
-    border-radius: 3px;
-    transition: color 0.15s, font-weight 0.15s;
-  }
-  .lyric-cell .word.on { font-weight: 700; color: var(--voice-strong); }
-  .lyric-cell .word:hover { background: var(--voice-tint); color: var(--ink); }
-  .lyric-cell .word-edit {
-    font: inherit;
-    font-size: 0.95rem;
-    padding: 0 0.2rem;
-    border: 1px solid var(--voice-strong);
-    border-radius: 3px;
-    min-width: 4ch;
-  }
-  .lyric-cell .tiny, .chord-cell .tiny {
-    font: inherit;
-    font-size: 0.65rem;
-    letter-spacing: 0;
-    text-transform: none;
-    margin-left: 0.5rem;
-    background: none;
-    border: 0;
-    padding: 0;
-    color: var(--voice-strong);
-    cursor: pointer;
-    text-decoration: underline;
-  }
-  .lyric-cell .error { color: var(--accent-hover); }
-  /* selo discreto: o texto veio do .lrc da faixa, sobre os tempos do ASR */
-  .lyric-cell .tiny.lrc { margin-left: 0.4rem; text-decoration: none; border: 1px solid var(--line); border-radius: 3px; padding: 0 0.25rem; color: var(--muted); cursor: help; }
-  .bass-cell .val { color: var(--bass-strong); }
-  /* nota em execução em negrito; depois que termina fica leve até a próxima chegar (não pisca) */
-  .val.note { font-weight: 700; transition: opacity 0.25s, font-weight 0.25s; }
-  .val.note.off { font-weight: 400; opacity: 0.4; }
-
-  .lbl {
-    font-family: 'IBM Plex Mono', 'Courier New', monospace;
-    font-size: 0.65rem;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
-  .val { font-size: 1.35rem; font-weight: 600; line-height: 1.2; font-variant-numeric: tabular-nums; display: inline-flex; align-items: baseline; gap: 0.5rem; }
-  .sub { font-size: 0.8rem; min-height: 1rem; display: inline-flex; align-items: center; gap: 0.5rem; }
-  .degree-big { font-size: 1.1rem; font-weight: 500; color: var(--muted); }
-
-  /* ciclo das quintas: à direita da célula do acorde; a coluna cresce 4,4 rem e as outras cedem 0,6 rem de
-     padding cada, para a grade continuar cabendo nos 1200 px da página */
-  .chord-cell { position: relative; }
-  .chord-cell .tiny { margin-left: 0.5rem; }
-  &.circle {
-    grid-template-columns: 22.4rem 5.9rem 5.9rem 8.4rem 8.4rem 25.4rem;
-    .cell { padding: 0.3rem 0.8rem; }
-    .chord-cell { padding-right: calc(0.8rem + 96px + 0.5rem); min-height: calc(96px + 0.6rem); box-sizing: border-box; }
-    .fifths { position: absolute; right: 0.8rem; top: 50%; transform: translateY(-50%); }
-  }
-}
-@media (max-width: 1200px) {
-  .detail { grid-template-columns: minmax(12rem, 1fr) 6.5rem 6.5rem 9rem 9rem; }
-  .detail.circle { grid-template-columns: minmax(16rem, 1fr) 5.9rem 5.9rem 8.4rem 8.4rem; }
-  .detail .vocal-cell { border-right: none; }
-  .detail .lyric-cell { grid-column: 1 / -1; border-top: 1px solid var(--line); margin-top: 0.3rem; padding-top: 0.5rem; }
-}
-/* Celular (tela estreita): painel em pilha de pares, mixer em coluna com sliders na largura toda. */
+/* Celular (tela estreita): cabeçalho em coluna (o mixer e o painel têm as regras deles). */
 @media (max-width: 700px) {
-  .detail, .detail.circle { grid-template-columns: 1fr 1fr; }
-  .detail .chord-cell { grid-column: 1 / -1; border-right: none; }
-  .detail .cell:nth-child(3), .detail .cell:nth-child(5) { border-right: none; }
-  .detail .cell { padding: 0.3rem 0.6rem; }
-  .detail .lyric-cell { margin-top: 0.2rem; padding-top: 0.4rem; }
-
   .track-header { flex-direction: column; align-items: stretch; }
   .player { align-items: stretch; }
   .transport { min-width: 0; }
-  .mixer {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.35rem;
-    .channel { display: grid; grid-template-columns: 8rem minmax(0, 1fr) 4.5rem; gap: 0.5rem; align-items: center; }
-    .channel button { text-align: left; }
-    .channel input[type="range"] { width: 100%; }
-    .channel input[type="range"].pan { width: 100%; }
-    .channel.metronome { margin-left: 0; padding-left: 0; border-left: none; border-top: 1px solid var(--line); padding-top: 0.4rem; }
-    .small-note { grid-column: 1 / -1; }
-  }
 }
 /* Dedo em vez de mouse: alvos maiores, independentemente da largura. */
 @media (pointer: coarse) {
-  .mixer button { padding: 0.45rem 0.7rem; font-size: 0.9rem; }
-  .mixer .channel input[type="range"] { height: 2rem; }
   .transport .play { width: 2.8rem; height: 2.8rem; }
   .transport .seek { height: 2rem; }
 }
